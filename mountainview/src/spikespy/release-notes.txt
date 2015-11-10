@@ -1,0 +1,9 @@
+5/22/2015
+
+git clone https://github.com/magland/spikespy.git
+New name: ssviewqt -> spikespy
+Completely self-contained project
+README.txt is all you should need for compiling/using
+All temporary files now go into spikespy/tmp
+verbosity is off from MATLAB console
+> spikespy with no parameters from matlab to get some key shortcut info
