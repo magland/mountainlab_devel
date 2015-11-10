@@ -50,8 +50,8 @@ int main(int argc, char *argv[]) {
 
 	qsrand(QDateTime::currentDateTime().toMSecsSinceEpoch());
 
-	QString working_path=CLP.named_parameters.value("working_path","/home/magland/dev/ms11d45A/working");
-	QString output_path=CLP.named_parameters.value("output_path","/home/magland/dev/ms11d45A/output");
+	QString working_path=CLP.named_parameters.value("working_path");
+	QString output_path=CLP.named_parameters.value("output_path");
 
 	QString templates_path=QString("%1/templates.mda").arg(output_path);
 	QString locations_path=QString("%1/locations.mda").arg(output_path);

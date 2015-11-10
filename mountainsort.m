@@ -42,7 +42,6 @@ fprintf('Setting up... basepath=%s...\n',basepath);
 addpath([basepath,'/view']);
 addpath([basepath,'/util']);
 addpath([basepath,'/processing']);
-addpath([basepath,'/spikespy/matlab']);
 addpath([basepath,'/isosplit']);
 
 fprintf('Verifying input parameters in opts...\n');
