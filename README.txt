@@ -6,20 +6,21 @@ Prerequisites:
 * Linux or Mac (has been tested on Ubuntu)
 
 Overview:
-Run the processing using mountainsort_example
-View the results using mountainview_example
-Read the output arrays from MATLAB
+Run the processing using mountainsort_example1
+View the results using mountainview_example1
+You can also read the output arrays from MATLAB
 
 
 == Run mountainsort for the first time ==
 
 From MATLAB:
 > cd mountainsort
-> mountainview_example1
+> mountainsort_example1
 
 You will get a message telling you to download some data.
 Follow those instructions and then try re-running.
 
+Download should take a few minutes
 Processing should take less than one minute
 
 
