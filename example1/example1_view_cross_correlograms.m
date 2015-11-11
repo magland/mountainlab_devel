@@ -1,6 +1,8 @@
-function view_cross_correlograms_example1
+function example1_view_cross_correlograms
 
-k=input('Enter a spike type number (or zero for diagonal): ');
+if nargin<1
+    k=input('Enter a spike type number (or zero for diagonal): ');
+end;
 
 output_path=example1_output_path;
 path0=[output_path,'/cross-correlograms.mda'];
