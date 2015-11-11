@@ -10,6 +10,7 @@
 #include "diskreadmda.h"
 #include <QList>
 #include <QTextBrowser>
+#include "firetrackwidget.h"
 
 class MountainViewWidgetPrivate {
 public:
@@ -66,6 +67,11 @@ MountainViewWidget::MountainViewWidget(QWidget *parent) : QMainWindow(parent)
 		QPushButton *B=new QPushButton("Statistics");
 		VL->addWidget(B);
 		connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_statistics()));
+	}
+	{
+		QPushButton *B=new QPushButton("FireTrack");
+		VL->addWidget(B);
+		connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_firetrack()));
 	}
 	{
 		QPushButton *B=new QPushButton("Quit");
@@ -226,12 +232,18 @@ void MountainViewWidget::slot_view_spike_clips()
     d->connect_clips_view(V);
 }
 
-void MountainViewWidget::slot_cluster_view()
-{
+void MountainViewWidget::slot_firetrack() {
+	FireTrackWidget *W=new FireTrackWidget;
+	W->setElectrodeLocations(d->m_locations);
+	W->setWaveforms(d->m_templates);
 
+	W->show();
+	W->setAttribute(Qt::WA_DeleteOnClose);
+	W->move(this->topLevelWidget()->geometry().topRight()+QPoint(500,400));
+	W->resize(800,400);
 }
 
-void MountainViewWidget::slot_firetrack()
+void MountainViewWidget::slot_cluster_view()
 {
 
 }
