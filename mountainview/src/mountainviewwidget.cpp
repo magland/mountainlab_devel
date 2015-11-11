@@ -94,10 +94,10 @@ MountainViewWidget::MountainViewWidget(QWidget *parent) : QMainWindow(parent)
     CW->setLayout(VL);
 	this->setCentralWidget(CW);
 
-    this->setWindowFlags(Qt::WindowStaysOnTopHint);
-    this->setWindowFlags(Qt::CustomizeWindowHint | Qt::WindowTitleHint);
-    //this->setWindowFlags(Qt::X11BypassWindowManagerHint);
-    //this->setWindowFlags(Qt::FramelessWindowHint);
+    this->setWindowFlags(Qt::Window|Qt::WindowStaysOnTopHint);
+    this->setWindowFlags(Qt::Window|Qt::Tool);
+    this->setWindowFlags(this->windowFlags()|Qt::CustomizeWindowHint);
+    this->setWindowFlags(this->windowFlags() ^ Qt::WindowCloseButtonHint);
 }
 
 void MountainViewWidget::setElectrodeLocations(const Mda &L)
