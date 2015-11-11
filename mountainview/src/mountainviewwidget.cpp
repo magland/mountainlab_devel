@@ -236,6 +236,7 @@ void MountainViewWidget::slot_firetrack() {
 	FireTrackWidget *W=new FireTrackWidget;
 	W->setElectrodeLocations(d->m_locations);
 	W->setWaveforms(d->m_templates);
+	W->electrodeArrayWidget()->setShowChannelNumbers(true);
 
 	W->show();
 	W->setAttribute(Qt::WA_DeleteOnClose);

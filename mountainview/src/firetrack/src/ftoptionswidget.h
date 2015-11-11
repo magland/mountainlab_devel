@@ -19,6 +19,8 @@ public:
 	bool normalizeIntensity();
 	float brightness();
 
+	void setShowChannelNumbers(bool val);
+
 private:
 	FTOptionsWidgetPrivate *d;
 

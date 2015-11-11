@@ -29,7 +29,7 @@ FTOptionsWidget::FTOptionsWidget(QWidget *parent) : QWidget(parent)
 	int row=0;
 
 	{
-		QCheckBox *CB=new QCheckBox("Show electrode numbers"); CB->setChecked(true);
+		QCheckBox *CB=new QCheckBox("Show electrode numbers"); CB->setChecked(false);
 		layout->addWidget(CB,row,0);
 		connect(CB,SIGNAL(stateChanged(int)),this,SIGNAL(signalOptionsChanged()));
 		d->m_show_channel_numbers=CB;
@@ -90,5 +90,10 @@ bool FTOptionsWidget::normalizeIntensity()
 float FTOptionsWidget::brightness()
 {
 	return d->m_brightness_slider->value();
+}
+
+void FTOptionsWidget::setShowChannelNumbers(bool val)
+{
+	d->m_show_channel_numbers->setChecked(val);
 }
 

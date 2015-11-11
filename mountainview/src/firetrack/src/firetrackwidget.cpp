@@ -124,7 +124,12 @@ void FireTrackWidget::setWaveforms(const Mda &X)
 			}
 	d->m_widget->setGlobalAbsMax(absmax);
 
-    d->set_current_waveform_index(0);
+	d->set_current_waveform_index(0);
+}
+
+FTElectrodeArrayWidget *FireTrackWidget::electrodeArrayWidget()
+{
+	return d->m_widget;
 }
 
 void FireTrackWidget::animate()

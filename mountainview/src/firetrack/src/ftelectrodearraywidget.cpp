@@ -106,7 +106,13 @@ void FTElectrodeArrayWidget::setAnimationSpeed(float hz)
 
 void FTElectrodeArrayWidget::setLoopAnimation(bool val)
 {
-    d->m_view->setLoopAnimation(val);
+	d->m_view->setLoopAnimation(val);
+}
+
+void FTElectrodeArrayWidget::setShowChannelNumbers(bool val)
+{
+	d->m_view->setShowChannelNumbers(val);
+	d->m_options_widget->setShowChannelNumbers(val);
 }
 
 int FTElectrodeArrayWidget::timepoint()

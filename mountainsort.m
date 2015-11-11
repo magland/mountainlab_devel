@@ -28,7 +28,15 @@ step3_cluster(opts,data);
 
 %Step 4: Consolidate
 fprintf('\n*** Step 4: Consolidate...\n');
-step4_consolidate(opts);
+[times,labels]=step4_consolidate(opts);
+
+%Cross-correlogram
+fprintf('\n*** Computing cross-correlograms ***\n');
+max_dt=1500;
+CC=compute_cross_correlograms(times,labels,max_dt);
+path0=[opts.output_path,'/cross-correlograms.mda'];
+fprintf('Writing %s...\n',path0);
+writemda(cross_correlograms_to_mda(CC),path0);
 
 fprintf('Total processing time: %.2f sec\n',toc(total_timer));
 
@@ -65,3 +73,27 @@ if (~exist([opts.working_path,'/cluster'],'dir')) mkdir([opts.working_path,'/clu
 if (~exist(opts.output_path,'dir')) mkdir(opts.output_path); end;
 
 end
+
+function ret=cross_correlograms_to_mda(CC)
+K=size(CC,1);
+
+ct=0;
+for k1=1:K
+for k2=1:K
+ct=ct+length(CC{k1,k2});
+end;
+end;
+ret=zeros(3,ct);
+
+ct=0;
+for k1=1:K
+for k2=1:K
+ret(1,ct+1:ct+length(CC{k1,k2}))=k1;
+ret(2,ct+1:ct+length(CC{k1,k2}))=k2;
+ret(3,ct+1:ct+length(CC{k1,k2}))=CC{k1,k2};
+ct=ct+length(CC{k1,k2});
+end;
+end;
+
+end
+
