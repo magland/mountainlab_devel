@@ -6,8 +6,8 @@ Prerequisites:
 * Linux or Mac (has been tested on Ubuntu)
 
 Overview:
-Run the processing using mountainsort_example1
-View the results using mountainview_example1
+Run the processing using example1_mountainsort
+View the results using example1_mountainview
 You can also read the output arrays from MATLAB
 
 
@@ -15,6 +15,7 @@ You can also read the output arrays from MATLAB
 
 From MATLAB:
 > cd mountainsort
+> addpath example1
 > example1_mountainsort
 
 You will get a message telling you to download some data.
@@ -46,6 +47,7 @@ mountainsort/mountainview/bin/mountainview
 
 From MATLAB:
 > cd mountainsort
+> addpath example1
 > example1_mountainview
 
 You should get a small window with a few buttons.
@@ -56,6 +58,7 @@ Press the buttons to view different aspects of the data
 
 From MATLAB:
 > cd mountainsort
+> addpath example1
 > example1_view_cross_correlograms
 
 
