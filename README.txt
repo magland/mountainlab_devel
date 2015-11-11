@@ -15,7 +15,7 @@ You can also read the output arrays from MATLAB
 
 From MATLAB:
 > cd mountainsort
-> mountainsort_example1
+> example1_mountainsort
 
 You will get a message telling you to download some data.
 Follow those instructions and then try re-running.
@@ -46,10 +46,17 @@ mountainsort/mountainview/bin/mountainview
 
 From MATLAB:
 > cd mountainsort
-> mountainview_example1
+> example1_mountainview
 
 You should get a small window with a few buttons.
 Press the buttons to view different aspects of the data
+
+
+== Viewing the cross-correlograms ==
+
+From MATLAB:
+> cd mountainsort
+> example1_view_cross_correlograms
 
 
 == Accessing the output data ==
