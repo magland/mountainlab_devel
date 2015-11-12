@@ -1,67 +1,167 @@
-function mountainsort(opts)
-
-%If there are no inputs, we run the test
-if (nargin==0) mountainsort_example1; return; end;
+function mountainsort(input_file_path,output_dir_path,opts)
 
 total_timer=tic;
 
-%Setup the environment, create the working directories, etc
-mountainsort_setup(opts);
+basepath=fileparts(mfilename('fullpath'));
+addpath([basepath,'/processing']);
+addpath([basepath,'/isosplit']);
+addpath([basepath,'/util']);
 
-%Step 1: Preprocess
-fprintf('\n*** Step 1: Preprocess...\n');
-data=step1_preprocess(opts);
-fprintf('Writing raw.mda...\n');
-writemda(data.X,[opts.output_path,'/raw.mda']);
+locations=opts.locations;
+adjacency_matrix=ms_adjacency_matrix(locations,opts.adjacency_radius);
 
-%Step 1a: Prepare
-fprintf('\n*** Step 1a: Prepare...\n');
-step1a_prepare(opts);
+if isfield(opts,'preprocessed_input_file_path')
+    fprintf('Reading preprocessed file... '); timer0=tic;
+    X=readmda_data_beginning(opts.preprocessed_input_file_path,length(opts.timepoints));
+    fprintf('%.2f seconds...\n',toc(timer0));  timer0=tic;
+else
+    fprintf('Reading... '); timer0=tic;
+    X=ms_readdat(input_file_path,opts);
+    fprintf('%.2f seconds...\n',toc(timer0));  timer0=tic;
+    fprintf('Filtering... ');
+    X=ms_filter(X,opts);
+    fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
+    fprintf('Normalizing... ');
+    X=ms_normalize(X);
+    fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
+end;
+M=size(X,1);
+X0=X;
+if (opts.whiten)
+%     fprintf('Prewhitening...\n');
+%     X=ms_prewhiten(X,opts);
+    fprintf('Whitening... ');
+    X=ms_whiten(X,opts);
+    fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
+    fprintf('Normalizing... ');
+    X=ms_normalize(X);
+    fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
+end;
 
-%Step 2: Detect
-fprintf('\n*** Step 2: Detect...\n');
-step2_detect(opts,data);
+opts2=opts; opts2.freq_min=600; opts2.freq_max=2000;
+fprintf('Filtering... ');
+Y=ms_filter(X,opts2);
+fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
+fprintf('Normalizing... ');
+Y=ms_normalize(Y);
+fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
+all_times=[]; all_labels=[]; primary_channels=[];
+current_label=1;
+for ch=1:M
+    fprintf('Channel %d/%d... ',ch,M);
+    [times_pos,times_neg]=ms_detect(Y(ch,:),opts);
+    AM=adjacency_matrix; AM(ch,ch)=0;
+    neighbor_channels=[ch,find(AM(ch,:))];
+    clips_pos=ms_extract_clips(X(neighbor_channels,:),times_pos,opts.clip_size);
+    clips_neg=ms_extract_clips(X(neighbor_channels,:),times_neg,opts.clip_size);
+    FF_pos=ms_event_features(clips_pos,opts.num_pca_features);
+    FF_neg=ms_event_features(clips_neg,opts.num_pca_features);
+%     ss_view_clusters(FF_pos,ones(1,size(FF_pos,2))); title(sprintf('%d pos',ch));
+%     ss_view_clusters(FF_neg,ones(1,size(FF_neg,2))); title(sprintf('%d neg',ch));
+    labels_pos=ms_cluster(FF_pos); Kpos=max(labels_pos); if (isempty(Kpos)) Kpos=0; end;
+    labels_neg=ms_cluster(FF_neg); Kneg=max(labels_neg); if (isempty(Kneg)) Kneg=0; end;
+    times0=[times_pos,times_neg];
+    labels0=[labels_pos,labels_neg+Kpos];
+    %templates0=compute_templates(X,times0,labels0,opts.clip_size);
+    templates0=compute_templates(X0,times0,labels0,opts.clip_size);
+    K0=Kpos+Kneg;
+    [times0,labels0,templates0]=consolidate_clusters(times0,labels0,templates0,ch,opts.min_cluster_size);
+    
+    K0=max(labels0);
+    if (K0>0)
+        labels0=labels0+current_label-1;
+        current_label=current_label+K0;
+        all_times=[all_times,times0];
+        all_labels=[all_labels,labels0];
+        primary_channels=[primary_channels,ones(1,K0)*ch];
+    end;
+    
+    fprintf('%d pos, %d neg, using %d (%d events)... ',Kpos,Kneg,K0,length(times_pos)+length(times_neg));
+    fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
+end;
+fprintf('Sorting times/labels... ');
+[all_times,sort_inds]=sort(all_times);
+all_labels=all_labels(sort_inds);
+fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
 
-%Step 3: Cluster
-fprintf('\n*** Step 3: Cluster...\n');
-step3_cluster(opts,data);
+fprintf('***** Detected %d events and %d neurons... *****\n',length(all_times),max(all_labels));
 
-%Step 4: Consolidate
-fprintf('\n*** Step 4: Consolidate...\n');
-step4_consolidate(opts);
+fprintf('Computing cross correlograms...\n');
+[CC,CCmda]=ms_cross_correlograms(all_times,all_labels,opts.cross_correlogram_max_dt);
+fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
 
-fprintf('Total processing time: %.2f sec\n',toc(total_timer));
+fprintf('writing output... ');
+outdir=output_dir_path;
+if (~exist(outdir,'dir'))
+    mkdir(outdir);
+end;
+
+if (opts.whiten)
+    writemda(X,[outdir,'/raw_white.mda']);
+    writemda(compute_templates(X,all_times,all_labels,opts.clip_size),[outdir,'/templates_white.mda']);
+else
+    if (exist([outdir,'/raw_white.mda'],'file'))
+        delete([outdir,'/raw_white.mda']);
+    end;
+    if (exist([outdir,'/templates_white.mda'],'file'))
+        delete([outdir,'/templates_white.mda']);
+    end;
+end
+writemda(X0,[outdir,'/raw.mda']);
+writemda(all_times,[outdir,'/times.mda']);
+writemda(all_labels,[outdir,'/labels.mda']);
+writemda(compute_templates(X0,all_times,all_labels,opts.clip_size),[outdir,'/templates.mda']);
+writemda(adjacency_matrix,[outdir,'/adjacency.mda']);
+writemda(locations,[outdir,'/locations.mda']);
+writemda(primary_channels,[outdir,'/primary_channels.mda']);
+writemda(CCmda,[outdir,'/cross-correlograms.mda']);
+fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
+
+fprintf('Total time for mountainsort: %.2f\n',toc(total_timer));
 
 end
 
-function mountainsort_setup(opts)
+function [times,labels,templates]=consolidate_clusters(times,labels,templates,k,min_cluster_size)
+sizes=squeeze(sum(templates.^2,2));
+max_sizes=(max(sizes,[],1));
+rel_sizes=sizes(k,:)./max_sizes;
+to_use=(rel_sizes>=0.9);
+K=max(labels);
 
-basepath=fileparts(mfilename('fullpath'));
-
-fprintf('Setting up... basepath=%s...\n',basepath);
-addpath([basepath,'/view']);
-addpath([basepath,'/util']);
-addpath([basepath,'/processing']);
-addpath([basepath,'/isosplit']);
-
-fprintf('Verifying input parameters in opts...\n');
-if (~isfield(opts,'timepoints')) opts.timepoints=[]; end;
-required_fields={...
-    'working_path',...
-    'channels',...
-    'raw_dat',...
-    'raw_mda',...
-};
-for j=1:length(required_fields)
-    if (~isfield(opts,required_fields{j}))
-        error('opts.%s is a required input parameter.',required_fields{j});
+for k=1:K
+    ct=length(find(labels==k));
+    if (ct<min_cluster_size)
+        to_use(k)=0;
     end;
 end;
 
-fprintf('Creating working directories in %s...\n',opts.working_path);
-if (~exist(opts.working_path,'dir')) mkdir(opts.working_path); end;
-if (~exist([opts.working_path,'/detect'],'dir')) mkdir([opts.working_path,'/detect']); end;
-if (~exist([opts.working_path,'/cluster'],'dir')) mkdir([opts.working_path,'/cluster']); end;
-if (~exist(opts.output_path,'dir')) mkdir(opts.output_path); end;
+labels_to_use=find(to_use);
+ret=length(labels_to_use);
+
+templates=templates(:,:,labels_to_use);
+
+times2=[];
+labels2=[];
+for ii=1:length(labels_to_use)
+
+    inds0=find(labels==labels_to_use(ii));
+    times2=[times2,times(inds0)];
+    labels2=[labels2,ones(size(times(inds0)))*ii];
+end;
+[times,sort_inds]=sort(times2);
+labels=labels2(sort_inds);
 
 end
+
+function templates=compute_templates(X,times,labels,clip_size)
+[M,N]=size(X);
+T=clip_size;
+clips=ms_extract_clips(X,times,clip_size);
+K=max(labels);
+templates=zeros(M,T,K);
+for k=1:K
+    inds=find(labels==k);
+    templates(:,:,k)=median(clips(:,:,inds),3);
+end;
+end
+

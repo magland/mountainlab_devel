@@ -17,9 +17,9 @@ public:
 	MountainViewWidget *q;
 
 	Mda m_primary_channels;
-    Mda m_templates;
+    Mda m_templates,m_templates_whitened;
 	Mda m_locations;
-    DiskArrayModel *m_raw;
+    DiskArrayModel *m_raw,*m_raw_whitened;
     Mda m_times;
     Mda m_labels;
     DiskReadMda *m_times_labels;
@@ -42,57 +42,71 @@ MountainViewWidget::MountainViewWidget(QWidget *parent) : QMainWindow(parent)
 	d->q=this;
 
     d->m_raw=0;
+    d->m_raw_whitened=0;
     d->m_times_labels=0;
     d->m_template_view_padding=30;
 
     d->m_current_template_index=0;
 
-    QVBoxLayout *VL=new QVBoxLayout;
+    QGridLayout *GL=new QGridLayout;
+    int row=0;
     {
-        QPushButton *B=new QPushButton("Labeled Raw Data (SpikeSpy)");
-        VL->addWidget(B);
+        QPushButton *B=new QPushButton("Labeled Raw Data");
+        GL->addWidget(B,row,0);
+        connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_view_labeled_raw_data()));
+    }
+    {
+        QPushButton *B=new QPushButton("Labeled Raw Data (Whitened)");
+        B->setProperty("whitened",true);
+        GL->addWidget(B,row,1); row++;
         connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_view_labeled_raw_data()));
     }
     {
         QPushButton *B=new QPushButton("Spike Templates");
-        VL->addWidget(B);
+        GL->addWidget(B,row,0);
+        connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_view_spike_templates()));
+    }
+    {
+        QPushButton *B=new QPushButton("Spike Templates (Whitened)");
+        B->setProperty("whitened",true);
+        GL->addWidget(B,row,1); row++;
         connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_view_spike_templates()));
     }
     {
         QPushButton *B=new QPushButton("Spike Clips");
-        VL->addWidget(B);
+        GL->addWidget(B,row,0); row++;
         connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_view_spike_clips()));
     }
 	{
 		QPushButton *B=new QPushButton("Statistics");
-		VL->addWidget(B);
+        GL->addWidget(B,row,0); row++;
 		connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_statistics()));
 	}
 	{
 		QPushButton *B=new QPushButton("FireTrack");
-		VL->addWidget(B);
+        GL->addWidget(B,row,0); row++;
 		connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_firetrack()));
 	}
 	{
 		QPushButton *B=new QPushButton("Quit");
-		VL->addWidget(B);
+        GL->addWidget(B,row,0); row++;
 		connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_quit()));
 	}
 //    {
 //        QPushButton *B=new QPushButton("Cluster View");
-//        VL->addWidget(B);
+//        GL->addWidget(B,row,0); row++;
 //        connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_cluster_view()));
 //    }
 //    {
 //        QPushButton *B=new QPushButton("FireTrack");
-//        VL->addWidget(B);
+//        GL->addWidget(B,row,0); row++;
 //        connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_firetrack()));
 //    }
 
 
-	QWidget *CW=new QWidget;
-    CW->setLayout(VL);
-	this->setCentralWidget(CW);
+    QWidget *CW=new QWidget;
+    CW->setLayout(GL);
+    this->setCentralWidget(CW);
 
     this->setWindowFlags(Qt::Window|Qt::WindowStaysOnTopHint);
     this->setWindowFlags(Qt::Window|Qt::Tool);
@@ -107,8 +121,11 @@ void MountainViewWidget::setElectrodeLocations(const Mda &L)
 
 void MountainViewWidget::setTemplates(const Mda &X)
 {
-	qDebug() << "setTemplates" << X.N1() << X.N2() << X.N3();
 	d->m_templates=X;
+}
+void MountainViewWidget::setTemplatesWhitened(const Mda &X)
+{
+    d->m_templates_whitened=X;
 }
 
 void MountainViewWidget::setPrimaryChannels(const Mda &X)
@@ -120,6 +137,12 @@ void MountainViewWidget::setRaw(DiskArrayModel *X)
 {
     if (d->m_raw) delete d->m_raw;
     d->m_raw=X;
+}
+
+void MountainViewWidget::setRawWhitened(DiskArrayModel *X)
+{
+    if (d->m_raw_whitened) delete d->m_raw_whitened;
+    d->m_raw_whitened=X;
 }
 
 void MountainViewWidget::setTimesLabels(const Mda &times, const Mda &labels)
@@ -156,10 +179,18 @@ void MountainViewWidget::resizeEvent(QResizeEvent *evt)
 void MountainViewWidget::slot_view_labeled_raw_data()
 {
     if (!d->m_raw) return;
+    if (sender()->property("whitened").toBool()) {
+        if (!d->m_raw_whitened) return;
+    }
     SSTimeSeriesWidget *W=new SSTimeSeriesWidget;
     SSTimeSeriesView *V=new SSTimeSeriesView;
     W->addView(V);
-    V->setData(d->m_raw,false);
+    if (sender()->property("whitened").toBool()) {
+        V->setData(d->m_raw_whitened,false);
+    }
+    else {
+        V->setData(d->m_raw,false);
+    }
     if (d->m_times_labels) {
         V->setLabels(d->m_times_labels,false);
     }
@@ -186,12 +217,16 @@ void MountainViewWidget::slot_view_spike_templates()
     Mda templates_formatted; templates_formatted.allocate(M,(T+padding)*K);
 	qDebug() << "templates_formatted:" << templates_formatted.N1() << templates_formatted.N2() << templates_formatted.N3() << M << T << K;
     Mda TL; TL.allocate(2,K);
+    Mda *templates=&d->m_templates;
+    if (sender()->property("whitened").toBool()) {
+        templates=&d->m_templates_whitened;
+    }
     for (int k=0; k<K; k++) {
         TL.setValue((T+padding)*k+T/2,0,k);
         TL.setValue(k+1,1,k);
         for (int t=0; t<T; t++) {
             for (int m=0; m<M; m++) {
-                templates_formatted.setValue(d->m_templates.value(m,t,k),m,t+(T+padding)*k);
+                templates_formatted.setValue(templates->value(m,t,k),m,t+(T+padding)*k);
             }
         }
     }
@@ -237,6 +272,7 @@ void MountainViewWidget::slot_firetrack() {
 	FireTrackWidget *W=new FireTrackWidget;
 	W->setElectrodeLocations(d->m_locations);
 	W->setWaveforms(d->m_templates);
+	W->electrodeArrayWidget()->setShowChannelNumbers(true);
 
 	W->show();
 	W->setAttribute(Qt::WA_DeleteOnClose);
@@ -343,6 +379,7 @@ void MountainViewWidget::slot_object_destroyed(QObject *obj)
 MountainViewWidget::~MountainViewWidget()
 {
     if (d->m_raw) delete d->m_raw;
+    if (d->m_raw_whitened) delete d->m_raw_whitened;
     if (d->m_times_labels) delete d->m_times_labels;
 	delete d;
 }

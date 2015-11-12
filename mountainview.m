@@ -11,6 +11,7 @@ if (~exist(exe_path,'file'))
 end;
 
 cmd=sprintf('%s --output_path=%s &',exe_path,output_path);
+disp(cmd);
 system(cmd);
 
 end

@@ -7,6 +7,16 @@ detect_clips_prefix=[opts.working_path,'/detect/clips_'];
 adjacency_path=[opts.output_path,'/adjacency.mda'];
 
 X=data.X;
+if (opts.prewhiten)
+    d.A=X; d.samplefreq=30000; d.dt=1/d.samplefreq;
+    fprintf('Prewhitening... ');
+    d=channelprewhiten(d,[]);
+    X=d.A;
+end;
+
+raw_out_fname=[opts.output_path,'/raw.mda'];
+fprintf('Writing %s...\n',raw_out_fname);
+writemda(X,raw_out_fname);
 
 AM=readmda(adjacency_path);
 

@@ -5,6 +5,7 @@
 #include <QWheelEvent>
 #include "diskreadmda.h"
 #include "mda.h"
+#include "ftelectrodearraywidget.h"
 
 class FireTrackWidgetPrivate;
 
@@ -17,6 +18,7 @@ public:
 
 	void setElectrodeLocations(const Mda &L);
 	void setWaveforms(const Mda &X);
+	FTElectrodeArrayWidget *electrodeArrayWidget();
 
     Q_INVOKABLE void animate();
 	Q_INVOKABLE void setWaveforms(DiskReadMda *X);

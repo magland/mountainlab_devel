@@ -1,4 +1,4 @@
-function step5_consolidate(opts)
+function [TIMES,LABELS]=step5_consolidate(opts)
 
 timerA=tic;
 

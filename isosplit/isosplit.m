@@ -9,7 +9,7 @@ function [labels,info]=isosplit(X,opts)
 %
 %   opts.K : The starting number of k-means clusters (to save time).
 %            If K is large enough this should not affect the result.
-%   opts.minsize
+%   opts.minsize (has no effect!!!!)
 %   opts.verbose, opts.verbose2
 %   opts.max_iterations_per_number_clusters
 %
@@ -40,6 +40,7 @@ if (~isfield(opts,'max_iterations_per_number_clusters')) opts.max_iterations_per
 if (~isfield(opts,'return_iterations')) opts.return_iterations=0; end;
 
 [M,N]=size(X);
+opts.K=min(opts.K,N); %Added by jfm on 11/12/15
 
 %initialize with k-means (just to save time)
 timer_initialization=tic;
@@ -69,7 +70,8 @@ while true
 	if (opts.verbose)
 		fprintf('Trying (%d,%d) -- %d clusters\n',label1,label2,max(labels));
 	end;
-	if (label1==0) break; end; %This means that we've tried everything ... we are done!
+    %jfm added isempty(label1) condition 11/12/15
+	if (isempty(label1))||(label1==0) break; end; %This means that we've tried everything ... we are done!
 	timer_find_centroids=tic;
 	inds1=find(labels==label1);
 	inds2=find(labels==label2);

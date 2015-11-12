@@ -48,7 +48,8 @@ end;
 
 fprintf('Creating %s...',fname_out');
 
-N=inf;
+%N=inf;
+N=1e7;
 
 fprintf('\nReading %s... ',fname_in);
 F=fopen(fname_in,'rb');
@@ -63,10 +64,6 @@ fprintf('%d chan, %g timepoints\n',size(X,1),size(X,2));
 
 fprintf('Filtering... ');
 X=ss_freqfilter(X,30000,300,10000);
-d.A=X; d.samplefreq=30000; d.dt=1/d.samplefreq;
-fprintf('Prewhitening... ');
-d=channelprewhiten(d,[]);
-X=d.A;
 
 fprintf('Normalizing... ');
 for j=1:size(X,1)
@@ -94,6 +91,7 @@ end
 function opts_txt=get_options_text(opts)
 opts_txt='';
 opts_txt=[opts_txt,sprintf('channels=%d\n',opts.channels)];
+opts_txt=[opts_txt,sprintf('prewhiten=%d\n',opts.prewhiten)];
 
 opts_txt=[opts_txt,sprintf('timepoints_code=%d,%d,%d,%f\n',...
     min(opts.timepoints),max(opts.timepoints),length(opts.timepoints),mean(opts.timepoints)...
