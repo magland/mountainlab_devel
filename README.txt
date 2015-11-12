@@ -33,6 +33,7 @@ For Ubuntu 14.04 (and perhaps other versions) use
 sudo apt-add-repository ppa:ubuntu-sdk-team/ppa
 sudo apt-get update
 sudo apt-get install qtdeclarative5-dev
+sudo apt-get install qt5-default qtscript5-dev make g++
 
 Otherwise, download/install Qt5 from here:
 http://www.qt.io/download/
