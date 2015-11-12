@@ -22,7 +22,8 @@ opts.prewhiten=1;
 
 %opts.timepoints=1:19e6; %Something seems to change around timepoint 19-20 million
 %opts.timepoints=[1:2.9e6,3.0e6:19e6]; %Something seems to change around timepoint 19-20 million
-opts.timepoints=[1:2.9e6,3.0e6:5e6];
+%opts.timepoints=[1:2.9e6,3.0e6:5e6];
+opts.timepoints=1:1e6;
 %opts.timepoints=1:4.5e6;
 %opts.timepoints=1:10e6;
 

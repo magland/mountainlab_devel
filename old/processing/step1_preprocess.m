@@ -48,7 +48,8 @@ end;
 
 fprintf('Creating %s...',fname_out');
 
-N=inf;
+%N=inf;
+N=1e7;
 
 fprintf('\nReading %s... ',fname_in);
 F=fopen(fname_in,'rb');

@@ -54,11 +54,16 @@ int main(int argc, char *argv[]) {
 	QString output_path=CLP.named_parameters.value("output_path");
 
 	QString templates_path=QString("%1/templates.mda").arg(output_path);
+    QString templates_whitened_path=QString("%1/templates_white.mda").arg(output_path);
 	QString locations_path=QString("%1/locations.mda").arg(output_path);
 	QString raw_path=QString("%1/raw.mda").arg(output_path);
+    QString raw_whitened_path=QString("%1/raw_white.mda").arg(output_path);
 	QString times_path=QString("%1/times.mda").arg(output_path);
 	QString labels_path=QString("%1/labels.mda").arg(output_path);
 	QString primary_channels_path=QString("%1/primary_channels.mda").arg(output_path);
+
+    if (!QFile::exists(templates_whitened_path)) templates_whitened_path="";
+    if (!QFile::exists(raw_whitened_path)) raw_whitened_path="";
 
 	MountainViewWidget W;
     W.show();
@@ -66,6 +71,10 @@ int main(int argc, char *argv[]) {
     if (!templates_path.isEmpty()) {
         Mda X; X.read(templates_path);
         W.setTemplates(X);
+    }
+    if (!templates_whitened_path.isEmpty()) {
+        Mda X; X.read(templates_whitened_path);
+        W.setTemplatesWhitened(X);
     }
     if (!locations_path.isEmpty()) {
         Mda X; X.read(locations_path);
@@ -76,6 +85,12 @@ int main(int argc, char *argv[]) {
         X->setPath(raw_path);
         X->createFileHierarchyIfNeeded();
         W.setRaw(X);
+    }
+    if (!raw_whitened_path.isEmpty()) {
+        DiskArrayModel *X=new DiskArrayModel;
+        X->setPath(raw_whitened_path);
+        X->createFileHierarchyIfNeeded();
+        W.setRawWhitened(X);
     }
     if (!times_path.isEmpty()) {
         Mda T; T.read(times_path);
