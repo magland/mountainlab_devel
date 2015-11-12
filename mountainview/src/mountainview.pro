@@ -1,9 +1,6 @@
 QT += core gui
 QT += script
 
-QMAKE_CXXFLAGS += -static-libstdc++ -static-libgcc
-LIBS += /usr/lib/gcc/x86_64-linux-gnu/4.9/libstdc++.a
-
 CONFIG -= app_bundle #Please apple, don't make a bundle today
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets #We do want to support Qt5, but there is no reason not to use Qt4
