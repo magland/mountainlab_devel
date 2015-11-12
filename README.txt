@@ -29,7 +29,12 @@ Processing should take less than one minute
 
 You need Qt4 or Qt5 to compile mountainview.
 
-Download/install Qt5 from here:
+For Ubuntu 14.04 (and perhaps other versions) use
+sudo apt-add-repository ppa:ubuntu-sdk-team/ppa
+sudo apt-get update
+sudo apt-get install qtdeclarative5-dev
+
+Otherwise, download/install Qt5 from here:
 http://www.qt.io/download/
 You should use the open source version
 
