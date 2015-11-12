@@ -1,7 +1,7 @@
 function mountainsort(opts)
 
 %If there are no inputs, we run the test
-if (nargin==0) mountainsort_example1; return; end;
+if (nargin==0) addpath('example1'); example1_mountainsort; return; end;
 
 total_timer=tic;
 
@@ -11,20 +11,18 @@ mountainsort_setup(opts);
 %Step 1: Preprocess
 fprintf('\n*** Step 1: Preprocess...\n');
 data=step1_preprocess(opts);
-fprintf('Writing raw.mda...\n');
-writemda(data.X,[opts.output_path,'/raw.mda']);
 
 %Step 1a: Prepare
 fprintf('\n*** Step 1a: Prepare...\n');
 step1a_prepare(opts);
 
 %Step 2: Detect
-fprintf('\n*** Step 2: Detect...\n');
+fprintf('\n*** Step 2: Detect...\n'); %Includes prewhitening
 step2_detect(opts,data);
 
 %Step 3: Cluster
 fprintf('\n*** Step 3: Cluster...\n');
-step3_cluster(opts,data);
+step3_cluster(opts);
 
 %Step 4: Consolidate
 fprintf('\n*** Step 4: Consolidate...\n');

@@ -18,6 +18,7 @@ opts.detect_freq_min=600;
 opts.detect_freq_max=2000;
 opts.working_path=[basepath,'/../ms11d45A/working'];
 opts.output_path=[basepath,'/../ms11d45A/output'];
+opts.prewhiten=1;
 
 %opts.timepoints=1:19e6; %Something seems to change around timepoint 19-20 million
 %opts.timepoints=[1:2.9e6,3.0e6:19e6]; %Something seems to change around timepoint 19-20 million

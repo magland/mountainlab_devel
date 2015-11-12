@@ -76,6 +76,7 @@ adjacency.mda: adjacency matrix for the electrodes - obtained from locations.mda
 templates.mda: the templates for each spike type
 primary_channels.mda: the primary channels for each spike template
 spikespy.raw.* folder: a temporary folder created by the spikespy viewer
+cross_correlograms.mda: data for the cross-correlograms -- see example1_view_cross_correlograms.m
 
 
 

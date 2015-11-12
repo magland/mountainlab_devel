@@ -1,4 +1,4 @@
-function step3_cluster(opts,data)
+function step3_cluster(opts)
 
 timerA=tic;
 
@@ -10,12 +10,11 @@ cluster_templates_prefix=[opts.working_path,'/cluster/templates_'];
 cluster_features_prefix=[opts.working_path,'/cluster/features_'];
 adjacency_path=[opts.output_path,'/adjacency.mda'];
 
-X=data.X;
-
 AM=readmda(adjacency_path);
+M=size(AM,1);
 
 fprintf('Clustering...\n');
-for j=1:size(X,1)
+for j=1:M
     fname_detect_times_pos=[detect_times_prefix,sprintf('pos_%d.mda',j)];
     fname_detect_times_neg=[detect_times_prefix,sprintf('neg_%d.mda',j)];
     fname_detect_clips_pos=[detect_clips_prefix,sprintf('pos_%d.mda',j)];

@@ -8,8 +8,6 @@ fname_in=opts.raw_dat;
 fname_out=opts.raw_mda;
 channels=opts.channels;
 
-if (~isfield(opts,'prewhiten')) opts.prewhiten=1; end;
-
 opts_fname=[opts.raw_mda,'.mountainsort.opts'];
 if (exist(fname_out,'file'))&&(options_match(opts,opts_fname))
     fprintf('File %s already exists and options match.\n',fname_out);
@@ -65,12 +63,6 @@ fprintf('%d chan, %g timepoints\n',size(X,1),size(X,2));
 
 fprintf('Filtering... ');
 X=ss_freqfilter(X,30000,300,10000);
-d.A=X; d.samplefreq=30000; d.dt=1/d.samplefreq;
-if opts.prewhiten
-    fprintf('Prewhitening... ');
-    d=channelprewhiten(d,[]);
-    X=d.A;
-end;
 
 fprintf('Normalizing... ');
 for j=1:size(X,1)
