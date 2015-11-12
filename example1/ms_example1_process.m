@@ -20,7 +20,7 @@ opts.freq_max=10000;
 
 %comment this out if you change any of the above parameters that
 %relate to the pre-processing so the raw.mda file can be re-generated
-%opts.preprocessed_input_file_path=[output_dir_path,'/ms11d45A_pre.mda']; 
+opts.preprocessed_input_file_path=[fileparts(mfilename('fullpath')),'/../example1_data/ms11d45A_pre.mda'];
 
 opts.detect_interval=40;
 opts.detect_threshold=5;
