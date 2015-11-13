@@ -69,6 +69,7 @@ for ch=1:M
     [times0,labels0]=remove_outliers(times0,labels0,clips0,opts.num_pca_features,opts.cluster_outlier_alpha);
     templates0=compute_templates(X,times0,labels0,opts.clip_size); %Use X or X0 here?
     fprintf('con ');
+    K_before_consolidate=max(labels0);
     [times0,labels0,templates0]=consolidate_clusters(times0,labels0,templates0,ch,opts.min_cluster_size);
     
     K0=max(labels0);
@@ -80,7 +81,7 @@ for ch=1:M
         primary_channels=[primary_channels,ones(1,K0)*ch];
     end;
     
-    fprintf('%d pos, %d neg, using %d (%d events)... ',Kpos,Kneg,K0,length(times_pos)+length(times_neg));
+    fprintf('%d clusters, using %d (%d events)... ',K_before_consolidate,K0,length(times0));
     fprintf('%.2f seconds...\n',toc(timer0)); timer0=tic;
 end;
 fprintf('Sorting times/labels... ');

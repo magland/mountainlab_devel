@@ -1,6 +1,7 @@
 function ms_example1_process
 
 addpath([fileparts(mfilename('fullpath')),'/..']);
+addpath([fileparts(mfilename('fullpath')),'/../view']);
 
 opts.locations=get_frank_lab_locations;
 
@@ -8,7 +9,7 @@ opts.locations=get_frank_lab_locations;
 %output_dir_path='test_output';
 input_file_path=[fileparts(mfilename('fullpath')),'/../example1_data/ms11d45.dat'];
 %output_dir_path=[fileparts(mfilename('fullpath')),'/../example1_output'];
-output_dir_path=[fileparts(mfilename('fullpath')),'/../example1c_output'];
+output_dir_path=[fileparts(mfilename('fullpath')),'/../example1_output'];
 
 opts.num_channels=72;
 opts.channels=[37:52,68,69];
@@ -36,10 +37,6 @@ opts.cluster_outlier_alpha=0.01;
 
 mountainsort(input_file_path,output_dir_path,opts);
 
-%ms_example1_view
-
-addpath([fileparts(mfilename('fullpath')),'/..']);
-addpath([fileparts(mfilename('fullpath')),'/../view']);
 mountainview(output_dir_path);
 view_cross_correlograms([output_dir_path,'/cross-correlograms.mda'],0);
 
