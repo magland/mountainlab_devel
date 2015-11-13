@@ -79,6 +79,8 @@ QString DiskArrayModel::path()
 }
 
 Mda DiskArrayModel::loadData(int scale,int t1,int t2) {
+    QTime timer; timer.start();
+
 	Mda X; X.setDataType(d->m_data_type);
 	int d3=2;
 	X.allocate(d->m_num_channels,t2-t1+1,d3);
@@ -142,6 +144,8 @@ Mda DiskArrayModel::loadData(int scale,int t1,int t2) {
 			}
 		}
 	}
+
+    //qDebug() << "ELAPSED" << "DiskArrayModel::loadData()" << timer.elapsed();
 
 	return X;
 
