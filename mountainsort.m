@@ -198,7 +198,7 @@ K=max(labels);
 use_it=ones(size(labels));
 for k=1:K
     inds=find(labels==k);
-    FF=ms_event_features(X(:,inds),num_pca_features);
+    FF=ms_event_features(X(:,:,inds),num_pca_features);
     inds2=find_outliers(FF,cluster_outlier_alpha);
     use_it(inds(inds2))=0;
 end;
