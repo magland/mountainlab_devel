@@ -5,6 +5,7 @@
 #include <QDebug>
 #include <QTime>
 #include <QMap>
+#include <QTimer>
 #include "sscommon.h"
 #define MIN_NUM_PIXELS 4000
 
@@ -40,6 +41,8 @@ public:
 	void set_data2();
 	QColor get_channel_color(int num);
 	void setup_plot_area();
+    void schedule_setup_plot_area();
+    bool m_setup_plot_area_scheduled;
 };
 
 SSTimeSeriesPlot::SSTimeSeriesPlot(QWidget *parent) : SSAbstractPlot(parent) {
@@ -182,7 +185,7 @@ void SSTimeSeriesPlot::setLabels(SSLabelsModel1 *L,bool is_owner) {
 
 void SSTimeSeriesPlot::initialize()
 {
-	d->setup_plot_area();
+    d->schedule_setup_plot_area();
 }
 
 DiskArrayModel *SSTimeSeriesPlot::data()
@@ -264,7 +267,7 @@ QColor SSTimeSeriesPlotPrivate::get_channel_color(int ch) {
 
 void SSTimeSeriesPlotPrivate::setup_plot_area() {
 
-	if (!m_data) return;
+    if (!m_data) return;
 
 	QTime timer; timer.start();
 
@@ -346,7 +349,7 @@ void SSTimeSeriesPlotPrivate::setup_plot_area() {
 	int xrange_min = q->xRange().x;
 	int xrange_max = q->xRange().y;
 
-	m_plot_area.setXRange(xrange_min - 1, xrange_max + 1);
+    //m_plot_area.setXRange(xrange_min - 1, xrange_max + 1);
 	if (M>0) {
 	  if (!q->channelFlip())      // ahb, matches above
 	  		q->setYRange(vec2(m_plot_offsets[0] + m_plot_minvals[0] - max00 / 20, m_plot_offsets[M - 1] + m_plot_maxvals[M - 1] + max00 / 20));
@@ -465,6 +468,13 @@ void SSTimeSeriesPlotPrivate::setup_plot_area() {
 
 }
 
+void SSTimeSeriesPlotPrivate::schedule_setup_plot_area()
+{
+    if (m_setup_plot_area_scheduled) return;
+    m_setup_plot_area_scheduled=true;
+    QTimer::singleShot(50,q,SLOT(slot_setup_plot_area()));
+}
+
 Vec2 SSTimeSeriesPlot::coordToPix(Vec2 coord) {
 	return d->m_plot_area.coordToPix(coord);
 }
@@ -498,15 +508,25 @@ void SSTimeSeriesPlot::setMargins(int left,int right,int top,int bottom) {
 
 void SSTimeSeriesPlot::slot_replot_needed()
 {
+    d->schedule_setup_plot_area();
 
-	d->setup_plot_area();
+}
 
+void SSTimeSeriesPlot::slot_setup_plot_area()
+{
+    d->m_setup_plot_area_scheduled=false;
+    d->setup_plot_area();
 }
 
 void SSTimeSeriesPlot::setXRange(const Vec2 &range) {
 	if ((xRange().x!=range.x)||(xRange().y!=range.y)) {
 		SSAbstractPlot::setXRange(range);
-		d->setup_plot_area();
+
+        int xrange_min = xRange().x;
+        int xrange_max = xRange().y;
+        d->m_plot_area.setXRange(xrange_min - 1, xrange_max + 1);
+
+        d->schedule_setup_plot_area();
 	}
 }
 void SSTimeSeriesPlot::setYRange(const Vec2 &range) {

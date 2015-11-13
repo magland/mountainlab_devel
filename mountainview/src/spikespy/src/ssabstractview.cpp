@@ -31,6 +31,7 @@ public:
 	bool m_activated;
 
 	void do_translate(int dx);
+    void translate_to(int x_left);
 	void zoom_in();
 	void zoom_out();
 	void do_zoom(double center_x, double frac);
@@ -42,6 +43,7 @@ public:
 
 	int m_max_timepoint;
 	double m_click_anchor;
+    double m_click_anchor_x_left;
 	QPoint m_click_anchor_pix;
 	double m_selected_x_anchor;
 	bool m_is_moving;
@@ -65,6 +67,7 @@ SSAbstractView::SSAbstractView(QWidget *parent) : QWidget(parent) {
 
 	d->m_cursor_visible=true;
 	d->m_click_anchor=-1;
+    d->m_click_anchor_x_left=0;
 	d->m_click_anchor_pix=QPoint(-1,-1);
 	d->m_selected_x_anchor=-1;
 	d->m_max_timepoint=0;
@@ -105,27 +108,35 @@ void SSAbstractViewUnderlayPainter::paint(QPainter *painter) {
 
 		if ((d->m_cursor_visible)&&(q->currentX()>=0)) {
 
-			QPainterPath path;
-			path.moveTo(p1.x,p1.y-10);
-			path.lineTo(p1.x-8,p1.y-2);
-			path.lineTo(p1.x+8,p1.y-2);
-			path.lineTo(p1.x,p1.y-10);
-			QColor col=QColor(60,80,60);
-			if (d->m_activated) {
-				col=Qt::gray;
-			}
-			painter->fillPath(path,QBrush(col));
+            for (int pass=1; pass<=2; pass++) {
+                QPainterPath path;
+                Vec2 pp=p0;
+                int sign=-1;
+                if (pass==2) {
+                    pp=p1; sign=1;
+                }
+                path.moveTo(pp.x,pp.y-10*sign);
+                path.lineTo(pp.x-8,pp.y-2*sign);
+                path.lineTo(pp.x+8,pp.y-2*sign);
+                path.lineTo(pp.x,pp.y-10*sign);
+                QColor col=QColor(60,80,60);
+                if (d->m_activated) {
+                    //col=Qt::gray;
+                    col=QColor(50,50,220);
+                }
+                painter->fillPath(path,QBrush(col));
+            }
 
-			/*
-			QPainterPath path;
-			path.moveTo(p0.x,p0.y);
-			path.lineTo(p1.x,p1.y);
-			painter->setPen(QPen(QBrush(QColor(220,220,220)),5));
-			painter->drawPath(path);
 
-			painter->setPen(QPen(QBrush(QColor(255,255,100)),3));
-			painter->drawPath(path);
-			*/
+            QPainterPath path2;
+            path2.moveTo(p0.x,p0.y+10);
+            path2.lineTo(p1.x,p1.y-10);
+            painter->setPen(QPen(QBrush(QColor(50,50,220,60)),5));
+            painter->drawPath(path2);
+
+            painter->setPen(QPen(QBrush(QColor(50,50,220,180)),1));
+            painter->drawPath(path2);
+
 		} else {
 		}
 	}
@@ -168,6 +179,7 @@ void SSAbstractView::mousePressEvent(QMouseEvent *evt) {
 	double x0 = (int) coord.x;
 	if (evt->button()==Qt::LeftButton) {
 		d->m_click_anchor=x0;
+        d->m_click_anchor_x_left=this->xRange().x;
 		d->m_click_anchor_pix=evt->pos();
 		d->m_selected_x_anchor=-1;
 		setSelectionRange(vec2(-1,-1));
@@ -208,8 +220,8 @@ void SSAbstractView::mouseMoveEvent(QMouseEvent *evt) {
 
 	if (evt->buttons()&Qt::LeftButton) {
 		if ((d->m_click_anchor>=0)&&(qAbs(evt->pos().x()-d->m_click_anchor_pix.x())>=15)) { //don't be so sensitive!
-			d->do_translate((int)(d->m_click_anchor-x0));
-			d->m_is_moving=true;
+            d->do_translate((int)(d->m_click_anchor-x0));
+            d->m_is_moving=true;
 			setCursor(Qt::OpenHandCursor);
 		}
 	} else if (evt->buttons()&Qt::RightButton) {
@@ -694,6 +706,13 @@ void SSAbstractView::setCurrentTimepoint(int tt)
 int SSAbstractView::currentTimepoint()
 {
 	return getTimepointForX(d->m_current_x);
+}
+
+void SSAbstractViewPrivate::translate_to(int x_left) {
+    int x_right=q->xRange().y-q->xRange().x+x_left;
+    if ((x_left >= 0) && (x_right <= m_max_timepoint)) {
+        q->setXRange(vec2(x_left, x_right));
+    }
 }
 
 void SSAbstractViewPrivate::do_translate(int dx) {

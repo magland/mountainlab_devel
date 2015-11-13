@@ -215,7 +215,6 @@ void MountainViewWidget::slot_view_spike_templates()
     int K=d->m_templates.N3();
     int padding=d->m_template_view_padding;
     Mda templates_formatted; templates_formatted.allocate(M,(T+padding)*K);
-	qDebug() << "templates_formatted:" << templates_formatted.N1() << templates_formatted.N2() << templates_formatted.N3() << M << T << K;
     Mda TL; TL.allocate(2,K);
     Mda *templates=&d->m_templates;
     if (sender()->property("whitened").toBool()) {
