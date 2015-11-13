@@ -290,6 +290,9 @@ void SSTimeSeriesWidget::slot_extract_clips()
 	QStringList args; args << data_path << TL_path << out_path << QString("--clipsize=%1").arg(clipsize) << "--labels="+labels_txt;
 	if (fixed_clipsize) args << "--fixed-clipsize";
 	QString exe=qApp->applicationDirPath()+"/extractclips";
+        if (!QFile::exists(exe)) {
+            exe=qApp->applicationDirPath()+"/../spikespy/bin/extractclips";
+        }
 	qDebug()  << exe << args;
 	QProcess process;
 	process.start(exe,args);
@@ -420,6 +423,9 @@ void SSTimeSeriesWidget::slot_extract_comparison_clips()
 
 	QStringList args; args << data_path1 << data_path2 << TL1_path << TL1_path << out_path1 << out_path2 << QString("--clipsize=%1").arg(clipsize) << "--labels="+labels_txt;
 	QString exe=qApp->applicationDirPath()+"/extractclips2";
+        if (!QFile::exists(exe)) {
+            exe=qApp->applicationDirPath()+"/../spikespy/bin/extractclips2";
+        }
 	qDebug()  << exe << args;
 	QProcess process;
 	process.start(exe,args);
