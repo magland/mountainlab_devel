@@ -472,7 +472,7 @@ void SSTimeSeriesPlotPrivate::schedule_setup_plot_area()
 {
     if (m_setup_plot_area_scheduled) return;
     m_setup_plot_area_scheduled=true;
-    QTimer::singleShot(50,q,SLOT(slot_setup_plot_area()));
+    QTimer::singleShot(0,q,SLOT(slot_setup_plot_area()));
 }
 
 Vec2 SSTimeSeriesPlot::coordToPix(Vec2 coord) {
