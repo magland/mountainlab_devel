@@ -7,7 +7,8 @@ opts.locations=get_frank_lab_locations;
 %input_file_path='dev/test/testA.dat';
 %output_dir_path='test_output';
 input_file_path=[fileparts(mfilename('fullpath')),'/../example1_data/ms11d45.dat'];
-output_dir_path=[fileparts(mfilename('fullpath')),'/../example1_output'];
+%output_dir_path=[fileparts(mfilename('fullpath')),'/../example1_output'];
+output_dir_path=[fileparts(mfilename('fullpath')),'/../example1c_output'];
 
 opts.num_channels=72;
 opts.channels=[37:52,68,69];
@@ -31,10 +32,16 @@ opts.min_cluster_size=20;
 opts.cross_correlogram_max_dt=1500;
 opts.whiten=1;
 opts.num_whitening_components=3;
+opts.cluster_outlier_alpha=0.01;
 
 mountainsort(input_file_path,output_dir_path,opts);
 
-ms_example1_view
+%ms_example1_view
+
+addpath([fileparts(mfilename('fullpath')),'/..']);
+addpath([fileparts(mfilename('fullpath')),'/../view']);
+mountainview(output_dir_path);
+view_cross_correlograms([output_dir_path,'/cross-correlograms.mda'],0);
 
 end
 

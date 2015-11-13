@@ -1,12 +1,20 @@
 function CC_stats
 
-CC=mda_to_cross_correlograms(readmda('example1_output/cross-correlograms.mda'));
+CC=mda_to_cross_correlograms(readmda('example1b_output/cross-correlograms.mda'));
 %view_cross_correlograms(CC,0);
+
 
 n1=50;
 n2=100;
+show_CC_stats(CC,n1,n2);
 
-show_CC_stats(
+n1=100;
+n2=500;
+show_CC_stats(CC,n1,n2);
+
+end
+
+function show_CC_stats(CC,n1,n2)
 
 K=size(CC,1);
 AA=zeros(K,K);

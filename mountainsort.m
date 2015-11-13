@@ -62,9 +62,13 @@ for ch=1:M
     labels_neg=ms_cluster(FF_neg); Kneg=max(labels_neg); if (isempty(Kneg)) Kneg=0; end;
     times0=[times_pos,times_neg];
     labels0=[labels_pos,labels_neg+Kpos];
-    %templates0=compute_templates(X,times0,labels0,opts.clip_size);
-    templates0=compute_templates(X0,times0,labels0,opts.clip_size);
-    K0=Kpos+Kneg;
+    clips0=ms_extract_clips(X,times0,opts.clip_size); %Use X or X0 here?
+    fprintf('spl ');
+    labels0=split_clusters(clips0,labels0,3);
+    fprintf('rem ');
+    [times0,labels0]=remove_outliers(times0,labels0,clips0,opts.num_pca_features,opts.cluster_outlier_alpha);
+    templates0=compute_templates(X,times0,labels0,opts.clip_size); %Use X or X0 here?
+    fprintf('con ');
     [times0,labels0,templates0]=consolidate_clusters(times0,labels0,templates0,ch,opts.min_cluster_size);
     
     K0=max(labels0);
@@ -121,6 +125,29 @@ fprintf('Total time for mountainsort: %.2f\n',toc(total_timer));
 
 end
 
+function labels2=split_clusters(X,labels,num_pca_features)
+K=max(labels);
+labels2=zeros(size(labels));
+current_label=1;
+for k=1:K
+    fprintf(':');
+    inds=find(labels==k);
+    X0=X(:,:,inds);
+    FF0=ms_event_features(X0,num_pca_features);
+    labels000=ms_cluster(FF0);
+    K000=max(labels000);
+    if (K000>1)
+        fprintf('(%d)',K000);
+    end;
+    for jj=1:K000
+        indsjj=find(labels000==jj);
+        labels2(inds(indsjj))=current_label;
+        current_label=current_label+1;
+    end;
+end;
+fprintf(' ');
+end
+
 function [times,labels,templates]=consolidate_clusters(times,labels,templates,k,min_cluster_size)
 sizes=squeeze(sum(templates.^2,2));
 max_sizes=(max(sizes,[],1));
@@ -163,5 +190,36 @@ for k=1:K
     inds=find(labels==k);
     templates(:,:,k)=median(clips(:,:,inds),3);
 end;
+end
+
+function [times2,labels2]=remove_outliers(times,labels,X,num_pca_features,cluster_outlier_alpha)
+
+K=max(labels);
+use_it=ones(size(labels));
+for k=1:K
+    inds=find(labels==k);
+    FF=ms_event_features(X(:,inds),num_pca_features);
+    inds2=find_outliers(FF,cluster_outlier_alpha);
+    use_it(inds(inds2))=0;
+end;
+
+ok_inds=find(use_it);
+times2=times(ok_inds);
+labels2=labels(ok_inds);
+
+end
+
+function inds=find_outliers(X,alpha)
+
+X0=median(X,2);
+X=X-repmat(X0,1,size(X,2));
+for j=1:size(X,1)
+    X(j,:)=X(j,:)/sqrt(var(X(j,:)));
+end;
+
+vals=sum(X.^2,1);
+p=1-chi2cdf(vals,size(X,1));
+inds=find(p<alpha);
+
 end
 
