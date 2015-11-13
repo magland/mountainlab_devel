@@ -6,6 +6,8 @@ CC=mda_to_cross_correlograms(readmda('example1_output/cross-correlograms.mda'));
 n1=50;
 n2=100;
 
+show_CC_stats(
+
 K=size(CC,1);
 AA=zeros(K,K);
 for k1=1:K
