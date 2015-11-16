@@ -2,6 +2,7 @@
 
 #include "mdaio.h"
 #include "fftw3.h"
+#include <QTime>
 #include <math.h>
 #include "omp.h"
 
@@ -9,10 +10,10 @@ bool do_fft_1d_r2c(int N,float *out,float *in);
 bool do_ifft_1d_c2r(int N,float *out,float *in);
 void multiply_complex_by_real_kernel(int N,float *Y,float *kernel);
 void define_kernel(int N,float *kernel,double samplefreq,double freq_min,double freq_max);
-void bandpass_filter_2(MDAIO_HEADER &H,FILE *input_file,FILE *output_file,int timepoint1,int timepoint2,double samplefreq,double freq_min,double freq_max);
+void bandpass_filter_2(MDAIO_HEADER &H,FILE *input_file,FILE *output_file,int timepoint1,int timepoint2,double samplefreq,double freq_min,double freq_max,int overlap);
 
 bool bandpass_filter(const char *input_path,const char *output_path,double samplefreq,double freq_min,double freq_max) {
-	printf("bandpass filter %s %s %g %g %g... ",input_path,output_path,samplefreq,freq_min,freq_max);
+	printf("bandpass filter %s %s %g %g %g...\n",input_path,output_path,samplefreq,freq_min,freq_max);
 	FILE *input_file=fopen(input_path,"rb");
 	if (!input_file) {
 		printf("Unable to open file for reading: %s\n",input_path);
@@ -30,19 +31,26 @@ bool bandpass_filter(const char *input_path,const char *output_path,double sampl
 	//int M=H.dims[0];
 	int N=H.dims[1];
 
-	int chunk_size=pow(2,13); // 2^13 = 8,192
+	int chunk_size=pow(2,15); // 2^15 = 32,768
 	if (chunk_size>N) chunk_size=N;
-	//int overlap=chunk_size/10;
+	int overlap=chunk_size/10;
+	if (overlap<2000) overlap=2000;
 
 	MDAIO_HEADER H_out=H;
 	H_out.data_type=MDAIO_TYPE_FLOAT32;
 	H_out.num_bytes_per_entry=4;
 	mda_write_header(&H_out,output_file);
 
+	QTime timer; timer.start();
 	for (int tt=0; tt<N; tt+=chunk_size) {
+		if ((tt==0)||(timer.elapsed()>1000)) {
+			float pct=tt*1.0/N;
+			printf("Processing chunk %d/%d (%d%%)\n",(tt/chunk_size)+1,(N/chunk_size)+1,(int)(pct*100));
+			timer.restart();
+		}
 		int tt2=tt+chunk_size;
 		if (tt2>N) tt2=N;
-		bandpass_filter_2(H,input_file,output_file,tt,tt2,samplefreq,freq_min,freq_max);
+		bandpass_filter_2(H,input_file,output_file,tt,tt2,samplefreq,freq_min,freq_max,overlap);
 	}
 
 	fclose(input_file);
@@ -52,13 +60,13 @@ bool bandpass_filter(const char *input_path,const char *output_path,double sampl
 	return true;
 }
 
-void bandpass_filter_2(MDAIO_HEADER &H,FILE *input_file,FILE *output_file,int timepoint1,int timepoint2,double samplefreq,double freq_min,double freq_max) {
+void bandpass_filter_2(MDAIO_HEADER &H,FILE *input_file,FILE *output_file,int timepoint1,int timepoint2,double samplefreq,double freq_min,double freq_max,int overlap) {
 	int M=H.dims[0];
 	int N=timepoint2-timepoint1;
 
-	int overlap1=1000;
+	int overlap1=overlap;
 	if (timepoint1-overlap1<0) overlap1=timepoint1;
-	int overlap2=1000;
+	int overlap2=overlap;
 	if (timepoint2+overlap2>H.dims[1]) overlap2=H.dims[1]-timepoint2;
 	int NN=N+overlap1+overlap2;
 

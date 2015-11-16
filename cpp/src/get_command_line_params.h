@@ -14,7 +14,7 @@ struct CLParams {
 	QString error_message;
 };
 
-CLParams get_command_line_params(int argc,char *argv[],const QStringList &required_params,QStringList &optional_params);
+CLParams get_command_line_params(int argc,char *argv[],const QStringList &required_params);
 
 #endif // GET_COMMAND_LINE_PARAMS
 
