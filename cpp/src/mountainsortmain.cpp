@@ -5,10 +5,11 @@
 #include "processtracker.h"
 #include <QCoreApplication>
 
+#include "extract.h"
 #include "bandpass_filter.h"
 #include "normalize_channels.h"
 #include "whiten.h"
-#include "extract.h"
+#include "detect.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -43,6 +44,14 @@ void register_processors(ProcessTracker &PT) {
 		P.version="0.1";
 		PT.registerProcessor(P);
 	}
+	{
+		PTProcessor P;
+		P.command="detect";
+		P.input_file_pnames << "input";
+		P.output_file_pnames << "output";
+		P.version="0.11";
+		PT.registerProcessor(P);
+	}
 }
 
 void extract_usage() {
@@ -50,7 +59,7 @@ void extract_usage() {
 }
 
 void bandpass_filter_usage() {
-	printf("mountainsort bandpass_filter --input=in.mda --output=out.mda --samplefreq=30000 --freq_min=300 --freq_max=10000\n");
+	printf("mountainsort bandpass_filter --input=in.mda --output=out.mda --samplefreq=30000 --freq_min=300 --freq_max=10000 --outlier_threshold=0\n");
 }
 
 void normalize_channels_usage() {
@@ -59,6 +68,10 @@ void normalize_channels_usage() {
 
 void whiten_usage() {
 	printf("mountainsort whiten --input=in.mda --output=out.mda --ncomp=4\n");
+}
+
+void detect_usage() {
+	printf("mountainsort detect --input=in.mda --output=out.mda --inner_window_width=40 --outer_window_width=1000 --threshold=5\n");
 }
 
 int main(int argc,char *argv[]) {
@@ -106,7 +119,6 @@ int main(int argc,char *argv[]) {
 		int num_channels=CLP.named_parameters["num_channels"].toInt();
 		long t1=CLP.named_parameters["t1"].toLong();
 		long t2=CLP.named_parameters["t2"].toLong();
-		float threshold=CLP.named_parameters["threshold"].toFloat();
 		QStringList channels_str=CLP.named_parameters["channels"].split(",");
 		int M=channels_str.count();
 		int channels[M];
@@ -115,7 +127,7 @@ int main(int argc,char *argv[]) {
 		if ((input_path.isEmpty())||(output_path.isEmpty())) {extract_usage(); return -1;}
 		if (M==0) {extract_usage(); return -1;}
 
-		if (!extract(input_path.toLatin1().data(),output_path.toLatin1().data(),num_channels,M,channels,t1,t2,threshold)) {
+		if (!extract(input_path.toLatin1().data(),output_path.toLatin1().data(),num_channels,M,channels,t1,t2)) {
 			printf("Error in extract.\n");
 			return -1;
 		}
@@ -126,11 +138,12 @@ int main(int argc,char *argv[]) {
 		double samplefreq=CLP.named_parameters["samplefreq"].toDouble();
 		double freq_min=CLP.named_parameters["freq_min"].toDouble();
 		double freq_max=CLP.named_parameters["freq_max"].toDouble();
+		double outlier_threshold=CLP.named_parameters["outlier_threshold"].toDouble();
 
 		if ((input_path.isEmpty())||(output_path.isEmpty())) {bandpass_filter_usage(); return -1;}
 		if ((samplefreq==0)||(freq_min==0)||(freq_max==0)) {bandpass_filter_usage(); return -1;}
 
-		if (!bandpass_filter(input_path.toLatin1().data(),output_path.toLatin1().data(),samplefreq,freq_min,freq_max)) {
+		if (!bandpass_filter(input_path.toLatin1().data(),output_path.toLatin1().data(),samplefreq,freq_min,freq_max,outlier_threshold)) {
 			printf("Error in bandpass_filter.\n");
 			return -1;
 		}
@@ -156,6 +169,23 @@ int main(int argc,char *argv[]) {
 
 		if (!whiten(input_path.toLatin1().data(),output_path.toLatin1().data(),ncomp)) {
 			printf("Error in whiten.\n");
+			return -1;
+		}
+	}
+	else if (command=="detect") {
+		QString input_path=CLP.named_parameters["input"];
+		QString output_path=CLP.named_parameters["output"];
+		int inner_window_width=CLP.named_parameters["inner_window_width"].toInt();
+		int outer_window_width=CLP.named_parameters["outer_window_width"].toInt();
+		float threshold=CLP.named_parameters["threshold"].toFloat();
+
+		if ((input_path.isEmpty())||(output_path.isEmpty())) {detect_usage(); return -1;}
+		if (inner_window_width==0) {detect_usage(); return -1;}
+		if (outer_window_width==0) {detect_usage(); return -1;}
+		if (threshold==0) {detect_usage(); return -1;}
+
+		if (!detect(input_path.toLatin1().data(),output_path.toLatin1().data(),inner_window_width,outer_window_width,threshold)) {
+			printf("Error in detect.\n");
 			return -1;
 		}
 	}

@@ -17,7 +17,8 @@ HEADERS += \
     normalize_channels.h \
     whiten.h \
     pcasolver.h \
-    extract.h
+    extract.h \
+    detect.h
 SOURCES += mountainsortmain.cpp \
     bandpass_filter.cpp \
     usagetracking.cpp \
@@ -26,7 +27,8 @@ SOURCES += mountainsortmain.cpp \
     normalize_channels.cpp \
     whiten.cpp \
     pcasolver.cpp \
-    extract.cpp
+    extract.cpp \
+    detect.cpp
 
 HEADERS += qjson.h
 SOURCES += qjson.cpp

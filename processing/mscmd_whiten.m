@@ -7,6 +7,7 @@ if (~isfield(opts,'ncomp')) opts.ncomp=4; end;
 
 cmd=sprintf('%s whiten --input=%s --output=%s --ncomp=%d',mscmd_exe,input_path,output_path,opts.ncomp);
 
+fprintf('\n*** WHITEN ***\n');
 fprintf('%s\n',cmd);
 status=system(cmd);
 

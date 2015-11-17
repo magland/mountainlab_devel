@@ -61,7 +61,6 @@ bool whiten(const char *input_path,const char *output_path,int ncomp) {
 		subtract_components(M,i2-i,ncomp,data0,components);
 		mda_write_float32(data0,&H_out,M*(i2-i),output_file);
 	}
-	printf("\n");
 
 	free(components);
 	free(data);
