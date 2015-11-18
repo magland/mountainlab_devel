@@ -18,7 +18,7 @@ int mda_read_header(struct MDAIO_HEADER *HH,FILE *input_file) {
 	//data type
 	num_read=jfread(&HH->data_type,4,1,input_file);
 	if (num_read<1) {
-		printf("mda_read_header: Problem reading input file.\n");
+        printf("mda_read_header: Problem reading input file.\n");
 		return 0;
 	}
 

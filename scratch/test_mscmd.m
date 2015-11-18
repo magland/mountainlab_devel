@@ -33,7 +33,6 @@ mscmd_bandpass_filter([path0,'/raw.mda'],[path0,'/filt.mda'],o_filter);
 mscmd_whiten([path0,'/filt.mda'],[path0,'/filt_white.mda'],o_whiten);
 mscmd_bandpass_filter([path0,'/filt_white.mda'],[path0,'/filt2_white.mda'],o_filter_detect);
 mscmd_detect([path0,'/filt2_white.mda'],[path0,'/detect.mda'],o_detect);
-
 mscmd_features([path0,'/filt2_white.mda'],[path0,'/detect.mda'],[path0,'/features.mda'],o_features);
 
 % ch=3;

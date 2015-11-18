@@ -1,10 +1,9 @@
 #include "whiten.h"
 #include "mdaio.h"
-#include "pcasolver.h"
+#include "get_principal_components.h"
 
 #include <QTime>
 
-void get_principal_components(int M,int N,int ncomp,float *components,float *data);
 void subtract_components(int M,int N,int ncomp,float *data,float *components);
 
 bool whiten(const char *input_path,const char *output_path,int ncomp) {
@@ -72,17 +71,6 @@ bool whiten(const char *input_path,const char *output_path,int ncomp) {
 	printf("Done with whiten.\n");
 
 	return true;
-}
-
-void get_principal_components(int M,int N,int ncomp,float *components,float *data) {
-	PCASolver PCA;
-	PCA.setVectors(M,N,data);
-	PCA.setComponentCount(ncomp);
-	PCA.solve();
-	float *components0=PCA.components();
-	for (int i=0; i<ncomp*M; i++) {
-		components[i]=components0[i];
-	}
 }
 
 void subtract_components(int M,int N,int ncomp,float *data,float *components) {

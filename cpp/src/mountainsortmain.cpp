@@ -10,6 +10,7 @@
 #include "normalize_channels.h"
 #include "whiten.h"
 #include "detect.h"
+#include "features0.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -52,6 +53,15 @@ void register_processors(ProcessTracker &PT) {
 		P.version="0.11";
 		PT.registerProcessor(P);
 	}
+    {
+        PTProcessor P;
+        P.command="features";
+        P.input_file_pnames << "input";
+        P.input_file_pnames << "detect";
+        P.output_file_pnames << "output";
+        P.version="0.11";
+        PT.registerProcessor(P);
+    }
 }
 
 void extract_usage() {
@@ -72,6 +82,10 @@ void whiten_usage() {
 
 void detect_usage() {
 	printf("mountainsort detect --input=in.mda --output=out.mda --inner_window_width=40 --outer_window_width=1000 --threshold=5\n");
+}
+
+void features_usage() {
+    printf("mountainsort features --input=in.mda --detect=detect.mda --output=out.mda --num_features=6 --clip_size=100\n");
 }
 
 int main(int argc,char *argv[]) {
@@ -189,6 +203,22 @@ int main(int argc,char *argv[]) {
 			return -1;
 		}
 	}
+    else if (command=="features") {
+        QString input_path=CLP.named_parameters["input"];
+        QString detect_path=CLP.named_parameters["detect"];
+        QString output_path=CLP.named_parameters["output"];
+        int num_features=CLP.named_parameters["num_features"].toInt();
+        int clip_size=CLP.named_parameters["clip_size"].toInt();
+
+        if ((input_path.isEmpty())||(detect_path.isEmpty())||(output_path.isEmpty())) {features_usage(); return -1;}
+        if (num_features==0) {features_usage(); return -1;}
+        if (clip_size==0) {features_usage(); return -1;}
+
+        if (!features(input_path.toLatin1().data(),detect_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size)) {
+            printf("Error in features.\n");
+            return -1;
+        }
+    }
 	else {
 		printf("Unknown command: %s\n",command.toLatin1().data());
 		return -1;
