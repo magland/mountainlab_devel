@@ -1,6 +1,6 @@
 function AM=ms_adjacency_matrix(locations,radius)
 
-N=size(locations,2);
+N=size(locations,1);
 AM=zeros(N,N);
 for i1=1:N
     for i2=1:N

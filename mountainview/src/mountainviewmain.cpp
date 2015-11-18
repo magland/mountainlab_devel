@@ -15,6 +15,7 @@
 #include <QDesktopWidget>
 #include "get_command_line_params.h"
 #include "diskarraymodel.h"
+#include "histogramview.h"
 
 /*
  * TO DO:
@@ -33,11 +34,31 @@ bool download_file(QString url,QString fname) {
 	return QFile::exists(fname);
 }
 
+void test_histogramview() {
+
+	int N=100;
+	float values[N];
+	for (int i=0; i<N; i++) {
+		values[i]=(qrand()%10000)*1.0/10000;
+	}
+
+	HistogramView *W=new HistogramView;
+	W->setData(N,values);
+	W->autoSetBins(N/5);
+	W->show();
+}
+
 
 int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);
 	//MainWindow w;
 	//w.show();
+
+	{
+		test_histogramview();
+		return a.exec();
+	}
+
 
     QStringList required;
 	QStringList optional; optional << "working_path" << "output_path";
