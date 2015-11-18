@@ -9,8 +9,11 @@
 #include "sstimeseriesview.h"
 #include "diskreadmda.h"
 #include <QList>
+#include <QMessageBox>
 #include <QTextBrowser>
 #include "firetrackwidget.h"
+#include "histogramview.h"
+#include <math.h>
 
 class MountainViewWidgetPrivate {
 public:
@@ -28,6 +31,7 @@ public:
     QList<SSTimeSeriesView *> m_labeled_raw_data_views;
     QList<SSTimeSeriesView *> m_clips_views;
     int m_current_template_index;
+    QString m_cross_correlograms_path;
 
     void connect_spike_templates_view(SSTimeSeriesView *V);
     void connect_labeled_raw_data_view(SSTimeSeriesView *V);
@@ -87,6 +91,11 @@ MountainViewWidget::MountainViewWidget(QWidget *parent) : QMainWindow(parent)
         GL->addWidget(B,row,0); row++;
 		connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_firetrack()));
 	}
+    {
+        QPushButton *B=new QPushButton("Cross-Correlograms");
+        GL->addWidget(B,row,0); row++;
+        connect(B,SIGNAL(clicked(bool)),this,SLOT(slot_cross_correlograms()));
+    }
 	{
 		QPushButton *B=new QPushButton("Quit");
         GL->addWidget(B,row,0); row++;
@@ -157,6 +166,11 @@ void MountainViewWidget::setTimesLabels(const Mda &times, const Mda &labels)
     }
 
     d->m_times_labels=new DiskReadMda(TL);
+}
+
+void MountainViewWidget::setCrossCorrelogramsPath(const QString &path)
+{
+    d->m_cross_correlograms_path=path;
 }
 
 void MountainViewWidget::resizeEvent(QResizeEvent *evt)
@@ -347,12 +361,113 @@ void MountainViewWidget::slot_statistics()
 
 		W->resize(600,800);
 		W->move(this->geometry().topRight()+QPoint(100,50));
-	}
+    }
+}
+
+typedef QList<float> FloatList;
+
+QList<float> get_cross_correlogram_data(DiskReadMda &X,int k1,int k2) {
+    QList<float> ret;
+    for (int i=0; i<X.N2(); i++) {
+        if ((X.value(0,i)==k1)&&(X.value(1,i)==k2)) ret << X.value(2,i);
+    }
+    return ret;
+}
+
+QList<FloatList> get_cross_correlogram_datas(DiskReadMda &X,int k,int K) {
+    QList<FloatList> ret;
+    for (int i=0; i<=K; i++) {
+        ret << FloatList();
+    }
+    for (int i=0; i<X.N2(); i++) {
+        int k1=(int)X.value(0,i);
+        int k2=(int)X.value(1,i);
+        if ((k1==k)||((k==0)&&(k1==k2))) {
+            if ((1<=k2)&&(k2<=K)) {
+                ret[k2] << X.value(2,i);
+            }
+        }
+    }
+    return ret;
+}
+
+void MountainViewWidget::slot_cross_correlograms(int k0)
+{
+    QWidgetList widgets=qApp->allWidgets();
+    foreach (QWidget *widget,widgets) {
+        if (widget->property("slot_cross_correlograms").toBool()) {
+            int kk=widget->property("slot_cross_correlograms_k0").toInt();
+            if (kk==k0) {
+                widget->raise();
+                return;
+            }
+        }
+    }
+
+    if (d->m_cross_correlograms_path.isEmpty()) {
+        QMessageBox::information(this,"Unable to open cross-correlograms view","There was a problem opening the cross-correlograms view (empty path).");
+        return;
+    }
+    DiskReadMda X;
+    X.setPath(d->m_cross_correlograms_path);
+
+    int K=d->m_templates.N3();
+    int num_rows=(int)sqrt(K); if (num_rows<1) num_rows=1;
+    int num_cols=(K+num_rows-1)/num_rows;
+
+    QProgressDialog dlg;
+    dlg.show();
+    dlg.setLabelText("Loading cross correlograms...");
+    dlg.repaint(); qApp->processEvents();
+    QList<FloatList> data0=get_cross_correlogram_datas(X,k0,K);
+
+    QWidget *W=new QWidget;
+    W->setAttribute(Qt::WA_DeleteOnClose);
+    QGridLayout *GL=new QGridLayout;
+    W->setLayout(GL);
+
+    for (int k1=1; k1<=K; k1++) {
+        HistogramView *HV=new HistogramView;
+        HV->setData(data0[k1]);
+        HV->autoSetBins(50);
+        int k2=k1; if (k0>=1) k2=k0;
+        QString title0=QString("%1/%2").arg(k1).arg(k2);
+        HV->setTitle(title0);
+        GL->addWidget(HV,(k1-1)/num_cols,(k1-1)%num_cols);
+        HV->setProperty("cross-correlogram-k",k1);
+        connect(HV,SIGNAL(clicked()),this,SLOT(slot_cross_correlogram_clicked()));
+    }
+    W->show();
+    int W0=num_rows*150; if (W0>1500) W0=1500;
+    int H0=num_cols*150; if (H0>1500) H0=1500;
+    W->resize(W0,H0);
+    if (k0==0) {
+        W->move(this->topLevelWidget()->geometry().topRight()+QPoint(300,-100));
+    }
+    else {
+        W->move(this->topLevelWidget()->geometry().bottomLeft()+QPoint(100,100));
+    }
+
+    if (k0==0) {
+        W->setWindowTitle("Cross-Correlograms (Diagonal)");
+    }
+    else {
+        W->setWindowTitle(QString("Cross-Correlograms (Neuron %1)").arg(k0));
+    }
+
+    W->setProperty("slot_cross_correlograms",true);
+    W->setProperty("slot_cross_correlograms_k0",k0);
 }
 
 void MountainViewWidget::slot_quit()
 {
-	qApp->quit();
+    qApp->quit();
+}
+
+void MountainViewWidget::slot_cross_correlogram_clicked()
+{
+    int k=sender()->property("cross-correlogram-k").toInt();
+    slot_cross_correlograms(k);
 }
 
 void MountainViewWidget::slot_spike_templates_x_changed()

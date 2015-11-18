@@ -23,6 +23,7 @@ public:
     void setRaw(DiskArrayModel *X);
     void setRawWhitened(DiskArrayModel *X);
     void setTimesLabels(const Mda &times,const Mda &labels);
+    void setCrossCorrelogramsPath(const QString &path);
 
 protected:
 	void resizeEvent(QResizeEvent *evt);
@@ -34,8 +35,10 @@ private slots:
     void slot_cluster_view();
     void slot_firetrack();
 	void slot_statistics();
+    void slot_cross_correlograms(int k=0);
 	void slot_quit();
 
+    void slot_cross_correlogram_clicked();
     void slot_spike_templates_x_changed();
     void slot_object_destroyed(QObject*);
 

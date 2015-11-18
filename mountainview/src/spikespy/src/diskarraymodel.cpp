@@ -145,11 +145,9 @@ Mda DiskArrayModel::loadData(int scale,int t1,int t2) {
 		}
 	}
 
-    //qDebug() << "ELAPSED" << "DiskArrayModel::loadData()" << timer.elapsed();
-
 	return X;
-
 }
+
 float DiskArrayModel::value(int ch,int t) {
 	if (d->m_set_from_mda) {
 		return d->m_mda.value(ch,t);

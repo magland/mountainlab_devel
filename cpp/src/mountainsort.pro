@@ -9,7 +9,9 @@ MOC_DIR=../build
 TARGET = mountainsort
 TEMPLATE = app
 
-HEADERS += \ 
+SOURCES += test/test.cpp
+
+HEADERS += \
     bandpass_filter.h \
     usagetracking.h \
     mdaio.h \
@@ -19,7 +21,9 @@ HEADERS += \
     pcasolver.h \
     extract.h \
     detect.h
-SOURCES += mountainsortmain.cpp \
+    features.h
+SOURCES += \
+mountainsortmain.cpp \
     bandpass_filter.cpp \
     usagetracking.cpp \
     mdaio.cpp \
@@ -29,6 +33,7 @@ SOURCES += mountainsortmain.cpp \
     pcasolver.cpp \
     extract.cpp \
     detect.cpp
+    features.cpp
 
 HEADERS += qjson.h
 SOURCES += qjson.cpp

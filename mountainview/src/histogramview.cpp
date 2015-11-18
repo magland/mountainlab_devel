@@ -16,6 +16,8 @@ public:
 	QColor m_line_color;
 	int m_hovered_bin_index;
 	int m_margin_left,m_margin_right,m_margin_top,m_margin_bottom;
+    QString m_title;
+    bool m_hovered;
 
 	void update_bin_counts();
 	QPointF coord2pix(QPointF pt);
@@ -33,8 +35,9 @@ HistogramView::HistogramView(QWidget *parent) : QWidget(parent)
 	d->m_bin_counts=0;
 	d->m_max_bin_count=0;
 	d->m_num_bins=0;
-	d->m_hovered_bin_index=0;
+    d->m_hovered_bin_index=-1;
 	d->m_margin_left=d->m_margin_right=d->m_margin_top=d->m_margin_bottom=20;
+    d->m_hovered=false;
 
 	d->m_fill_color=QColor(100,100,150);
 	d->m_line_color=QColor(150,150,150);
@@ -47,7 +50,17 @@ HistogramView::~HistogramView()
 	if (d->m_data) free(d->m_data);
 	if (d->m_bin_counts) free(d->m_bin_counts);
 	if (d->m_bin_centers) free(d->m_bin_centers);
-	delete d;
+    delete d;
+}
+
+void HistogramView::setData(const QList<float> values)
+{
+    float *tmp=(float *)malloc(sizeof(float)*values.count());
+    for (int i=0; i<values.count(); i++) {
+        tmp[i]=values[i];
+    }
+    setData(values.count(),tmp);
+    free(tmp);
 }
 
 void HistogramView::setData(int N, float *values)
@@ -98,7 +111,13 @@ void HistogramView::setFillColor(const QColor &col)
 
 void HistogramView::setLineColor(const QColor &col)
 {
-	d->m_line_color=col;
+    d->m_line_color=col;
+}
+
+void HistogramView::setTitle(const QString &title)
+{
+    d->m_title=title;
+    update();
 }
 
 QRectF make_rect(QPointF p1,QPointF p2) {
@@ -121,6 +140,21 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 	Q_UNUSED(evt)
 	QPainter painter(this);
 
+    if (d->m_hovered) {
+        QRect R(0,0,width(),height());
+        painter.fillRect(R,QColor(0,0,0,30));
+    }
+
+    if (!d->m_title.isEmpty()) {
+        int text_height=12;
+        QRect R(d->m_margin_left,5,this->width()-d->m_margin_left-d->m_margin_right,text_height);
+        QFont font=painter.font();
+        font.setFamily("Arial");
+        font.setPixelSize(text_height);
+        painter.setFont(font);
+        painter.drawText(R,d->m_title,Qt::AlignLeft|Qt::AlignTop);
+    }
+
 	if (d->m_update_required) {
 		d->update_bin_counts();
 		d->m_update_required=false;
@@ -133,11 +167,17 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 		QPointF pt2=d->coord2pix(QPointF(d->m_bin_centers[i]+spacing/2,d->m_bin_counts[i]));
 		QRectF R=make_rect(pt1,pt2);
 		QColor col=d->m_fill_color;
-		if (i==d->m_hovered_bin_index) col=lighten(col,50,50,50);
+        if (i==d->m_hovered_bin_index) col=lighten(col,15,15,15);
 		painter.fillRect(R,col);
 		painter.setPen(d->m_line_color);
 		painter.drawRect(R);
-	}
+    }
+}
+
+void HistogramView::mousePressEvent(QMouseEvent *evt)
+{
+    Q_UNUSED(evt);
+    emit clicked();
 }
 
 void HistogramView::mouseMoveEvent(QMouseEvent *evt)
@@ -150,6 +190,20 @@ void HistogramView::mouseMoveEvent(QMouseEvent *evt)
 	}
 }
 
+void HistogramView::enterEvent(QEvent *evt)
+{
+    Q_UNUSED(evt)
+    d->m_hovered=true;
+    update();
+}
+
+void HistogramView::leaveEvent(QEvent *evt)
+{
+    Q_UNUSED(evt)
+    d->m_hovered=false;
+    update();
+}
+
 void HistogramViewPrivate::update_bin_counts()
 {
 	for (int i=0; i<m_num_bins; i++) {
@@ -158,7 +212,6 @@ void HistogramViewPrivate::update_bin_counts()
 	m_max_bin_count=0;
 	QList<float> list;
 	for (int i=0; i<m_N; i++) {
-		printf("%d :::: %f\n",i,m_data[i]);
 		list << m_data[i];
 	}
 	qSort(list);
@@ -188,7 +241,9 @@ QPointF HistogramViewPrivate::coord2pix(QPointF pt)
 	if (m_num_bins<=1) {
 		return QPointF(0,0);
 	}
-	if ((!W)||(!H)) return QPointF(0,0);
+    if ((!W)||(!H)) return QPointF(0,0);
+    if (W<=m_margin_left+m_margin_right+5) return QPointF(0,0);
+    if (H<=m_margin_top+m_margin_bottom+5) return QPointF(0,0);
 
 	float spacing=m_bin_centers[1]-m_bin_centers[0];
 	float xmin=m_bin_centers[0]-spacing/2;
@@ -215,6 +270,8 @@ QPointF HistogramViewPrivate::pix2coord(QPointF pt)
 		return QPointF(0,0);
 	}
 	if ((!W)||(!H)) return QPointF(0,0);
+    if (W<=m_margin_left+m_margin_right+5) return QPointF(0,0);
+    if (H<=m_margin_top+m_margin_bottom+5) return QPointF(0,0);
 
 	float spacing=m_bin_centers[1]-m_bin_centers[0];
 	float xmin=m_bin_centers[0]-spacing/2;
@@ -222,11 +279,28 @@ QPointF HistogramViewPrivate::pix2coord(QPointF pt)
 	float ymin=0;
 	float ymax=m_max_bin_count;
 
-	//finish!
+    float xfrac=(pt.x()-m_margin_left)/(W-m_margin_left-m_margin_right);
+    float yfrac=1-(pt.y()-m_margin_top)/(H-m_margin_top-m_margin_bottom);
+
+    float x0=xmin+xfrac*(xmax-xmin);
+    float y0=ymin+yfrac*(ymax-ymin);
+
+    return QPointF(x0,y0);
 }
 
-int HistogramViewPrivate::get_bin_index_at(QPointF pt)
+int HistogramViewPrivate::get_bin_index_at(QPointF pt_pix)
 {
-	QPointF pt2=pix2coord(pt);
-
+    if (m_num_bins<=1) {
+        return -1;
+    }
+    QPointF pt=pix2coord(pt_pix);
+    float spacing=m_bin_centers[1]-m_bin_centers[0];
+    for (int i=0; i<m_num_bins; i++) {
+        if ((pt.x()>=m_bin_centers[i]-spacing/2)&&(pt.x()<=m_bin_centers[i]+spacing/2)) {
+            //if ((0<=pt.y())&&(pt.y()<=m_bin_counts[i])) {
+                return i;
+            //}
+        }
+    }
+    return -1;
 }

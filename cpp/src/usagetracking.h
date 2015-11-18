@@ -1,8 +1,8 @@
 #ifndef USAGETRACKING
 #define USAGETRACKING
 
-#include <stdlib.h>
-#include <stdio.h>
+//#include <stdlib.h>
+//#include <stdio.h>
 
 FILE *jfopen(const char *path,const char *mode);
 void jfclose(FILE *F);

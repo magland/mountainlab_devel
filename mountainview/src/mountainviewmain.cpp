@@ -54,10 +54,10 @@ int main(int argc, char *argv[]) {
 	//MainWindow w;
 	//w.show();
 
-	{
-		test_histogramview();
-		return a.exec();
-	}
+//	{
+//		test_histogramview();
+//		return a.exec();
+//	}
 
 
     QStringList required;
@@ -82,6 +82,7 @@ int main(int argc, char *argv[]) {
 	QString times_path=QString("%1/times.mda").arg(output_path);
 	QString labels_path=QString("%1/labels.mda").arg(output_path);
 	QString primary_channels_path=QString("%1/primary_channels.mda").arg(output_path);
+    QString cross_correlograms_path=QString("%1/cross-correlograms.mda").arg(output_path);
 
     if (!QFile::exists(templates_whitened_path)) templates_whitened_path="";
     if (!QFile::exists(raw_whitened_path)) raw_whitened_path="";
@@ -129,6 +130,9 @@ int main(int argc, char *argv[]) {
 		Mda PC; PC.read(primary_channels_path);
 		W.setPrimaryChannels(PC);
 	}
+    {
+        W.setCrossCorrelogramsPath(cross_correlograms_path);
+    }
 
 
 	int ret=a.exec();
