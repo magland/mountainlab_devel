@@ -11,8 +11,10 @@ MOC_DIR=../build
 TARGET = mountainview
 TEMPLATE = app
 
-HEADERS += mountainviewwidget.h
-SOURCES += mountainviewmain.cpp mountainviewwidget.cpp
+HEADERS += mountainviewwidget.h \
+    histogramview.h
+SOURCES += mountainviewmain.cpp mountainviewwidget.cpp \
+    histogramview.cpp
 
 HEADERS += get_command_line_params.h
 SOURCES += get_command_line_params.cpp
