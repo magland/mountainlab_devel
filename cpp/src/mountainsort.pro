@@ -20,7 +20,8 @@ HEADERS += \
     extract.h \
     detect.h \
     features0.h \
-    get_principal_components.h
+    get_principal_components.h \
+    cluster.h
 SOURCES += \
 mountainsortmain.cpp \
     bandpass_filter.cpp \
@@ -33,7 +34,8 @@ mountainsortmain.cpp \
     extract.cpp \
     detect.cpp \
     features0.cpp \
-    get_principal_components.cpp
+    get_principal_components.cpp \
+    cluster.cpp
 
 HEADERS += qjson.h
 SOURCES += qjson.cpp
