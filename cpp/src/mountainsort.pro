@@ -21,7 +21,8 @@ HEADERS += \
     detect.h \
     features0.h \
     get_principal_components.h \
-    cluster.h
+    cluster.h \
+    templates.h
 SOURCES += \
 mountainsortmain.cpp \
     bandpass_filter.cpp \
@@ -35,7 +36,8 @@ mountainsortmain.cpp \
     detect.cpp \
     features0.cpp \
     get_principal_components.cpp \
-    cluster.cpp
+    cluster.cpp \
+    templates.cpp
 
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit

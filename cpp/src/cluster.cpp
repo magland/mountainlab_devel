@@ -3,7 +3,7 @@
 #include "isosplit.h"
 
 int get_num_channels(const char *path);
-int cluster_2(int ch,const char *input_path,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters);
+int cluster_2(int ch,const char *input_path,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters,int label_offset);
 int do_cluster(int M,int N,float *X,int *labels);
 
 bool cluster(const char *input_path,const char *output_path) {
@@ -26,10 +26,12 @@ bool cluster(const char *input_path,const char *output_path) {
     mda_write_header(&H_out,output_file);
 
     int total_num_events=0;
+    int label_offset=0;
     for (int ch=1; ch<=M; ch++) {
         printf("ch=%d... ",ch);
         int num_clusters;
-        int num_events=cluster_2(ch,input_path,&H_out,output_file,&num_clusters);
+        int num_events=cluster_2(ch,input_path,&H_out,output_file,&num_clusters,label_offset);
+        label_offset+=num_clusters;
         printf("%d events, %d clusters...\n",num_events,num_clusters);
         if (num_events<0) {
             fclose(output_file);
@@ -47,7 +49,7 @@ bool cluster(const char *input_path,const char *output_path) {
     return true;
 }
 
-int cluster_2(int ch,const char *input_path,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters) {
+int cluster_2(int ch,const char *input_path,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters,int label_offset) {
     FILE *input_file=fopen(input_path,"rb");
     if (!input_file) {
         printf("Unable to open file for reading: %s\n",input_path);
@@ -95,7 +97,7 @@ int cluster_2(int ch,const char *input_path,MDAIO_HEADER *H_out,FILE *output_fil
             float buf[3];
             buf[0]=ch;
             buf[1]=times[n];
-            buf[2]=labels[n];
+            buf[2]=labels[n]+label_offset;
             mda_write_float32(buf,H_out,3,output_file);
         }
         free(labels);

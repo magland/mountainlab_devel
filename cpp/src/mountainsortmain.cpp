@@ -12,6 +12,7 @@
 #include "detect.h"
 #include "features0.h"
 #include "cluster.h"
+#include "templates.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -68,6 +69,15 @@ void register_processors(ProcessTracker &PT) {
         P.command="cluster";
         P.input_file_pnames << "input";
         P.output_file_pnames << "output";
+        P.version="0.11";
+        PT.registerProcessor(P);
+    }
+    {
+        PTProcessor P;
+        P.command="templates";
+        P.input_file_pnames << "input";
+        P.input_file_pnames << "cluster";
+        P.output_file_pnames << "output";
         P.version="0.1";
         PT.registerProcessor(P);
     }
@@ -99,6 +109,10 @@ void features_usage() {
 
 void cluster_usage() {
     printf("mountainsort cluster --input=in.mda --output=out.mda\n");
+}
+
+void templates_usage() {
+    printf("mountainsort templates --input=in.mda --cluster=cluster.mda --output=out.mda --clip_size=100\n");
 }
 
 int main(int argc,char *argv[]) {
@@ -240,6 +254,20 @@ int main(int argc,char *argv[]) {
 
         if (!cluster(input_path.toLatin1().data(),output_path.toLatin1().data())) {
             printf("Error in cluster.\n");
+            return -1;
+        }
+    }
+    else if (command=="templates") {
+        QString input_path=CLP.named_parameters["input"];
+        QString cluster_path=CLP.named_parameters["cluster"];
+        QString output_path=CLP.named_parameters["output"];
+        int clip_size=CLP.named_parameters["clip_size"].toInt();
+
+        if ((input_path.isEmpty())||(output_path.isEmpty())) {templates_usage(); return -1;}
+        if (clip_size==0) {templates_usage(); return -1;}
+
+        if (!templates(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),clip_size)) {
+            printf("Error in templates.\n");
             return -1;
         }
     }
