@@ -37,6 +37,12 @@ mountainsortmain.cpp \
     get_principal_components.cpp \
     cluster.cpp
 
+INCLUDEPATH += ../../isosplit
+DEPENDPATH += ../../isosplit
+VPATH += ../../isosplit
+HEADERS += isosplit1d.h mda.h jisotonic.h isosplit.h
+SOURCES += isosplit1d.cpp mda.cpp jisotonic.cpp isosplit.cpp
+
 HEADERS += qjson.h
 SOURCES += qjson.cpp
 INCLUDEPATH += qjson

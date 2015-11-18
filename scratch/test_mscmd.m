@@ -25,8 +25,7 @@ o_detect.outer_window_width=100000;
 o_detect.threshold=5;
 o_features.num_features=6;
 o_features.clip_size=100;
-%o_sort.num_features=6;
-%o_sort.clip_size=100;
+o_cluster=struct;
 
 mscmd_extract([path0,'/ms11d45.dat'],[path0,'/raw.mda'],o_extract);
 mscmd_bandpass_filter([path0,'/raw.mda'],[path0,'/filt.mda'],o_filter);
@@ -34,6 +33,7 @@ mscmd_whiten([path0,'/filt.mda'],[path0,'/filt_white.mda'],o_whiten);
 mscmd_bandpass_filter([path0,'/filt_white.mda'],[path0,'/filt2_white.mda'],o_filter_detect);
 mscmd_detect([path0,'/filt2_white.mda'],[path0,'/detect.mda'],o_detect);
 mscmd_features([path0,'/filt2_white.mda'],[path0,'/detect.mda'],[path0,'/features.mda'],o_features);
+mscmd_cluster([path0,'/features.mda'],[path0,'/cluster.mda'],o_cluster);
 
 % ch=3;
 % out_path=[path0,sprintf('/sort-%d.mda',ch)];

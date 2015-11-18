@@ -11,6 +11,7 @@
 #include "whiten.h"
 #include "detect.h"
 #include "features0.h"
+#include "cluster.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -59,7 +60,15 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "input";
         P.input_file_pnames << "detect";
         P.output_file_pnames << "output";
-        P.version="0.11";
+        P.version="0.1";
+        PT.registerProcessor(P);
+    }
+    {
+        PTProcessor P;
+        P.command="cluster";
+        P.input_file_pnames << "input";
+        P.output_file_pnames << "output";
+        P.version="0.1";
         PT.registerProcessor(P);
     }
 }
@@ -86,6 +95,10 @@ void detect_usage() {
 
 void features_usage() {
     printf("mountainsort features --input=in.mda --detect=detect.mda --output=out.mda --num_features=6 --clip_size=100\n");
+}
+
+void cluster_usage() {
+    printf("mountainsort cluster --input=in.mda --output=out.mda\n");
 }
 
 int main(int argc,char *argv[]) {
@@ -216,6 +229,17 @@ int main(int argc,char *argv[]) {
 
         if (!features(input_path.toLatin1().data(),detect_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size)) {
             printf("Error in features.\n");
+            return -1;
+        }
+    }
+    else if (command=="cluster") {
+        QString input_path=CLP.named_parameters["input"];
+        QString output_path=CLP.named_parameters["output"];
+
+        if ((input_path.isEmpty())||(output_path.isEmpty())) {cluster_usage(); return -1;}
+
+        if (!cluster(input_path.toLatin1().data(),output_path.toLatin1().data())) {
+            printf("Error in cluster.\n");
             return -1;
         }
     }

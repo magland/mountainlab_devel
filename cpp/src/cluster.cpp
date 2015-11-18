@@ -1,5 +1,6 @@
 #include "cluster.h"
 #include "mdaio.h"
+#include "isosplit.h"
 
 int get_num_channels(const char *path);
 int cluster_2(int ch,const char *input_path,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters);
@@ -133,5 +134,19 @@ int get_num_channels(const char *path) {
 }
 
 int do_cluster(int M,int N,float *X,int *labels) {
-    return 0;
+    Mda A; A.allocate(M,N);
+    int ii=0;
+    for (int n=0; n<N; n++) {
+        for (int m=0; m<M; m++) {
+            A.setValue(X[ii],m,n);
+            ii++;
+        }
+    }
+    QVector<int> labels0=isosplit(A);
+    int ret=0;
+    for (int n=0; n<N; n++) {
+        labels[n]=labels0.value(n);
+        if (labels[n]>ret) ret=labels[n];
+    }
+    return ret;
 }
