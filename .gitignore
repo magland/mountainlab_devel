@@ -1,0 +1,7 @@
+**/*.mda
+**/Makefile
+**/build
+**/bin
+**/ui_*.h
+**/*.pro.user
+**/qrc_*.cpp
