@@ -41,9 +41,10 @@ bool whiten(const char *input_path,const char *output_path,int ncomp) {
 		mda_read_float32(&data[M*i],&H,M,input_file);
 		fseek(input_file,M*(stride-1)*H.num_bytes_per_entry,SEEK_CUR);
 	}
+
 	float *components=(float *)malloc(sizeof(float)*M*ncomp);
 	printf("Computing principal components...\n");
-	get_principal_components(M,NN,ncomp,components,data);
+    get_principal_components_2(M,NN,ncomp,components,data);
 	fseek(input_file,H.header_size,SEEK_SET);
 	printf("Subtracting %d components...\n",ncomp);
 	QTime timer; timer.start();
@@ -61,7 +62,8 @@ bool whiten(const char *input_path,const char *output_path,int ncomp) {
 		mda_write_float32(data0,&H_out,M*(i2-i),output_file);
 	}
 
-	free(components);
+
+    free(components);
 	free(data);
 	free(data0);
 

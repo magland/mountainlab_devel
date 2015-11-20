@@ -61,8 +61,8 @@ int main(int argc, char *argv[]) {
 
 
     QStringList required;
-	QStringList optional; optional << "working_path" << "output_path";
-    CLParams CLP=get_command_line_params(argc,argv,required,optional);
+    QStringList optional;
+    CLParams CLP=get_command_line_params(argc,argv,required);
 
 	QStringList args;
 	for (int i=1; i<argc; i++) {
@@ -74,18 +74,23 @@ int main(int argc, char *argv[]) {
 	QString working_path=CLP.named_parameters.value("working_path");
 	QString output_path=CLP.named_parameters.value("output_path");
 
-	QString templates_path=QString("%1/templates.mda").arg(output_path);
-    QString templates_whitened_path=QString("%1/templates_white.mda").arg(output_path);
-	QString locations_path=QString("%1/locations.mda").arg(output_path);
-	QString raw_path=QString("%1/raw.mda").arg(output_path);
-    QString raw_whitened_path=QString("%1/raw_white.mda").arg(output_path);
-	QString times_path=QString("%1/times.mda").arg(output_path);
-	QString labels_path=QString("%1/labels.mda").arg(output_path);
-	QString primary_channels_path=QString("%1/primary_channels.mda").arg(output_path);
-    QString cross_correlograms_path=QString("%1/cross-correlograms.mda").arg(output_path);
+    qDebug() << CLP.named_parameters;
+
+    QString templates_path=CLP.named_parameters.value("templates");
+    QString templates_whitened_path=CLP.named_parameters.value("templates-whitened");
+    QString locations_path=CLP.named_parameters.value("locations");
+    QString raw_path=CLP.named_parameters.value("raw");
+    QString raw_whitened_path=CLP.named_parameters.value("raw-whitened");
+    QString times_path=CLP.named_parameters.value("times");
+    QString labels_path=CLP.named_parameters.value("labels");
+    QString cluster_path=CLP.named_parameters.value("cluster");
+    QString primary_channels_path=CLP.named_parameters.value("primary-channels");
+    QString cross_correlograms_path=CLP.named_parameters.value("cross-correlograms");
 
     if (!QFile::exists(templates_whitened_path)) templates_whitened_path="";
     if (!QFile::exists(raw_whitened_path)) raw_whitened_path="";
+
+    qDebug() << templates_path;
 
 	MountainViewWidget W;
     W.show();
@@ -123,6 +128,18 @@ int main(int argc, char *argv[]) {
         else {
             L.allocate(T.N1(),T.N2());
             for (int ii=0; ii<L.totalSize(); ii++) L.setValue1(1,ii);
+        }
+        W.setTimesLabels(T,L);
+    }
+    if (!cluster_path.isEmpty()) {
+        Mda CC; CC.read(cluster_path);
+        int num_events=CC.N2();
+        Mda T,L;
+        T.allocate(1,num_events);
+        L.allocate(1,num_events);
+        for (int i=0; i<num_events; i++) {
+            T.setValue(CC.value(1,i),0,i);
+            L.setValue(CC.value(2,i),0,i);
         }
         W.setTimesLabels(T,L);
     }

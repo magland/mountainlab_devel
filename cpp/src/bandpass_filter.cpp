@@ -31,7 +31,7 @@ bool bandpass_filter(const char *input_path,const char *output_path,double sampl
 	//int M=H.dims[0];
 	int N=H.dims[1];
 
-	long chunk_size=pow(2,15); // 2^15 = 32,768
+    long chunk_size=pow(2,12); // 2^15 = 32,768
 	if (chunk_size>N) chunk_size=N;
 	long overlap=chunk_size/10;
 	if (overlap<2000) overlap=2000;
@@ -77,7 +77,9 @@ void bandpass_filter_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE
 	fseek(input_file,H.header_size+H.num_bytes_per_entry*M*(timepoint1-overlap1),SEEK_SET);
 	mda_read_float32(X,&H,M*NN,input_file);
 
-	#pragma omp parallel
+    int num_threads=M;
+    omp_set_num_threads(num_threads);
+    #pragma omp parallel
 	{
 
 		double *X0=(double *)fftw_malloc(sizeof(double)*NN);
@@ -89,8 +91,8 @@ void bandpass_filter_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE
 		#pragma omp critical
 		p_ifft=fftw_plan_dft_c2r_1d(NN,Y0,X0,FFTW_ESTIMATE);
 
-		//if (omp_get_thread_num()==0) printf("Using %d threads.\n",omp_get_num_threads());
-		#pragma omp for
+        //if (omp_get_thread_num()==0) printf("Using %d threads.\n",omp_get_num_threads());
+        #pragma omp for
 		for (int m=0; m<M; m++) {
 			int ii=m;
 			for (long n=0; n<NN; n++) {
@@ -222,8 +224,8 @@ void define_kernel(int N,float *kernel,double samplefreq,double freq_min,double 
 		else fgrid[i]=df*(i-N);
 	}
 
-	float fwidlo=100; //roll-off width (Hz). Sets ringing timescale << 10 ms
-	float fwidhi=1000; // roll-off width (Hz). Sets ringing timescale << 1 ms
+    float fwidlo=100; // roll-off width (Hz). Sets ringing timescale << 10 ms
+    float fwidhi=1000; // roll-off width (Hz). Sets ringing timescale << 1 ms
 
 	for (int i=0; i<N; i++) {
 		float absf=fabs(fgrid[i]);

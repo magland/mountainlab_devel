@@ -3,19 +3,18 @@
 #include "pca.h"
 #include <QDebug>
 
-//#include "pcasolver.h"
-
-//void get_principal_components(int M,int N,int ncomp,float *components,float *data) {
-//    PCASolver PCA;
-//    PCA.setVectors(M,N,data);
-//    PCA.setComponentCount(ncomp);
-//    PCA.setNumIterations(100);
-//    PCA.solve();
-//    float *components0=PCA.components();
-//    for (int i=0; i<ncomp*M; i++) {
-//        components[i]=components0[i];
-//    }
-//}
+#include "pcasolver.h"
+void get_principal_components_2(int M,int N,int ncomp,float *components,float *data) {
+    PCASolver PCA;
+    PCA.setVectors(M,N,data);
+    PCA.setComponentCount(ncomp);
+    PCA.setNumIterations(100);
+    PCA.solve();
+    float *components0=PCA.components();
+    for (int i=0; i<ncomp*M; i++) {
+        components[i]=components0[i];
+    }
+}
 
 void get_principal_components(int M,int N,int ncomp,float *components,float *data) {
     const int nvar = M;
@@ -32,9 +31,7 @@ void get_principal_components(int M,int N,int ncomp,float *components,float *dat
     pca.solve();
 
     for (int cc=0; cc<ncomp; cc++) {
-        printf("get_principal %d\n",cc);
         std::vector<double> prinvec = pca.get_principal(cc);
-        printf("size of prinvec: %ld\n",prinvec.size());
         //for (int m=0; m<M; m++) {
         //    components[m+cc*M]=prinvec[m];
         //}
@@ -44,5 +41,4 @@ void get_principal_components(int M,int N,int ncomp,float *components,float *dat
         }
     }
 }
-
 

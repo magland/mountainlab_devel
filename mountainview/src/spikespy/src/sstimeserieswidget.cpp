@@ -327,6 +327,7 @@ void SSTimeSeriesWidget::slot_extract_clips()
 		SSController CC;
 		SSTimeSeriesWidget *WWW=(SSTimeSeriesWidget *)CC.createTimeSeriesWidget();
 		SSTimeSeriesView *VVV=(SSTimeSeriesView *)CC.createTimeSeriesView();
+        qDebug() << "Loading: " << out_path;
 		VVV->setData((DiskArrayModel *)CC.loadArray(out_path),true);
 		VVV->setProperty("data_path",out_path); //a hack!
 		VVV->setProperty("TM_data_path",out_path_TM); //a hack!

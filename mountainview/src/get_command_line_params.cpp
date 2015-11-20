@@ -1,6 +1,6 @@
 #include "get_command_line_params.h"
 
-CLParams get_command_line_params(int argc,char *argv[],const QStringList &required_params,QStringList &optional_params) {
+CLParams get_command_line_params(int argc,char *argv[],const QStringList &required_params) {
 	CLParams ret;
 	ret.success=true; //let's be optimistic!
 
@@ -15,11 +15,6 @@ CLParams get_command_line_params(int argc,char *argv[],const QStringList &requir
 			if (name.isEmpty()) {
 				ret.success=false;
 				ret.error_message="Problem with parameter: "+str;
-				return ret;
-			}
-			if ((required_params.indexOf(name)<0)&&(optional_params.indexOf(name)<0)) {
-				ret.success=false;
-				ret.error_message="Unexpected parameter: "+name;
 				return ret;
 			}
 			ret.named_parameters[name]=val;

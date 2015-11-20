@@ -93,24 +93,24 @@ int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *n
     }
 
     //debug
-    {
-        Mda debug; debug.allocate(num_features,num_events);
-        int jjj=0;
-        for (int ie=0; ie<num_events; ie++) {
-            for (int f=0; f<num_features; f++) {
-                debug.setValue(X[jjj],f,ie);
-                jjj++;
-            }
-        }
-        debug.write(QString("debug-ch-%1.mda").arg(ch));
-    }
-    {
-        Mda debug; debug.allocate(1,num_events);
-        for (int ie=0; ie<num_events; ie++) {
-            debug.setValue(labels[ie],0,ie);
-        }
-        debug.write(QString("debug-labels-ch-%1.mda").arg(ch));
-    }
+//    {
+//        Mda debug; debug.allocate(num_features,num_events);
+//        int jjj=0;
+//        for (int ie=0; ie<num_events; ie++) {
+//            for (int f=0; f<num_features; f++) {
+//                debug.setValue(X[jjj],f,ie);
+//                jjj++;
+//            }
+//        }
+//        debug.write(QString("debug-ch-%1.mda").arg(ch));
+//    }
+//    {
+//        Mda debug; debug.allocate(1,num_events);
+//        for (int ie=0; ie<num_events; ie++) {
+//            debug.setValue(labels[ie],0,ie);
+//        }
+//        debug.write(QString("debug-labels-ch-%1.mda").arg(ch));
+//    }
     //////////////////////////////////////////////
 
     free(labels);

@@ -313,7 +313,8 @@ QVector<int> isosplit(Mda &X) {
 	QSet<double> attempted_redistributions;
 
 	int num_iterations=0;
-	while (true) {
+    int max_iterations=1000;
+    while ((true)&&(num_iterations<max_iterations)) {
 		num_iterations++;
         //if (num_iterations>35) return labels;
 		QVector<int> old_labels=labels;
