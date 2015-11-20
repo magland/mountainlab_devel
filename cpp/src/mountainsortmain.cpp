@@ -13,6 +13,7 @@
 #include "features0.h"
 #include "cluster.h"
 #include "templates.h"
+#include "consolidate.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -60,8 +61,9 @@ void register_processors(ProcessTracker &PT) {
         P.command="features";
         P.input_file_pnames << "input";
         P.input_file_pnames << "detect";
+        P.input_file_pnames << "adjacency";
         P.output_file_pnames << "output";
-        P.version="0.1";
+        P.version="0.13";
         PT.registerProcessor(P);
     }
     {
@@ -79,6 +81,17 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "cluster";
         P.output_file_pnames << "output";
         P.version="0.1";
+        PT.registerProcessor(P);
+    }
+    {
+        PTProcessor P;
+        P.command="consolidate";
+        P.input_file_pnames << "cluster";
+        P.input_file_pnames << "templates";
+        P.output_file_pnames << "cluster_out";
+        P.output_file_pnames << "templates_out";
+        P.output_file_pnames << "load_channels_out";
+        P.version="0.13";
         PT.registerProcessor(P);
     }
 }
@@ -104,7 +117,7 @@ void detect_usage() {
 }
 
 void features_usage() {
-    printf("mountainsort features --input=in.mda --detect=detect.mda --output=out.mda --num_features=6 --clip_size=100\n");
+    printf("mountainsort features --input=in.mda --detect=detect.mda --adjacency=adjacency.mda --output=out.mda --num_features=6 --clip_size=100\n");
 }
 
 void cluster_usage() {
@@ -115,9 +128,96 @@ void templates_usage() {
     printf("mountainsort templates --input=in.mda --cluster=cluster.mda --output=out.mda --clip_size=100\n");
 }
 
+void consolidate_usage() {
+    printf("mountainsort consolidate --cluster=cluster.mda --templates=templates.mda --cluster_out=cluster_out.mda --templates_out=templates_out.mda --load_channels_out=load_channels.mda\n");
+}
+
+#include "armadillo"
+void test_armadillo() {
+    std::complex<double> x=0.1;
+    std::complex<double> y=arma::arma_acos(x);
+    printf("test armadillo: %g + %gi\n",y.real(),y.imag());
+}
+
+#include "pca.h"
+void test_pca() {
+
+    //float feps=std::numeric_limits<float>::epsilon();
+
+    const int nvar = 4;
+    stats::pca pca(nvar);
+
+    const std::vector<double> record1 = {1, 2.5, 42, 7};
+    const std::vector<double> record2 = {3, 4.2, 90, 7};
+    const std::vector<double> record3 = {456, 444, 0, 7};
+    pca.add_record(record1);
+    pca.add_record(record2);
+    pca.add_record(record3);
+
+    pca.solve();
+
+    //const float factor = 10;
+    const std::vector<double> prinvec1 = pca.get_principal(0);
+    const std::vector<double> exp_prinvec1 = {-2.10846198e+02, -2.13231575e+02, 4.24077773e+02};
+    //assert_approx_equal_containers(exp_prinvec1, prinvec1, feps*factor, SPOT);
+
+    const std::vector<double> prinvec2 = pca.get_principal(1);
+    const std::vector<double> exp_prinvec2 = {-2.40512596e+01, 2.39612385e+01, 9.00211615e-02};
+    //assert_approx_equal_containers(exp_prinvec2, prinvec2, feps*factor, SPOT);
+
+    const std::vector<double> prinvec3 = pca.get_principal(2);
+    const std::vector<double> exp_prinvec3 = {0, 0, 0};
+    //assert_approx_equal_containers(exp_prinvec3, prinvec3, feps*factor, SPOT);
+
+    const std::vector<double> prinvec4 = pca.get_principal(3);
+    const std::vector<double> exp_prinvec4 = {0, 0, 0};
+    //assert_approx_equal_containers(exp_prinvec4, prinvec4, feps*factor, SPOT);
+
+    qDebug() << prinvec1[0] << prinvec1[1] << prinvec1[2];
+    qDebug() << exp_prinvec1[0] << exp_prinvec1[1] << exp_prinvec1[2];
+}
+void test_pca_2() {
+
+    //float feps=std::numeric_limits<float>::epsilon();
+
+    const int nvar = 4;
+    stats::pca pca(nvar);
+
+    const std::vector<double> record1 = {1, 2,3,4.0};
+    const std::vector<double> record2 = {2,4,6,8.8};
+    const std::vector<double> record3 = {3,6,9,12.4};
+    const std::vector<double> record4 = {1, 2,3,4.0};
+    const std::vector<double> record5 = {2,4,6,8.8};
+    const std::vector<double> record6 = {3,6,9,12.4};
+    pca.add_record(record1);
+    pca.add_record(record2);
+    pca.add_record(record3);
+    pca.add_record(record4);
+    pca.add_record(record5);
+    pca.add_record(record6);
+
+    pca.solve();
+
+    const std::vector<double> prinvec1 = pca.get_principal(0);
+    const std::vector<double> prinvec2 = pca.get_principal(1);
+    const std::vector<double> prinvec3 = pca.get_principal(2);
+    const std::vector<double> prinvec4 = pca.get_principal(3);
+
+    qDebug() << prinvec1[0] << prinvec1[1] << prinvec1[2] << prinvec1[3] << prinvec1[4] << prinvec1[5];
+    qDebug() << prinvec2[0] << prinvec2[1] << prinvec2[2] << prinvec2[3] << prinvec2[4] << prinvec2[5];
+    qDebug() << prinvec3[0] << prinvec3[1] << prinvec3[2] << prinvec3[3] << prinvec3[4] << prinvec3[5];
+    qDebug() << prinvec4[0] << prinvec4[1] << prinvec4[2] << prinvec4[3] << prinvec4[4] << prinvec4[5];
+
+
+}
+
 int main(int argc,char *argv[]) {
 
 	QCoreApplication app(argc,argv); //important for qApp->applicationDirPath() in processtracker
+
+//    test_armadillo();
+//    test_pca_2();
+//    return 0;
 
 	CLParams CLP;
 	QStringList required;
@@ -233,15 +333,16 @@ int main(int argc,char *argv[]) {
     else if (command=="features") {
         QString input_path=CLP.named_parameters["input"];
         QString detect_path=CLP.named_parameters["detect"];
+        QString adjacency_path=CLP.named_parameters["adjacency"];
         QString output_path=CLP.named_parameters["output"];
         int num_features=CLP.named_parameters["num_features"].toInt();
         int clip_size=CLP.named_parameters["clip_size"].toInt();
 
-        if ((input_path.isEmpty())||(detect_path.isEmpty())||(output_path.isEmpty())) {features_usage(); return -1;}
+        if ((input_path.isEmpty())||(detect_path.isEmpty())||(adjacency_path.isEmpty())||(output_path.isEmpty())) {features_usage(); return -1;}
         if (num_features==0) {features_usage(); return -1;}
         if (clip_size==0) {features_usage(); return -1;}
 
-        if (!features(input_path.toLatin1().data(),detect_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size)) {
+        if (!features(input_path.toLatin1().data(),detect_path.toLatin1().data(),adjacency_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size)) {
             printf("Error in features.\n");
             return -1;
         }
@@ -268,6 +369,22 @@ int main(int argc,char *argv[]) {
 
         if (!templates(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),clip_size)) {
             printf("Error in templates.\n");
+            return -1;
+        }
+    }
+    else if (command=="consolidate") {
+        QString cluster_path=CLP.named_parameters["cluster"];
+        QString templates_path=CLP.named_parameters["templates"];
+        QString cluster_out_path=CLP.named_parameters["cluster_out"];
+        QString templates_out_path=CLP.named_parameters["templates_out"];
+        QString load_channels_out_path=CLP.named_parameters["load_channels_out"];
+
+        if ((cluster_path.isEmpty())||(templates_path.isEmpty())) {consolidate_usage(); return -1;}
+        if ((cluster_out_path.isEmpty())||(templates_out_path.isEmpty())) {consolidate_usage(); return -1;}
+        if (load_channels_out_path.isEmpty()) {consolidate_usage(); return -1;}
+
+        if (!consolidate(cluster_path.toLatin1().data(),templates_path.toLatin1().data(),cluster_out_path.toLatin1().data(),templates_out_path.toLatin1().data(),load_channels_out_path.toLatin1().data())) {
+            printf("Error in consolidate.\n");
             return -1;
         }
     }

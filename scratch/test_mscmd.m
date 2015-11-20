@@ -24,19 +24,24 @@ o_detect.inner_window_width=40;
 o_detect.outer_window_width=100000;
 o_detect.threshold=5;
 o_features.num_features=6;
-o_features.clip_size=100;
+o_features.clip_size=150;
 o_cluster=struct;
 o_templates.clip_size=o_features.clip_size;
+
+% locations=get_frank_lab_locations;
+% locations
+% AM=ms_adjacency_matrix(locations,2);
+% writemda(AM,[path0,'/adjacency.mda']);
 
 mscmd_extract([path0,'/ms11d45.dat'],[path0,'/raw.mda'],o_extract);
 mscmd_bandpass_filter([path0,'/raw.mda'],[path0,'/filt.mda'],o_filter);
 mscmd_whiten([path0,'/filt.mda'],[path0,'/filt_white.mda'],o_whiten);
 mscmd_bandpass_filter([path0,'/filt_white.mda'],[path0,'/filt2_white.mda'],o_filter_detect);
 mscmd_detect([path0,'/filt2_white.mda'],[path0,'/detect.mda'],o_detect);
-mscmd_features([path0,'/filt2_white.mda'],[path0,'/detect.mda'],[path0,'/features.mda'],o_features);
+mscmd_features([path0,'/filt_white.mda'],[path0,'/detect.mda'],[path0,'/adjacency.mda'],[path0,'/features.mda'],o_features);
 mscmd_cluster([path0,'/features.mda'],[path0,'/cluster.mda'],o_cluster);
 mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster.mda'],[path0,'/templates.mda'],o_templates);
-mscmd_consolidate([path0,'/cluster.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda']);
+mscmd_consolidate([path0,'/cluster.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
 
 % ch=3;
 % out_path=[path0,sprintf('/sort-%d.mda',ch)];

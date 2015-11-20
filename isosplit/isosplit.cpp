@@ -390,6 +390,7 @@ QVector<int> isosplit(Mda &X) {
 			distances.setValue(-1,label1,label2);
 		}
 	}
+    printf("%d ISO-SPLIT iterations...",num_iterations);
     //remap the labels
     int labels_map[K_initial];
     int kk=1;

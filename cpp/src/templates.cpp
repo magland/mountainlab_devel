@@ -1,16 +1,15 @@
 #include "templates.h"
 #include "mdaio.h"
-#include "mda.h"
+#include "diskreadmda.h"
 
-bool compute_template(int M,int T,float *ret,const char *input_path,const Mda &CC,int k);
+bool compute_template(int M,int T,float *ret,DiskReadMda &X,DiskReadMda &CC,int k);
 void extract_clip(int M,int T,float *ret,MDAIO_HEADER *H,FILE *input_file,int time0);
 
 bool templates(const char *input_path,const char *cluster_path,const char *output_path,int clip_size) {
 
     printf("templates %s %s %s %d...\n",input_path,cluster_path,output_path,clip_size);
 
-
-    Mda CC; CC.read(cluster_path);
+    DiskReadMda CC; CC.setPath(cluster_path);
     int NT=CC.N2();
 
     int K=0,M=0;
@@ -45,10 +44,12 @@ bool templates(const char *input_path,const char *cluster_path,const char *outpu
     H_out.dims[2]=K;
     mda_write_header(&H_out,output_file);
 
+    DiskReadMda X; X.setPath(input_path);
+
     float *buf=(float *)malloc(sizeof(float)*M*clip_size);
     for (int k=1; k<=K; k++) {
         printf("Computing template %d/%d...\n",k,K);
-        if (!compute_template(M,clip_size,buf,input_path,CC,k)) {
+        if (!compute_template(M,clip_size,buf,X,CC,k)) {
             fclose(output_file);
             return false;
         }
@@ -61,19 +62,8 @@ bool templates(const char *input_path,const char *cluster_path,const char *outpu
     return true;
 }
 
-bool compute_template(int M,int T,float *ret,const char *input_path,const Mda &CC,int k) {
-
-    FILE *input_file=fopen(input_path,"rb");
-    if (!input_file) {
-        printf("Unable to open file for reading: %s\n",input_path);
-        return false;
-    }
-
-    MDAIO_HEADER H;
-    mda_read_header(&H,input_file);
-
+bool compute_template(int M,int T,float *ret,DiskReadMda &X,DiskReadMda &CC,int k) {
     double *sum=(double *)malloc(sizeof(double)*M*T);
-    float *buf=(float *)malloc(sizeof(float)*M*T);
     for (int ii=0; ii<M*T; ii++) {
         sum[ii]=0;
     }
@@ -83,34 +73,27 @@ bool compute_template(int M,int T,float *ret,const char *input_path,const Mda &C
         int k0=(int)CC.value(2,ii);
         if (k0==k) {
             int time0=(int)CC.value(1,ii);
-            extract_clip(M,T,buf,&H,input_file,time0);
-            for (int ii=0; ii<M*T; ii++) {
-                sum[ii]+=buf[ii];
+            if ((time0-T/2>=0)&&(time0-T/2+T<=X.N2())) {
+                int jj=0;
+                for (int t=time0-T/2; t<time0-T/2+T; t++) {
+                    for (int m=0; m<M; m++) {
+                        sum[jj]+=X.value(m,t);
+                        jj++;
+                    }
+                }
+                count++;
             }
-            count++;
+        }
+    }
+    printf("cluster %d, count %d\n",k,count);
+
+    if (count>0) {
+        for (int ii=0; ii<M*T; ii++) {
+            ret[ii]=sum[ii]/count;
         }
     }
 
-    for (int ii=0; ii<M*T; ii++) {
-        ret[ii]=sum[ii]/count;
-    }
-
     free(sum);
-    free(buf);
-
-    fclose(input_file);
 
     return true;
-}
-void extract_clip(int M,int T,float *ret,MDAIO_HEADER *H,FILE *input_file,int time0) {
-    for (int ii=0; ii<M*T; ii++) ret[ii]=0;
-    int t1=time0-T/2;
-    int t2=time0-T/2+T-1;
-    int offset=0;
-    if (t1<0) {
-        offset=-t1; t1=0;
-    }
-    if (t2>=H->dims[1]) t2=H->dims[1]-1;
-    fseek(input_file,H->header_size+H->num_bytes_per_entry*t1*M,SEEK_SET);
-    mda_read_float32(&ret[offset*M],H,M*(t2-t1+1),input_file);
 }

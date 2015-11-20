@@ -2,12 +2,12 @@
 #include "mdaio.h"
 #include "pcasolver.h"
 #include "get_principal_components.h"
+#include "diskreadmda.h"
+#include <QDebug>
 
-bool get_header(MDAIO_HEADER *H,const char *path);
-int features_2(int ch,const char *input_path,const char *detect_path,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size);
-float compute_inner_product(int N,float *X,float *Y);
+int features_2(int ch,DiskReadMda &X,DiskReadMda &D,DiskReadMda &A,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size);
 
-bool features(const char *input_path,const char *detect_path,const char *output_path,int num_features,int clip_size) {
+bool features(const char *input_path,const char *detect_path,const char *adjacency_path,const char *output_path,int num_features,int clip_size) {
     printf("features %s %s %s %d %d...\n",input_path,detect_path,output_path,num_features,clip_size);
     FILE *output_file=fopen(output_path,"wb");
     if (!output_file) {
@@ -15,19 +15,11 @@ bool features(const char *input_path,const char *detect_path,const char *output_
         return false;
     }
 
-    MDAIO_HEADER H_input;
-    if (!get_header(&H_input,input_path)) {
-        printf("Error reading %s\n",input_path);
-        fclose(output_file); return false;
-    }
+    DiskReadMda X; X.setPath(input_path);
+    DiskReadMda D; D.setPath(detect_path);
+    DiskReadMda A; A.setPath(adjacency_path);
 
-    MDAIO_HEADER H_detect;
-    if (!get_header(&H_detect,detect_path)) {
-        printf("Error reading %s\n",detect_path);
-        fclose(output_file); return false;
-    }
-
-    int M=H_input.dims[0];
+    int M=X.N1();
 
     // channel, timepoint, feature1, feature2, ..., feature6
     MDAIO_HEADER H_out;
@@ -41,7 +33,7 @@ bool features(const char *input_path,const char *detect_path,const char *output_
     int total_num_events=0;
     for (int ch=1; ch<=M; ch++) {
         printf("ch=%d... ",ch);
-        int num_events=features_2(ch,input_path,detect_path,&H_out,output_file,num_features,clip_size);
+        int num_events=features_2(ch,X,D,A,&H_out,output_file,num_features,clip_size);
         printf("%d events...\n",num_events);
         if (num_events<0) {
             fclose(output_file);
@@ -59,100 +51,91 @@ bool features(const char *input_path,const char *detect_path,const char *output_
     return true;
 }
 
-int features_2(int ch,const char *input_path,const char *detect_path,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size) {
+int features_2(int ch,DiskReadMda &X,DiskReadMda &D,DiskReadMda &A,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size) {
+    int M=X.N1();
+    int N=X.N2();
+    int NT=D.N2();
 
-
-    FILE *input_file=fopen(input_path,"rb");
-    if (!input_file) {
-        printf("Unable to open file for reading: %s\n",input_path);
-        return -1;
+    int M0=0;
+    for (int m=0; m<M; m++) {
+        if (A.value(m,ch-1)) {
+            M0++;
+        }
     }
-    FILE *detect_file=fopen(detect_path,"rb");
-    if (!detect_file) {
-        fclose(input_file);
-        printf("Unable to open file for reading: %s\n",detect_path);
-        return -1;
+    int channels[M0];
+    int mm=0;
+    for (int m=0; m<M; m++) {
+        if (A.value(m,ch-1)) {
+            channels[mm]=m;
+            mm++;
+        }
     }
 
-    MDAIO_HEADER H_input;
-    mda_read_header(&H_input,input_file);
-    MDAIO_HEADER H_detect;
-    mda_read_header(&H_detect,detect_file);
-
-    int M=H_input.dims[0];
-    int NT=H_detect.dims[1];
-
-    float *X=0; // IN THE FUTURE WE CAN USE A SUBSET OF THE DATA TO COMPUTE THE PCA
-    float *components=0;
-    float *buf=(float *)malloc(sizeof(float)*M*clip_size);
-    int N=0;
-
-    for (int pass=1; pass<=3; pass++) {
-        fseek(detect_file,H_detect.header_size,SEEK_SET);
-        int ii=0;
-        for (int i=0; i<NT; i++) {
-            float tmp[2];
-            mda_read_float32(tmp,&H_detect,2,detect_file);
-            if (tmp[0]==ch) {
-                int time0=(int)tmp[1];
-                if ((time0-clip_size/2>=0)&&(time0-clip_size/2+clip_size<=H_input.dims[1])) {
-                    if (pass==2) {
-                        fseek(input_file,H_input.header_size+(M*time0-clip_size/2)*H_input.num_bytes_per_entry,SEEK_SET);
-                        mda_read_float32(&X[M*clip_size*ii],&H_input,M*clip_size,input_file);
+    int num_events=0;
+    for (int i=0; i<NT; i++) {
+        if (D.value(0,i)==ch) {
+            int time0=(int)D.value(1,i);
+            if ((time0-clip_size/2>=0)&&(time0-clip_size/2+clip_size<=N)) {
+                num_events++;
+            }
+        }
+    }
+    if (num_events==0) return 0;
+    float *Y=(float *)malloc(sizeof(float)*M0*clip_size*num_events);
+    int *times=(int *)malloc(sizeof(int)*num_events);
+    int ie=0;
+    for (int i=0; i<NT; i++) {
+        if (D.value(0,i)==ch) {
+            int time0=(int)D.value(1,i);
+            if ((time0-clip_size/2>=0)&&(time0-clip_size/2+clip_size<=N)) {
+                int aa=M0*clip_size*ie;
+                for (int t=0; t<clip_size; t++) {
+                    for (int im=0; im<M0; im++) {
+                        Y[aa]=X.value(channels[im],t+time0-clip_size/2);
+                        aa++;
                     }
-                    if (pass==3) {
-                        fseek(input_file,H_input.header_size+(M*time0-clip_size/2)*H_input.num_bytes_per_entry,SEEK_SET);
-                        mda_read_float32(buf,&H_input,M*clip_size,input_file);
-                        float features[num_features];
-                        for (int cc=0; cc<num_features; cc++) {
-                            features[cc]=compute_inner_product(M*clip_size,buf,&components[M*clip_size*cc]);
-                        }
-                        float cc_tt[2]; cc_tt[0]=ch; cc_tt[1]=time0;
-                        mda_write_float32(cc_tt,H_out,2,output_file);
-                        mda_write_float32(features,H_out,num_features,output_file);
-                    }
-                    ii++;
+                }
+                times[ie]=time0;
+                ie++;
+            }
+        }
+    }
+
+    /*
+    float *components=(float *)malloc(sizeof(float)*M0*clip_size*num_features);
+    get_principal_components(M0*clip_size,num_events,num_features,components,Y);
+    for (int ie=0; ie<num_events; ie++) {
+        float features[num_features];
+        int time0=times[ie];
+        for (int cc=0; cc<num_features; cc++) {
+            float *component=&components[M0*clip_size*cc];
+            float ip=0;
+            for (int t=0; t<clip_size; t++) {
+                for (int im=0; im<M; im++) {
+                    ip+=component[im+M0*t]*Y[im+M0*t+M0*clip_size*ie];
                 }
             }
+            features[cc]=ip;
         }
-        if (pass==1) {
-            N=ii;
-            if (N>0) X=(float *)malloc(sizeof(float)*M*clip_size*N);
-        }
-        if (pass==2) {
-            if (N>0) {
-                // IN THE FUTURE WE CAN USE A SUBSET OF THE DATA TO COMPUTE THE PCA
-                components=(float *)malloc(sizeof(float)*M*clip_size*num_features);
-                get_principal_components(M*clip_size,N,num_features,components,X);
-            }
-        }
+        float cc_tt[2]; cc_tt[0]=ch; cc_tt[1]=time0;
+        mda_write_float32(cc_tt,H_out,2,output_file);
+        mda_write_float32(features,H_out,num_features,output_file);
+    }
+    */
+    float *all_features=(float *)malloc(sizeof(float)*num_features*N);
+    get_principal_components(M0*clip_size,num_events,num_features,all_features,Y);
+    for (int ie=0; ie<num_events; ie++) {
+        int time0=times[ie];
+        float cc_tt[2]; cc_tt[0]=ch; cc_tt[1]=time0;
+        mda_write_float32(cc_tt,H_out,2,output_file);
+        mda_write_float32(&all_features[num_features*ie],H_out,num_features,output_file);
     }
 
-    free(buf);
-    if (components) free(components);
-    if (X) free(X);
+    free(all_features);
 
-    fclose(input_file);
-    fclose(detect_file);
+    free(Y);
+    //free(components);
 
-    return N;
+    return num_events;
 }
 
-bool get_header(MDAIO_HEADER *H,const char *path) {
-    FILE *file=fopen(path,"rb");
-    if (!file) {
-        printf("Unable to open file for reading num channels: %s\n",path);
-        return false;
-    }
-    mda_read_header(H,file);
-    fclose(file);
-    return true;
-}
-
-float compute_inner_product(int N,float *X,float *Y) {
-    float ret=0;
-    for (int i=0; i<N; i++) {
-        ret+=X[i]*Y[i];
-    }
-    return ret;
-}

@@ -9,6 +9,8 @@ MOC_DIR=../build
 TARGET = mountainsort
 TEMPLATE = app
 
+LIBS += -larmadillo -lpca -L/usr/local/lib -Wl,-rpath,$(DEFAULT_LIB_INSTALL_PATH)
+
 HEADERS += \
     bandpass_filter.h \
     usagetracking.h \
@@ -22,7 +24,9 @@ HEADERS += \
     features0.h \
     get_principal_components.h \
     cluster.h \
-    templates.h
+    templates.h \
+    diskreadmda.h \
+    consolidate.h
 SOURCES += \
 mountainsortmain.cpp \
     bandpass_filter.cpp \
@@ -37,7 +41,9 @@ mountainsortmain.cpp \
     features0.cpp \
     get_principal_components.cpp \
     cluster.cpp \
-    templates.cpp
+    templates.cpp \
+    diskreadmda.cpp \
+    consolidate.cpp
 
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit

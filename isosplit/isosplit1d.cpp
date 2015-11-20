@@ -257,14 +257,14 @@ bool read_isosplit_calibration(int N,QVector<double> &avg,QVector<double> &stdev
 	int N1=s_calibration_Ns[ii];
 	int N2=s_calibration_Ns[ii+1];
 	if (N1==N) N2=N1;
-	if (!s_calibration_files.contains(N1)) {
+    if (!s_calibration_files.contains(N1)) {
 		load_calibration_file(N1);
         if (!s_calibration_files.contains(N1)) {printf ("Error: unable to find calibration file (N=%d)\n",N1); return false;}
-	}
-	if (!s_calibration_files.contains(N2)) {
+    }
+    if (!s_calibration_files.contains(N2)) {
 		load_calibration_file(N2);
         if (!s_calibration_files.contains(N2)) {printf ("Error: unable to find calibration file (N=%d)\n",N2); return false;}
-	}
+    }
 	if (N1==N2) {
 		calibration_file *CF=&s_calibration_files[N1];
 		avg=CF->avg; stdev=CF->stdev; scores=CF->scores;
