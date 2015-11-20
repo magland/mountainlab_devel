@@ -26,7 +26,8 @@ HEADERS += \
     cluster.h \
     templates.h \
     diskreadmda.h \
-    consolidate.h
+    consolidate.h \
+    split_clusters.h
 SOURCES += \
 mountainsortmain.cpp \
     bandpass_filter.cpp \
@@ -43,7 +44,8 @@ mountainsortmain.cpp \
     cluster.cpp \
     templates.cpp \
     diskreadmda.cpp \
-    consolidate.cpp
+    consolidate.cpp \
+    split_clusters.cpp
 
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit
