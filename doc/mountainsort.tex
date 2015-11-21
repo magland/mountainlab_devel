@@ -1,0 +1,55 @@
+%%%%&latex
+\documentclass[10pt]{article}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{enumerate}
+\usepackage{url}
+\usepackage{amsfonts}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+%\pdfminorversion=4
+% NOTE: To produce blinded version, replace "0" with "1" below.
+
+\begin{document}
+
+\def\spacingset#1{\renewcommand{\baselinestretch}%
+{#1}\small\normalsize} \spacingset{1}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\title{\bf MountainSort User Guide}
+\author{Jeremy F. Magland\hspace{.2cm}\\
+  Simons Center for Data Analysis\\
+  }
+\maketitle
+
+\bigskip
+\begin{abstract}
+This is an overview of the MountainSort software for automated spike sorting.
+\end{abstract}
+
+\vfill
+
+\newpage
+
+\section {Introduction}
+
+Our objectives are threefold. First we will implement an automated spike sorting algorithm requiring minimal user intervention. Second, we will provide interactive visualization tools for exploring the output of this and other spike sorting softwares. Finally, we will provide an algorithm-independent framework for objectively validating spike sorting performance by reporting a reliability metric for each detected neuron.
+
+\section {Sorting automation}
+
+Manual human intervention as part of a spike sorting pipeline is problematic for a number of reasons. The workload may not be practical for a single operator since hundreds of large datasets can be acquired over the course of a few days. Operator bias becomes an issue if the task is shared among several users or the sorting methods of a single user drift over time. Assessing reproducibility or sorting reliability is near impossible since the user cannot be asked to supervise processing of the same dataset multiple times in an unbiased manner. Finally, human-supervised processing cannot easily be transferred between labs and is not combatible with objective comparisons between alternative methods. 
+
+With that said, it is not reasonable to expect a single algorithm to work for all datasets. The experimental setup, noise properties, and hardware-specific artifacts vary significantly between laboratories. We therefore consider two distinct steps in the overall processing pipeline: (a) preprocessing and (b) spike sorting. 
+
+The input to the preprocessing stage is an $M\times N$ array $Y$ of raw data collected over $M$ timepoints and $N$ electrode channels. The preprocessing then applies bandpass filters, prewhitening, or other techniques to produce three $M\times N$ data arrays $Y_b$, $Y_d$, and $Y_s$. The first is simply a bandpass-filtered version of the data used for visualization of the results. The second, $Y_d$, is used for spike detection whereas $Y_s$ is used for the clustering and fitting stages. The same data can be used for the latter two arrays, although it may be desirable to use a more agressive filter for detection since the fine details of the spikes are not needed at that stage.
+
+A few basic parameters need to be input into the main sorting stage. An integer $T_w$ specifies the size of a time window (in time steps), which should be large enough to contain any single spike event. A second integer $T_m$ represents the minimum separation (in time points) between events on the same channel during the detection and clustering stage (note that overlapping events are not handled until the fitting stage). A real number $\sigma_\text{thresh}$ is the threshold used during event detection in terms of the number of standard deviations above or below the mean.
+
+If a multi-electrode array is used and the user wishes to provide information about the geometry of the detectors, an $M\times M$ binary adjacency matrix may be supplied to specify the neighbors to each channel.
+
+
+
+\end{document}
