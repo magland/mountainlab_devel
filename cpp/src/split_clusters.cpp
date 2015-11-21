@@ -4,11 +4,13 @@
 #include "get_principal_components.h"
 #include "isosplit.h"
 
+QList<int> get_times(DiskReadMda &C,int k);
 int get_K(DiskReadMda &C);
 void extract_clips(Mda &clips,DiskReadMda &X,QList<int> &times,int clip_size);
 void compute_features(Mda &features,Mda &clips,int num_features);
+int get_max_k(const QVector<int> &labels);
 
-bool cluster(const char *input_path,const char *cluster_path,const char *output_path,int num_features,int clip_size) {
+bool split_clusters(const char *input_path,const char *cluster_path,const char *output_path,int num_features,int clip_size) {
     DiskReadMda X; X.setPath(input_path);
     DiskReadMda C; C.setPath(cluster_path);
     Mda C2;
@@ -18,29 +20,55 @@ bool cluster(const char *input_path,const char *cluster_path,const char *output_
         C2.setValue(C.value(1,i),1,i);
     }
 
-    int M=X.N1();
     int K=get_K(C);
 
     int kk=1;
     for (int k=1; k<=K; k++) {
+		printf("k=%d...\n",k);
         QList<int> times=get_times(C,k);
         Mda clips;
+		printf("extract clips...\n");
 		extract_clips(clips,X,times,clip_size);
         Mda features;
+		printf("compute features...\n");
 		compute_features(features,clips,num_features);
+		printf("isosplit...\n");
         QVector<int> labels0=isosplit(features);
+		printf("setting...\n");
         int K0=get_max_k(labels0);
-        for (aa=1; aa<=K0; aa++) {
-            int jjj=0;
-            for (int bb=0; bb<C.N2(); bb++) {
-                if (C.value(2,bb)==k) {
-                   C2.setValue(kk,2,jjj);
-                   jjj++;
-                }
-            }
-            kk++;
-        }
+		if (K0>1) printf("%d clusters\n",K0);
+		else printf("\n");
+		int jjj=0;
+		for (int bb=0; bb<C.N2(); bb++) {
+			if (C.value(2,bb)==k) {
+			   C2.setValue(kk+labels0[jjj]-1,2,bb);
+			   jjj++;
+			}
+		}
+		kk+=K0;
     }
+
+	C2.write(output_path);
+
+	return true;
+}
+
+int get_max_k(const QVector<int> &labels) {
+	int ret=0;
+	for (int i=0; i<labels.count(); i++) {
+		if (labels[i]>ret) ret=labels[i];
+	}
+	return ret;
+}
+
+QList<int> get_times(DiskReadMda &C,int k) {
+	QList<int> times;
+	for (int i=0; i<C.N2(); i++) {
+		if (C.value(2,i)==k) {
+			times << (int)C.value(1,i);
+		}
+	}
+	return times;
 }
 
 int get_K(DiskReadMda &C) {
@@ -54,10 +82,10 @@ int get_K(DiskReadMda &C) {
 
 void extract_clips(Mda &clips,DiskReadMda &X,QList<int> &times,int clip_size) {
 	int M=X.N1();
-	clips.allocate(M,clip_size,);
+	clips.allocate(M,clip_size,times.count());
 	int tt1=-clip_size/2;
-	int tt2=tt1+clip_size-1;
 	for (int i=0; i<times.count(); i++) {
+		int t0=times[i];
 		for (int t=0; t<clip_size; t++) {
 			for (int m=0; m<M; m++) {
 				clips.setValue(X.value(m,t0+t+tt1),m,t,i);
@@ -72,5 +100,6 @@ void compute_features(Mda &features,Mda &clips,int num_features) {
 	int T=clips.N2();
 	int num=clips.N3();
 	features.allocate(num_features,num);
-	get_principal_components(M*T,num,num_features,features.dataPtr(),clips.dataPtr());
+
+	get_pca_features(M*T,num,num_features,features.dataPtr(),clips.dataPtr());
 }

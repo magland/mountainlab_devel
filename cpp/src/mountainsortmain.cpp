@@ -12,8 +12,10 @@
 #include "detect.h"
 #include "features0.h"
 #include "cluster.h"
+#include "split_clusters.h"
 #include "templates.h"
 #include "consolidate.h"
+#include "get_principal_components.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -74,6 +76,15 @@ void register_processors(ProcessTracker &PT) {
         P.version="0.11";
         PT.registerProcessor(P);
     }
+	{
+		PTProcessor P;
+		P.command="split_clusters";
+		P.input_file_pnames << "input";
+		P.input_file_pnames << "cluster";
+		P.output_file_pnames << "output";
+		P.version="0.1";
+		PT.registerProcessor(P);
+	}
     {
         PTProcessor P;
         P.command="templates";
@@ -122,6 +133,10 @@ void features_usage() {
 
 void cluster_usage() {
     printf("mountainsort cluster --input=in.mda --output=out.mda\n");
+}
+
+void split_clusters_usage() {
+	printf("mountainsort split_clusters --input=in.mda --cluster=cluster.mda --output=out.mda --num_features=3 --clip_size=100\n");
 }
 
 void templates_usage() {
@@ -209,15 +224,48 @@ void test_pca_2() {
     qDebug() << prinvec4[0] << prinvec4[1] << prinvec4[2] << prinvec4[3] << prinvec4[4] << prinvec4[5];
 
 
+	int ncomp=4;
+	double *features=(double *)malloc(sizeof(double)*ncomp*6);
+	double *data=(double *)malloc(sizeof(double)*nvar*6);
+	int ii=0;
+	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record1[jj];
+	ii+=nvar;
+	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record2[jj];
+	ii+=nvar;
+	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record3[jj];
+	ii+=nvar;
+	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record4[jj];
+	ii+=nvar;
+	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record5[jj];
+	ii+=nvar;
+	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record6[jj];
+	ii+=nvar;
+	get_pca_features(nvar,6,ncomp,features,data);
+	printf("@@@@@@@@@@@@@@@@@@@@@@\n");
+	for (int n=0; n<6; n++) {
+		for (int m=0; m<nvar; m++) {
+			printf("%g, ",data[m+nvar*n]);
+		}
+		printf("\n");
+	}
+	printf("@@@@@@@@@@@@@@@@@@@@@@\n");
+	for (int k=0; k<ncomp; k++) {
+		for (int n=0; n<6; n++) {
+			printf("%g, ",features[k+ncomp*n]);
+		}
+		printf("\n");
+	}
+	free(features);
+	free(data);
 }
 
 int main(int argc,char *argv[]) {
 
 	QCoreApplication app(argc,argv); //important for qApp->applicationDirPath() in processtracker
 
-//    test_armadillo();
-//    test_pca_2();
-//    return 0;
+//	test_armadillo();
+//	test_pca_2();
+//	return 0;
 
 	CLParams CLP;
 	QStringList required;
@@ -358,6 +406,22 @@ int main(int argc,char *argv[]) {
             return -1;
         }
     }
+	else if (command=="split_clusters") {
+		QString input_path=CLP.named_parameters["input"];
+		QString cluster_path=CLP.named_parameters["cluster"];
+		QString output_path=CLP.named_parameters["output"];
+		int num_features=CLP.named_parameters["num_features"].toInt();
+		int clip_size=CLP.named_parameters["clip_size"].toInt();
+
+		if ((input_path.isEmpty())||(cluster_path.isEmpty())||(output_path.isEmpty())) {cluster_usage(); return -1;}
+		if (num_features==0) {cluster_usage(); return -1;}
+		if (clip_size==0) {cluster_usage(); return -1;}
+
+		if (!split_clusters(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size)) {
+			printf("Error in cluster.\n");
+			return -1;
+		}
+	}
     else if (command=="templates") {
         QString input_path=CLP.named_parameters["input"];
         QString cluster_path=CLP.named_parameters["cluster"];

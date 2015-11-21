@@ -31,16 +31,12 @@ bool features(const char *input_path,const char *detect_path,const char *adjacen
     mda_write_header(&H_out,output_file);
 
     int total_num_events=0;
-    for (int ch=1; ch<=M; ch++) {
-        printf("ch=%d... ",ch);
-        int num_events=features_2(ch,X,D,A,&H_out,output_file,num_features,clip_size);
-        printf("%d events...\n",num_events);
-        if (num_events<0) {
-            fclose(output_file);
-            return false;
-        }
-        total_num_events+=num_events;
-    }
+	for (int ch=1; ch<=M; ch++) {
+		printf("ch=%d... ",ch);
+		int num_events=features_2(ch,X,D,A,&H_out,output_file,num_features,clip_size);
+		printf("%d events...\n",num_events);
+		total_num_events+=num_events;
+	}
 
     H_out.dims[1]=total_num_events;
     fseek(output_file,0,SEEK_SET);
@@ -84,22 +80,22 @@ int features_2(int ch,DiskReadMda &X,DiskReadMda &D,DiskReadMda &A,MDAIO_HEADER 
     float *Y=(float *)malloc(sizeof(float)*M0*clip_size*num_events);
     int *times=(int *)malloc(sizeof(int)*num_events);
     int ie=0;
-    for (int i=0; i<NT; i++) {
-        if (D.value(0,i)==ch) {
-            int time0=(int)D.value(1,i);
-            if ((time0-clip_size/2>=0)&&(time0-clip_size/2+clip_size<=N)) {
-                int aa=M0*clip_size*ie;
-                for (int t=0; t<clip_size; t++) {
-                    for (int im=0; im<M0; im++) {
-                        Y[aa]=X.value(channels[im],t+time0-clip_size/2);
-                        aa++;
-                    }
-                }
-                times[ie]=time0;
-                ie++;
-            }
-        }
-    }
+	for (int i=0; i<NT; i++) {
+		if (D.value(0,i)==ch) {
+			int time0=(int)D.value(1,i);
+			if ((time0-clip_size/2>=0)&&(time0-clip_size/2+clip_size<=N)) {
+				int aa=M0*clip_size*ie;
+				for (int t=0; t<clip_size; t++) {
+					for (int im=0; im<M0; im++) {
+						Y[aa]=X.value(channels[im],t+time0-clip_size/2);
+						aa++;
+					}
+				}
+				times[ie]=time0;
+				ie++;
+			}
+		}
+	}
 
     /*
     float *components=(float *)malloc(sizeof(float)*M0*clip_size*num_features);
@@ -123,7 +119,7 @@ int features_2(int ch,DiskReadMda &X,DiskReadMda &D,DiskReadMda &A,MDAIO_HEADER 
     }
     */
     float *all_features=(float *)malloc(sizeof(float)*num_features*N);
-    get_principal_components(M0*clip_size,num_events,num_features,all_features,Y);
+	get_pca_features(M0*clip_size,num_events,num_features,all_features,Y);
     for (int ie=0; ie<num_events; ie++) {
         int time0=times[ie];
         float cc_tt[2]; cc_tt[0]=ch; cc_tt[1]=time0;

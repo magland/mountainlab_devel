@@ -1,5 +1,5 @@
 %%%%&latex
-\documentclass[10pt]{article}
+\documentclass[hidelinks,10pt]{article}
 \usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{enumerate}
@@ -7,6 +7,10 @@
 \usepackage{amsfonts}
 \usepackage{algpseudocode}
 \usepackage{algorithm}
+
+\usepackage{listings}
+\usepackage{color}
+\usepackage{hyperref}
 
 %\pdfminorversion=4
 % NOTE: To produce blinded version, replace "0" with "1" below.
@@ -21,7 +25,7 @@
 
 \title{\bf MountainSort User Guide}
 \author{Jeremy F. Magland\hspace{.2cm}\\
-  Simons Center for Data Analysis\\
+  Center for Computational Biology, Simons Foundation\\
   }
 \maketitle
 
@@ -50,6 +54,58 @@ A few basic parameters need to be input into the main sorting stage. An integer 
 
 If a multi-electrode array is used and the user wishes to provide information about the geometry of the detectors, an $M\times M$ binary adjacency matrix may be supplied to specify the neighbors to each channel.
 
+\section {Installation}
+
+\definecolor{color1}{rgb}{0.558, 0.188, 0.3}
+
+The core MountainSort software is written in Qt5/C++. It requires Qt5, Armadillo, and libpca.
+
+\section {Linux/Ubuntu Installation}
+
+\noindent
+\textbf{Install Qt5}.
+
+{\color{color1}
+\begin{lstlisting}[language=bash]
+sudo apt-add-repository ppa:ubuntu-sdk-team/ppa
+sudo apt-get update
+sudo apt-get install qtdeclarative5-dev
+sudo apt-get install qt5-default qtbase5-dev qtscript5-dev make g++
+\end{lstlisting}}
+
+\noindent
+\textbf{Install cmake and git}.
+{\color{color1}
+\begin{lstlisting}[language=bash]
+sudo apt-get install cmake git
+\end{lstlisting}}
+
+\noindent
+\textbf{Install armadillo}. Download and extract the stable armadillo source code from here:
+
+\href{http://arma.sourceforge.net/download.html}{http://arma.sourceforge.net/download.html}
+
+{\color{color1}
+\begin{lstlisting}[language=bash]
+sudo apt-get install liblapack-dev
+cd armadillo-*
+./configure
+make
+sudo make install
+\end{lstlisting}}
+
+\noindent
+\textbf{Install libpca}. Download and extract the libpca source code from here:
+
+\href{http://sourceforge.net/projects/libpca/}{http://sourceforge.net/projects/libpca/}
+
+{\color{color1}
+\begin{lstlisting}[language=bash]
+cd libpca-*
+./configure
+make
+sudo make install
+\end{lstlisting}}
 
 
 \end{document}
