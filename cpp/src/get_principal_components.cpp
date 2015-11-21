@@ -1,52 +1,6 @@
 #include "get_principal_components.h"
-//Depends on libpca which depends on armadillo
-#include "pca.h"
 #include <QDebug>
 
-#include "pcasolver.h"
-void get_principal_components_2(int M,int N,int ncomp,float *components,float *data) {
-    PCASolver PCA;
-    PCA.setVectors(M,N,data);
-    PCA.setComponentCount(ncomp);
-    PCA.setNumIterations(100);
-    PCA.solve();
-    float *components0=PCA.components();
-    for (int i=0; i<ncomp*M; i++) {
-        components[i]=components0[i];
-    }
-}
-
-void get_pca_features_old(int M,int N,int ncomp,float *features,float *data) {
-    const int nvar = M;
-    stats::pca pca(nvar);
-
-    for (int i=0; i<N; i++) {
-        std::vector<double> V;
-        for (int m=0; m<M; m++) {
-            V.push_back(data[m+M*i]);
-        }
-        pca.add_record(V);
-    }
-
-    pca.solve();
-
-    for (int cc=0; cc<ncomp; cc++) {
-        std::vector<double> prinvec = pca.get_principal(cc);
-        for (int n=0; n<N; n++) {
-            float val=prinvec[n];
-			features[cc+n*ncomp]=val;
-        }
-    }
-}
-
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
-/////////////////////////////////////////////////////////////////////////////
 
 void make_random_vector(int M,double *v) {
 	for (int i=0; i<M; i++) v[i]=(qrand()*1.0/RAND_MAX)*2-1;
@@ -124,6 +78,7 @@ void do_pca(int M,int N,int ncomp,double *components,double *features,double *da
 	}
 }
 
+/*
 void get_pca_features_old(int M,int N,int ncomp,double *features,double *data) {
 	const int nvar = M;
 	stats::pca pca(nvar);
@@ -146,6 +101,7 @@ void get_pca_features_old(int M,int N,int ncomp,double *features,double *data) {
 		}
 	}
 }
+*/
 
 
 void get_pca_components(int M, int N, int ncomp, float *components, float *data)
@@ -178,3 +134,59 @@ void get_pca_features(int M, int N, int ncomp, double *features, double *data)
 	do_pca(M,N,ncomp,components2,features,data);
 	free(components2);
 }
+
+
+/*
+
+
+
+
+//Depends on libpca which depends on armadillo
+#include "pca.h"
+
+#include "pcasolver.h"
+void get_principal_components_2(int M,int N,int ncomp,float *components,float *data) {
+    PCASolver PCA;
+    PCA.setVectors(M,N,data);
+    PCA.setComponentCount(ncomp);
+    PCA.setNumIterations(100);
+    PCA.solve();
+    float *components0=PCA.components();
+    for (int i=0; i<ncomp*M; i++) {
+        components[i]=components0[i];
+    }
+}
+
+void get_pca_features_old(int M,int N,int ncomp,float *features,float *data) {
+    const int nvar = M;
+    stats::pca pca(nvar);
+
+    for (int i=0; i<N; i++) {
+        std::vector<double> V;
+        for (int m=0; m<M; m++) {
+            V.push_back(data[m+M*i]);
+        }
+        pca.add_record(V);
+    }
+
+    pca.solve();
+
+    for (int cc=0; cc<ncomp; cc++) {
+        std::vector<double> prinvec = pca.get_principal(cc);
+        for (int n=0; n<N; n++) {
+            float val=prinvec[n];
+			features[cc+n*ncomp]=val;
+        }
+    }
+}
+
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////
+
+*/

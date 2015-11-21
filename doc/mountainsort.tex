@@ -56,14 +56,14 @@ If a multi-electrode array is used and the user wishes to provide information ab
 
 \section {Installation}
 
-\definecolor{color1}{rgb}{0.558, 0.188, 0.3}
+\definecolor{color1}{rgb}{0.258, 0.038, 0.06}
 
-The core MountainSort software is written in Qt5/C++. It requires Qt5, Armadillo, and libpca.
+The core MountainSort software is written in Qt5/C++. It requires Qt5 development environment to be installed on your system. For now MountainSort runs on Linux. It should work on Mac without too much trouble. Windows is a pain.
 
-\section {Linux/Ubuntu Installation}
+\subsection {Linux/Ubuntu Installation}
 
 \noindent
-\textbf{Install Qt5}.
+\textbf{Install Qt5}
 
 {\color{color1}
 \begin{lstlisting}[language=bash]
@@ -74,38 +74,54 @@ sudo apt-get install qt5-default qtbase5-dev qtscript5-dev make g++
 \end{lstlisting}}
 
 \noindent
-\textbf{Install cmake and git}.
+\textbf{Download and compile MountainSort}
 {\color{color1}
 \begin{lstlisting}[language=bash]
-sudo apt-get install cmake git
+sudo apt-get install git
+git clone https://github.com/magland/mountainsort.git
+cd mountainsort
+cd cpp/src
+qmake
+make -j 10
+cd ../../mountainview/src
+qmake
+make -j 10
+cd ../..
 \end{lstlisting}}
 
-\noindent
-\textbf{Install armadillo}. Download and extract the stable armadillo source code from here:
+%\noindent
+%\textbf{Install cmake and git}.
+%{\color{color1}
+%\begin{lstlisting}[language=bash]
+%sudo apt-get install cmake git
+%\end{lstlisting}}
 
-\href{http://arma.sourceforge.net/download.html}{http://arma.sourceforge.net/download.html}
+%\noindent
+%\textbf{Install armadillo}. Download and extract the stable armadillo source code from here:
 
-{\color{color1}
-\begin{lstlisting}[language=bash]
-sudo apt-get install liblapack-dev
-cd armadillo-*
-./configure
-make
-sudo make install
-\end{lstlisting}}
+%\href{http://arma.sourceforge.net/download.html}{http://arma.sourceforge.net/download.html}
 
-\noindent
-\textbf{Install libpca}. Download and extract the libpca source code from here:
+%{\color{color1}
+%\begin{lstlisting}[language=bash]
+%sudo apt-get install liblapack-dev
+%cd armadillo-*
+%./configure
+%make
+%sudo make install
+%\end{lstlisting}}
 
-\href{http://sourceforge.net/projects/libpca/}{http://sourceforge.net/projects/libpca/}
+%\noindent
+%\textbf{Install libpca}. Download and extract the libpca source code from here:
 
-{\color{color1}
-\begin{lstlisting}[language=bash]
-cd libpca-*
-./configure
-make
-sudo make install
-\end{lstlisting}}
+%\href{http://sourceforge.net/projects/libpca/}{http://sourceforge.net/projects/libpca/}
+
+%{\color{color1}
+%\begin{lstlisting}[language=bash]
+%cd libpca-*
+%./configure
+%make
+%sudo make install
+%\end{lstlisting}}
 
 
 \end{document}

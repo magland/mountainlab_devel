@@ -9,7 +9,8 @@ MOC_DIR=../build
 TARGET = mountainsort
 TEMPLATE = app
 
-LIBS += -larmadillo -lpca -L/usr/local/lib -Wl,-rpath,$(DEFAULT_LIB_INSTALL_PATH)
+# we want to avoid using any 3rdparty libraries -- this is important! Because ease of installation is critical!
+#LIBS += -larmadillo -lpca -L/usr/local/lib -Wl,-rpath,$(DEFAULT_LIB_INSTALL_PATH)
 
 HEADERS += \
     bandpass_filter.h \

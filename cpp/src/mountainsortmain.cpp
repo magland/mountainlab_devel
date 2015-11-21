@@ -147,6 +147,8 @@ void consolidate_usage() {
     printf("mountainsort consolidate --cluster=cluster.mda --templates=templates.mda --cluster_out=cluster_out.mda --templates_out=templates_out.mda --load_channels_out=load_channels.mda\n");
 }
 
+/*
+
 #include "armadillo"
 void test_armadillo() {
     std::complex<double> x=0.1;
@@ -258,6 +260,7 @@ void test_pca_2() {
 	free(features);
 	free(data);
 }
+*/
 
 int main(int argc,char *argv[]) {
 
