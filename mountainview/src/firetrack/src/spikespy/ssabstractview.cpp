@@ -98,7 +98,7 @@ void SSAbstractViewUnderlayPainter::paint(QPainter *painter) {
 	double selected_xmin=SR.x;
 	double selected_xmax=SR.y;
 
-	//current location
+        //current location
 	if (selected_xmin < 0) {
 		Vec2 p0 = q->plot()->coordToPix(vec2(q->currentX(), 0)); Q_UNUSED(p0);
 		Vec2 p1 = q->plot()->coordToPix(vec2(q->currentX(), 0));

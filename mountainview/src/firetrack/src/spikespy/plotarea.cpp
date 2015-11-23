@@ -142,7 +142,7 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
 				QRect RR(x0-50,m_plot_rect.bottom(),100,15);
 				marker_x_positions.insert(x0);
 				float tmp=qMin(200.0F,(pixels_per_marker-1)*1.0F/6*255);
-				P->setPen(QPen(QColor(255-tmp,255-tmp,255-tmp),0));
+                                P->setPen(QPen(QColor(255-tmp,255-tmp,255-tmp),0));
 				P->drawText(RR,Qt::AlignCenter|Qt::AlignVCenter,m_marker_labels[l0]);
 			}
 		}

@@ -20,6 +20,8 @@ public:
 	void setLineColor(const QColor &col);
     void setTitle(const QString &title);
 
+	void setHighlighted(bool val);
+
 protected:
 	void paintEvent(QPaintEvent *evt);
     void mousePressEvent(QMouseEvent *evt);

@@ -257,8 +257,6 @@ QList<int> get_template_sort_order(const Mda &X) {
 		values << sum1;
 	}
 	QList<int> inds=get_sort_order(values);
-	qDebug() << values;
-	qDebug() << inds;
 	return inds;
 }
 

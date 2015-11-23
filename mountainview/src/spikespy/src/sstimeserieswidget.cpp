@@ -153,7 +153,7 @@ void SSTimeSeriesWidget::addView(SSAbstractView *V) {
 
 void SSTimeSeriesWidget::setClipData(const Mda &X)
 {
-    d->m_clip_data=X;
+	d->m_clip_data=X;
 }
 
 void SSTimeSeriesWidgetPrivate::set_info(QString txt) {
@@ -327,7 +327,6 @@ void SSTimeSeriesWidget::slot_extract_clips()
 		SSController CC;
 		SSTimeSeriesWidget *WWW=(SSTimeSeriesWidget *)CC.createTimeSeriesWidget();
 		SSTimeSeriesView *VVV=(SSTimeSeriesView *)CC.createTimeSeriesView();
-        qDebug() << "Loading: " << out_path;
 		VVV->setData((DiskArrayModel *)CC.loadArray(out_path),true);
 		VVV->setProperty("data_path",out_path); //a hack!
 		VVV->setProperty("TM_data_path",out_path_TM); //a hack!

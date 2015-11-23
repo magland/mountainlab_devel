@@ -16,6 +16,7 @@
 #include "get_command_line_params.h"
 #include "diskarraymodel.h"
 #include "histogramview.h"
+#include "mvoverviewwidget.h"
 
 /*
  * TO DO:
@@ -74,8 +75,6 @@ int main(int argc, char *argv[]) {
 	QString working_path=CLP.named_parameters.value("working_path");
 	QString output_path=CLP.named_parameters.value("output_path");
 
-    qDebug() << CLP.named_parameters;
-
     QString templates_path=CLP.named_parameters.value("templates");
     QString templates_whitened_path=CLP.named_parameters.value("templates-whitened");
     QString locations_path=CLP.named_parameters.value("locations");
@@ -90,11 +89,11 @@ int main(int argc, char *argv[]) {
     if (!QFile::exists(templates_whitened_path)) templates_whitened_path="";
     if (!QFile::exists(raw_whitened_path)) raw_whitened_path="";
 
-    qDebug() << templates_path;
-
-	MountainViewWidget W;
+	//MountainViewWidget W;
+	MVOverviewWidget W;
     W.show();
-    W.move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(300,300));
+	W.move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
+	W.resize(1800,1200);
     if (!templates_path.isEmpty()) {
         Mda X; X.read(templates_path);
         W.setTemplates(X);
@@ -150,6 +149,7 @@ int main(int argc, char *argv[]) {
     {
         W.setCrossCorrelogramsPath(cross_correlograms_path);
     }
+	W.updateWidgets();
 
 
 	int ret=a.exec();

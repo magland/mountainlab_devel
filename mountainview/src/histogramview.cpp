@@ -18,6 +18,7 @@ public:
 	int m_margin_left,m_margin_right,m_margin_top,m_margin_bottom;
     QString m_title;
     bool m_hovered;
+	bool m_highlighted;
 
 	void update_bin_counts();
 	QPointF coord2pix(QPointF pt);
@@ -36,8 +37,9 @@ HistogramView::HistogramView(QWidget *parent) : QWidget(parent)
 	d->m_max_bin_count=0;
 	d->m_num_bins=0;
     d->m_hovered_bin_index=-1;
-	d->m_margin_left=d->m_margin_right=d->m_margin_top=d->m_margin_bottom=20;
+	d->m_margin_left=d->m_margin_right=d->m_margin_top=d->m_margin_bottom=5;
     d->m_hovered=false;
+	d->m_highlighted=false;
 
 	d->m_fill_color=QColor(100,100,150);
 	d->m_line_color=QColor(150,150,150);
@@ -117,7 +119,16 @@ void HistogramView::setLineColor(const QColor &col)
 void HistogramView::setTitle(const QString &title)
 {
     d->m_title=title;
-    update();
+	update();
+}
+
+void HistogramView::setHighlighted(bool val)
+{
+	if (d->m_highlighted!=val) {
+		d->m_highlighted=val;
+		this->update();
+	}
+
 }
 
 QRectF make_rect(QPointF p1,QPointF p2) {
@@ -140,20 +151,19 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 	Q_UNUSED(evt)
 	QPainter painter(this);
 
-    if (d->m_hovered) {
-        QRect R(0,0,width(),height());
+	QRect R(0,0,width(),height());
+	if ((d->m_hovered)&&(!d->m_highlighted)) {
         painter.fillRect(R,QColor(0,0,0,30));
     }
-
-    if (!d->m_title.isEmpty()) {
-        int text_height=12;
-        QRect R(d->m_margin_left,5,this->width()-d->m_margin_left-d->m_margin_right,text_height);
-        QFont font=painter.font();
-        font.setFamily("Arial");
-        font.setPixelSize(text_height);
-        painter.setFont(font);
-        painter.drawText(R,d->m_title,Qt::AlignLeft|Qt::AlignTop);
-    }
+	else if ((!d->m_hovered)&&(d->m_highlighted)) {
+		painter.setPen(QPen(Qt::darkBlue,10));
+		painter.drawRect(R);
+	}
+	else if ((d->m_hovered)&&(d->m_highlighted)) {
+		painter.setPen(QPen(Qt::darkBlue,10));
+		painter.drawRect(R);
+		painter.fillRect(R,QColor(0,0,0,30));
+	}
 
 	if (d->m_update_required) {
 		d->update_bin_counts();
@@ -172,6 +182,17 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 		painter.setPen(d->m_line_color);
 		painter.drawRect(R);
     }
+
+	if (!d->m_title.isEmpty()) {
+		int text_height=12;
+		QRect R(d->m_margin_left,5,this->width()-d->m_margin_left-d->m_margin_right,text_height);
+		QFont font=painter.font();
+		font.setFamily("Arial");
+		font.setPixelSize(text_height);
+		painter.setFont(font);
+		painter.setPen(QColor(150,60,60));
+		painter.drawText(R,d->m_title,Qt::AlignLeft|Qt::AlignTop);
+	}
 }
 
 void HistogramView::mousePressEvent(QMouseEvent *evt)

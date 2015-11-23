@@ -12,9 +12,15 @@ TARGET = mountainview
 TEMPLATE = app
 
 HEADERS += mountainviewwidget.h \
-    histogramview.h
+    histogramview.h \
+    mvoverviewwidget.h \
+    mvstatisticswidget.h \
+    mvcrosscorrelogramswidget.h
 SOURCES += mountainviewmain.cpp mountainviewwidget.cpp \
-    histogramview.cpp
+    histogramview.cpp \
+    mvoverviewwidget.cpp \
+    mvstatisticswidget.cpp \
+    mvcrosscorrelogramswidget.cpp
 
 HEADERS += get_command_line_params.h
 SOURCES += get_command_line_params.cpp
