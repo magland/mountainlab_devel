@@ -4,8 +4,9 @@
 #include "get_principal_components.h"
 #include "diskreadmda.h"
 #include <QDebug>
+#include "mda.h"
 
-int features_2(int ch,DiskReadMda &X,DiskReadMda &D,DiskReadMda &A,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size);
+int features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size);
 
 bool features(const char *input_path,const char *detect_path,const char *adjacency_path,const char *output_path,int num_features,int clip_size) {
     printf("features %s %s %s %d %d...\n",input_path,detect_path,output_path,num_features,clip_size);
@@ -17,7 +18,7 @@ bool features(const char *input_path,const char *detect_path,const char *adjacen
 
     DiskReadMda X; X.setPath(input_path);
     DiskReadMda D; D.setPath(detect_path);
-    DiskReadMda A; A.setPath(adjacency_path);
+	Mda A; A.read(adjacency_path);
 
     int M=X.N1();
 
@@ -31,11 +32,15 @@ bool features(const char *input_path,const char *detect_path,const char *adjacen
     mda_write_header(&H_out,output_file);
 
     int total_num_events=0;
-	for (int ch=1; ch<=M; ch++) {
-		printf("ch=%d... ",ch);
-		int num_events=features_2(ch,X,D,A,&H_out,output_file,num_features,clip_size);
-		printf("%d events...\n",num_events);
-		total_num_events+=num_events;
+	//#pragma omp parallel
+	{
+		//#pragma omp for
+		for (int ch=1; ch<=M; ch++) {
+			printf("ch=%d... ",ch);
+			int num_events=features_2(ch,X,D,A,&H_out,output_file,num_features,clip_size);
+			printf("%d events...\n",num_events);
+			total_num_events+=num_events;
+		}
 	}
 
     H_out.dims[1]=total_num_events;
@@ -47,7 +52,7 @@ bool features(const char *input_path,const char *detect_path,const char *adjacen
     return true;
 }
 
-int features_2(int ch,DiskReadMda &X,DiskReadMda &D,DiskReadMda &A,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size) {
+int features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size) {
     int M=X.N1();
     int N=X.N2();
     int NT=D.N2();

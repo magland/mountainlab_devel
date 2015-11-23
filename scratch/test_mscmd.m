@@ -18,10 +18,10 @@ o_filter.freq_min=300;
 o_filter.freq_max=4000;
 o_filter.outlier_threshold=400;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-o_whiten.ncomp=4;
+o_whiten.ncomp=5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_filter2.samplefreq=30000;
-o_filter2.freq_min=600;
+o_filter2.freq_min=300;
 o_filter2.freq_max=10000;
 o_filter2.outlier_threshold=0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,6 +40,8 @@ o_split_clusters.clip_size=o_features.clip_size;
 o_remove_outliers=struct;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_templates.clip_size=o_features.clip_size;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+o_cross_correlograms.max_dt=1500;
 
 % locations=get_frank_lab_locations;
 % AM=ms_adjacency_matrix(locations,2);
@@ -54,17 +56,22 @@ mscmd_bandpass_filter([path0,'/filt_white.mda'],[path0,'/filt2_white.mda'],o_fil
 mscmd_detect([path0,'/filt2_white.mda'],[path0,'/detect.mda'],o_detect);
 mscmd_features([path0,'/filt2_white.mda'],[path0,'/detect.mda'],[path0,'/adjacency.mda'],[path0,'/features.mda'],o_features);
 mscmd_cluster([path0,'/features.mda'],[path0,'/cluster.mda'],o_cluster);
-mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster.mda'],[path0,'/templates.mda'],o_templates);
-mscmd_consolidate([path0,'/cluster.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
+
+mscmd_split_clusters([path0,'/filt2_white.mda'],[path0,'/cluster.mda'],[path0,'/cluster2.mda'],o_split_clusters);
+mscmd_templates([path0,'/filt.mda'],[path0,'/cluster2.mda'],[path0,'/templates.mda'],o_templates);
+mscmd_consolidate([path0,'/cluster2.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
+
+%mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster.mda'],[path0,'/templates.mda'],o_templates);
+%mscmd_consolidate([path0,'/cluster.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
+
 mscmd_templates([path0,'/raw.mda'],[path0,'/cluster0.mda'],[path0,'/templates0_raw.mda'],o_templates);
 
-%mscmd_split_clusters([path0,'/filt2_white.mda'],[path0,'/cluster.mda'],[path0,'/cluster2.mda'],o_split_clusters);
-%mscmd_remove_outliers([path0,'/filt2_white.mda'],[path0,'/cluster2.mda'],[path0,'/cluster3.mda'],o_remove_outliers);
-%mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster3.mda'],[path0,'/templates.mda'],o_templates);
-%mscmd_consolidate([path0,'/cluster3.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
-%mscmd_templates([path0,'/raw.mda'],[path0,'/cluster0.mda'],[path0,'/templates_raw.mda'],o_templates);
+fprintf('Computing cross-correlograms...\n');
+cluster0=readmda([path0,'/cluster0.mda']);
+[CC,CCmda]=ms_cross_correlograms(cluster0(2,:),cluster0(3,:),o_cross_correlograms.max_dt);
+writemda(CCmda,[path0,'/cross-correlograms.mda']);
 
-fprintf('Elapsed time: %g sec',toc(timerA));
+fprintf('Elapsed time: %g sec\n',toc(timerA));
 
 % ch=3;
 % out_path=[path0,sprintf('/sort-%d.mda',ch)];

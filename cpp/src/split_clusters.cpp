@@ -24,19 +24,19 @@ bool split_clusters(const char *input_path,const char *cluster_path,const char *
 
     int kk=1;
     for (int k=1; k<=K; k++) {
-		printf("k=%d...\n",k);
+		printf("k=%d/%d... ",k,K);
         QList<int> times=get_times(C,k);
         Mda clips;
-		printf("extract clips...\n");
+		printf("extract clips... ");
 		extract_clips(clips,X,times,clip_size);
         Mda features;
-		printf("compute features...\n");
+		printf("compute features... ");
 		compute_features(features,clips,num_features);
-		printf("isosplit...\n");
+		printf("isosplit... ");
         QVector<int> labels0=isosplit(features);
 		printf("setting...\n");
         int K0=get_max_k(labels0);
-		if (K0>1) printf("%d clusters\n",K0);
+		if (K0>1) printf("::: split into %d clusters\n",K0);
 		else printf("\n");
 		int jjj=0;
 		for (int bb=0; bb<C.N2(); bb++) {

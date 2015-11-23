@@ -1,19 +1,61 @@
 #include "consolidate.h"
 #include "diskreadmda.h"
 #include "mdaio.h"
+#include "mda.h"
 
-void get_load_channels(int K,int *load_channels,DiskReadMda &cluster);
+//void get_load_channels(int K,int *load_channels,DiskReadMda &cluster);
+Mda get_load_channels(int K,DiskReadMda &cluster);
+
+struct SortRec {
+	double val;
+	int index;
+};
+bool caseInsensitiveLessThan(const SortRec &R1, const SortRec &R2)
+{
+  return R1.val<R2.val;
+}
+QList<int> get_sort_order(const QList<double> &values) {
+	QList<SortRec> list;
+	for (int i=0; i<values.count(); i++) {
+		SortRec RR; RR.val=values[i]; RR.index=i;
+		list << RR;
+	}
+	qSort(list.begin(),list.end(),caseInsensitiveLessThan);
+	QList<int> ret;
+	for (int i=0; i<list.count(); i++) {
+		ret << list[i].index;
+	}
+	return ret;
+}
+QList<int> get_template_sort_order(const Mda &X) {
+	int K=X.N3();
+	QList<double> values;
+	for (int k=0; k<K; k++) {
+		double sum1=0;
+		double sum2=0;
+		for (int t=0; t<X.N2(); t++) {
+			for (int m=0; m<X.N1(); m++) {
+				double val0=X.value(m,t,k);
+				sum1+=val0*val0*m;
+				sum2+=val0*val0;
+			}
+		}
+		if (sum2>0) sum1/=sum2;
+		values << sum1;
+	}
+	QList<int> inds=get_sort_order(values);
+	return inds;
+}
 
 bool consolidate(const char *cluster_path,const char *templates_path,const char *cluster_out_path,const char *templates_out_path,const char *load_channels_out_path) {
     DiskReadMda cluster; cluster.setPath(cluster_path);
-    DiskReadMda templates; templates.setPath(templates_path);
+	Mda templates; templates.read(templates_path);
 
     int M=templates.N1();
     int T=templates.N2();
     int K=templates.N3();
 
-    int load_channels[K+1];
-    get_load_channels(K,load_channels,cluster);
+	Mda load_channels=get_load_channels(K,cluster);
 
     bool to_use[K+1];
     int num_to_use=0;
@@ -27,7 +69,7 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
             }
             energies[m]=sumsqr;
         }
-        int ch=load_channels[k];
+		int ch=load_channels.value(0,k-1);
         bool okay=true;
         for (int m=1; m<=M; m++) {
             if (m!=ch) {
@@ -48,16 +90,53 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
     }
 
     int kk=1;
-    int cluster_mapping[K+1];
+	int cluster_mapping1[K+1];
     for (int i=1; i<=K; i++) {
         if (to_use[i]) {
-            cluster_mapping[i]=kk;
+			cluster_mapping1[i]=kk;
             kk++;
         }
         else {
-            cluster_mapping[i]=0;
+			cluster_mapping1[i]=0;
         }
     }
+
+	Mda templates1;
+	templates1.allocate(M,T,K2);
+	for (int k=1; k<=K; k++) {
+		if (cluster_mapping1[k]) {
+			for (int t=0; t<T; t++) {
+				for (int m=0; m<M; m++) {
+					templates1.setValue(templates.value(m,t,k-1),m,t,cluster_mapping1[k]-1);
+				}
+			}
+		}
+	}
+	QList<int> order=get_template_sort_order(templates1);
+
+	int cluster_mapping2[K+1];
+	for (int a=0; a<=K; a++) cluster_mapping2[a]=0;
+	for (int k=1; k<=K2; k++) {
+		int k2=order[k-1]+1;
+		for (int a=1; a<=K; a++) {
+			if (cluster_mapping1[a]==k2) {
+				cluster_mapping2[a]=k;
+			}
+		}
+	}
+
+	Mda load_channels2; load_channels2.allocate(1,K2);
+	Mda templates2; templates2.allocate(M,T,K2);
+	for (int k=1; k<=K; k++) {
+		if (cluster_mapping2[k]) {
+			load_channels2.setValue(load_channels.value(0,k-1),0,cluster_mapping2[k]-1);
+			for (int t=0; t<T; t++) {
+				for (int m=0; m<M; m++) {
+					templates2.setValue(templates.value(m,t,k-1),m,t,cluster_mapping2[k]-1);
+				}
+			}
+		}
+	}
 
     MDAIO_HEADER H_cluster;
     H_cluster.data_type=MDAIO_TYPE_FLOAT32;
@@ -74,8 +153,8 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
         mda_write_header(&H_cluster,outf);
         for (int i=0; i<cluster.N2(); i++) {
             int k0=(int)cluster.value(2,i);
-            if (to_use[k0]) {
-                int k=cluster_mapping[k0];
+			if (cluster_mapping2[k0]) {
+				int k=cluster_mapping2[k0];
                 float ch_tt_k[3];
                 ch_tt_k[0]=cluster.value(0,i);
                 ch_tt_k[1]=cluster.value(1,i);
@@ -87,6 +166,10 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
     }
 
 
+	templates2.write(templates_out_path);
+	load_channels2.write(load_channels_out_path);
+
+	/*
     MDAIO_HEADER H_templates;
     H_templates.data_type=MDAIO_TYPE_FLOAT32;
     H_templates.num_bytes_per_entry=4;
@@ -139,10 +222,24 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
         }
         fclose(outf);
     }
+	*/
 
     return true;
 }
 
+Mda get_load_channels(int K,DiskReadMda &cluster) {
+	Mda load_channels;
+	load_channels.allocate(1,K);
+	for (int k=0; k<K; k++) load_channels.setValue(0,0,k);
+	for (int i=0; i<cluster.N2(); i++) {
+		int ch=(int)cluster.value(0,i);
+		int k=(int)cluster.value(2,i);
+		if ((1<=k)&&(k<=K)) load_channels.setValue(ch,0,k-1);
+	}
+	return load_channels;
+}
+
+/*
 void get_load_channels(int K,int *load_channels,DiskReadMda &cluster) {
     for (int k=0; k<=K; k++) load_channels[k]=0;
     for (int i=0; i<cluster.N2(); i++) {
@@ -151,3 +248,4 @@ void get_load_channels(int K,int *load_channels,DiskReadMda &cluster) {
         if ((1<=k)&&(k<=K)) load_channels[k]=ch;
     }
 }
+*/

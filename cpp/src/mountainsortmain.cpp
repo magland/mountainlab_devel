@@ -102,7 +102,7 @@ void register_processors(ProcessTracker &PT) {
         P.output_file_pnames << "cluster_out";
         P.output_file_pnames << "templates_out";
         P.output_file_pnames << "load_channels_out";
-        P.version="0.13";
+		P.version="0.17";
         PT.registerProcessor(P);
     }
 }

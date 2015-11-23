@@ -218,6 +218,50 @@ void MountainViewWidget::slot_view_labeled_raw_data()
     d->connect_labeled_raw_data_view(V);
 }
 
+struct SortRec {
+	double val;
+	int index;
+};
+bool caseInsensitiveLessThan(const SortRec &R1, const SortRec &R2)
+{
+  return R1.val<R2.val;
+}
+QList<int> get_sort_order(const QList<double> &values) {
+	QList<SortRec> list;
+	for (int i=0; i<values.count(); i++) {
+		SortRec RR; RR.val=values[i]; RR.index=i;
+		list << RR;
+	}
+	qSort(list.begin(),list.end(),caseInsensitiveLessThan);
+	QList<int> ret;
+	for (int i=0; i<list.count(); i++) {
+		ret << list[i].index;
+	}
+	return ret;
+}
+
+QList<int> get_template_sort_order(const Mda &X) {
+	int K=X.N3();
+	QList<double> values;
+	for (int k=0; k<K; k++) {
+		double sum1=0;
+		double sum2=0;
+		for (int t=0; t<X.N2(); t++) {
+			for (int m=0; m<X.N1(); m++) {
+				double val0=X.value(m,t,k);
+				sum1+=val0*val0*m;
+				sum2+=val0*val0;
+			}
+		}
+		if (sum2>0) sum1/=sum2;
+		values << sum1;
+	}
+	QList<int> inds=get_sort_order(values);
+	qDebug() << values;
+	qDebug() << inds;
+	return inds;
+}
+
 void MountainViewWidget::slot_view_spike_templates()
 {
     SSTimeSeriesWidget *W=new SSTimeSeriesWidget;
@@ -234,18 +278,22 @@ void MountainViewWidget::slot_view_spike_templates()
     if (sender()->property("whitened").toBool()) {
         templates=&d->m_templates_whitened;
     }
+	//QList<int> order=get_template_sort_order(*templates);
     for (int k=0; k<K; k++) {
         TL.setValue((T+padding)*k+T/2,0,k);
-        TL.setValue(k+1,1,k);
+		//TL.setValue(order[k]+1,1,k);
+		TL.setValue(k+1,1,k);
         for (int t=0; t<T; t++) {
             for (int m=0; m<M; m++) {
-                templates_formatted.setValue(templates->value(m,t,k),m,t+(T+padding)*k);
+				//templates_formatted.setValue(templates->value(m,t,order[k]),m,t+(T+padding)*k);
+				templates_formatted.setValue(templates->value(m,t,k),m,t+(T+padding)*k);
             }
         }
     }
     data->setFromMda(templates_formatted);
     V->plot()->setShowMarkerLines(false);
-    V->setData(data,true);
+	V->setData(data,true);
+	V->setVerticalZoomFactor(0.6);
     V->setLabels(new DiskReadMda(TL),true);
     V->initialize();
 
@@ -438,8 +486,9 @@ void MountainViewWidget::slot_cross_correlograms(int k0)
         connect(HV,SIGNAL(clicked()),this,SLOT(slot_cross_correlogram_clicked()));
     }
     W->show();
-    int W0=num_rows*150; if (W0>1500) W0=1500;
-    int H0=num_cols*150; if (H0>1500) H0=1500;
+	//int W0=num_rows*150; if (W0>1500) W0=1500;
+	//int H0=num_cols*150; if (H0>1500) H0=1500;
+	int W0=1500,H0=1500;
     W->resize(W0,H0);
     if (k0==0) {
         W->move(this->topLevelWidget()->geometry().topRight()+QPoint(300,-100));
