@@ -457,8 +457,10 @@ void SSTimeSeriesPlotPrivate::setup_plot_area() {
 	if (m_dim3>1) {
 		int tmp=(m_max_timepoint+1)/m_dim3;
 		for (int xx=x1; xx<=x2; xx++) {
-			if (xx%tmp==0) {
-				m_plot_area.addMarker(xx-0.5,0);
+			if (tmp>0) {
+				if (xx%tmp==0) {
+					m_plot_area.addMarker(xx-0.5,0);
+				}
 			}
 		}
 	}

@@ -5,6 +5,7 @@
 #include "mda.h"
 #include "diskarraymodel.h"
 
+class QTreeWidgetItem;
 class MVStatisticsWidgetPrivate;
 class MVStatisticsWidget : public QWidget
 {
@@ -24,9 +25,11 @@ public:
 
 signals:
 	void currentUnitChanged();
+	void unitActivated(int num);
 
 private slots:
 	void slot_item_clicked();
+	void slot_item_activated(QTreeWidgetItem *item);
 
 private:
 	MVStatisticsWidgetPrivate *d;

@@ -222,7 +222,13 @@ void HistogramView::leaveEvent(QEvent *evt)
 {
     Q_UNUSED(evt)
     d->m_hovered=false;
-    update();
+	update();
+}
+
+void HistogramView::mouseDoubleClickEvent(QMouseEvent *evt)
+{
+	Q_UNUSED(evt)
+	emit activated();
 }
 
 void HistogramViewPrivate::update_bin_counts()

@@ -37,11 +37,13 @@ o_cluster=struct;
 o_split_clusters.num_features=3;
 o_split_clusters.clip_size=o_features.clip_size;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-o_remove_outliers=struct;
+%o_remove_outliers=struct;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_templates.clip_size=o_features.clip_size;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_cross_correlograms.max_dt=1500;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+o_extract_clips.clip_size=o_templates.clip_size;
 
 % locations=get_frank_lab_locations;
 % AM=ms_adjacency_matrix(locations,2);
@@ -65,6 +67,8 @@ mscmd_consolidate([path0,'/cluster2.mda'],[path0,'/templates.mda'],[path0,'/clus
 %mscmd_consolidate([path0,'/cluster.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
 
 mscmd_templates([path0,'/raw.mda'],[path0,'/cluster0.mda'],[path0,'/templates0_raw.mda'],o_templates);
+
+mscmd_extract_clips([path0,'/filt.mda'],[path0,'/cluster0.mda'],[path0,'/clips_filt.mda'],[path0,'/clips_filt_index.mda'],o_extract_clips);
 
 fprintf('Computing cross-correlograms...\n');
 cluster0=readmda([path0,'/cluster0.mda']);

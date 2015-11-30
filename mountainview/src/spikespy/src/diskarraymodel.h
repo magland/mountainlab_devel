@@ -17,10 +17,11 @@ public:
 	QString path();
 	bool fileHierarchyExists();
 	void createFileHierarchyIfNeeded();
-	Mda loadData(int scale,int t1,int t2);
 	float value(int ch,int t);
-	int size(int dim);
-	int dim3();
+
+	virtual Mda loadData(int scale,int t1,int t2);
+	virtual int size(int dim);
+	virtual int dim3();
 private:
 	DiskArrayModelPrivate *d;
 

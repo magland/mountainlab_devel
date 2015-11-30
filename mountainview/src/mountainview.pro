@@ -15,12 +15,16 @@ HEADERS += mountainviewwidget.h \
     histogramview.h \
     mvoverviewwidget.h \
     mvstatisticswidget.h \
-    mvcrosscorrelogramswidget.h
+    mvcrosscorrelogramswidget.h \
+    mvunitwidget.h \
+    diskarraymodelclipssubset.h
 SOURCES += mountainviewmain.cpp mountainviewwidget.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
     mvstatisticswidget.cpp \
-    mvcrosscorrelogramswidget.cpp
+    mvcrosscorrelogramswidget.cpp \
+    mvunitwidget.cpp \
+    diskarraymodelclipssubset.cpp
 
 HEADERS += get_command_line_params.h
 SOURCES += get_command_line_params.cpp

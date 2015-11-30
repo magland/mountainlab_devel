@@ -88,7 +88,6 @@ void SSTimeSeriesView::keyPressEvent(QKeyEvent *evt)
 }
 
 void SSTimeSeriesView::setData(SSARRAY *data,bool is_owner) {
-
 	if (!data->fileHierarchyExists()) {
 		qWarning() << "File hierarchy does not exist. Creating.";
 		data->createFileHierarchyIfNeeded();

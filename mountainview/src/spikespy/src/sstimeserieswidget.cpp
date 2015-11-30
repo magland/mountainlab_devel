@@ -327,7 +327,7 @@ void SSTimeSeriesWidget::slot_extract_clips()
 		SSController CC;
 		SSTimeSeriesWidget *WWW=(SSTimeSeriesWidget *)CC.createTimeSeriesWidget();
 		SSTimeSeriesView *VVV=(SSTimeSeriesView *)CC.createTimeSeriesView();
-		VVV->setData((DiskArrayModel *)CC.loadArray(out_path),true);
+		VVV->setData((DiskArrayModel *)CC.loadArray(out_path),true); //added true on 11/24/15
 		VVV->setProperty("data_path",out_path); //a hack!
 		VVV->setProperty("TM_data_path",out_path_TM); //a hack!
 		VVV->setTimepointMapping(out_TM);
@@ -462,7 +462,7 @@ void SSTimeSeriesWidget::slot_extract_comparison_clips()
 		SSTimeSeriesWidget *WWW=(SSTimeSeriesWidget *)CC.createTimeSeriesWidget();
 
 		SSTimeSeriesView *VVV1=(SSTimeSeriesView *)CC.createTimeSeriesView();
-		VVV1->setData((DiskArrayModel *)CC.loadArray(out_path1));
+		VVV1->setData((DiskArrayModel *)CC.loadArray(out_path1),true);
 		VVV1->setTimepointMapping(out_TM);
 		//VVV1->setConnectZeros(false);
 		VVV1->setClipMode(true);
@@ -470,7 +470,7 @@ void SSTimeSeriesWidget::slot_extract_comparison_clips()
 		d->connect_view(VVV1,true);
 
 		SSTimeSeriesView *VVV2=(SSTimeSeriesView *)CC.createTimeSeriesView();
-		VVV2->setData((DiskArrayModel *)CC.loadArray(out_path2));
+		VVV2->setData((DiskArrayModel *)CC.loadArray(out_path2),true); //added on 11/24/15
 		VVV2->setTimepointMapping(out_TM);
 		//VVV2->setConnectZeros(false);
 		VVV2->setClipMode(true);

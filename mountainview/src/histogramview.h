@@ -28,8 +28,10 @@ protected:
 	void mouseMoveEvent(QMouseEvent *evt);
     void enterEvent(QEvent *evt);
     void leaveEvent(QEvent *evt);
+	void mouseDoubleClickEvent(QMouseEvent *evt);
 signals:
     void clicked();
+	void activated();
 
 public slots:
 

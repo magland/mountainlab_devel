@@ -98,6 +98,7 @@ void MVCrossCorrelogramsWidget::updateWidget()
 		GL->addWidget(HV,(k1-1)/num_cols,(k1-1)%num_cols);
 		HV->setProperty("unit_number",k1);
 		connect(HV,SIGNAL(clicked()),this,SLOT(slot_histogram_view_clicked()));
+		connect(HV,SIGNAL(activated()),this,SLOT(slot_histogram_view_activated()));
 		d->m_histogram_views << HV;
 	}
 }
@@ -120,6 +121,11 @@ void MVCrossCorrelogramsWidget::slot_histogram_view_clicked()
 {
 	int num=sender()->property("unit_number").toInt();
 	setCurrentUnit(num);
+}
+
+void MVCrossCorrelogramsWidget::slot_histogram_view_activated()
+{
+	emit unitActivated(currentUnit());
 }
 
 

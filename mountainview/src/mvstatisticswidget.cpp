@@ -28,9 +28,6 @@ public:
   }
 };
 
-
-
-
 struct SpikeStats {
 	int count;
 };
@@ -49,6 +46,7 @@ MVStatisticsWidget::MVStatisticsWidget()
 	font.setPointSize(10);
 	d->m_tree->setFont(font);
 	connect(d->m_tree,SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)),this,SLOT(slot_item_clicked()));
+	connect(d->m_tree,SIGNAL(itemActivated(QTreeWidgetItem*,int)),this,SLOT(slot_item_activated(QTreeWidgetItem*)));
 
 	QVBoxLayout *layout=new QVBoxLayout;
 	layout->addWidget(d->m_tree);
@@ -103,6 +101,11 @@ void MVStatisticsWidget::setCurrentUnit(int unit)
 void MVStatisticsWidget::slot_item_clicked()
 {
 	emit currentUnitChanged();
+}
+
+void MVStatisticsWidget::slot_item_activated(QTreeWidgetItem *item)
+{
+	emit unitActivated(item->data(0,Qt::UserRole).toInt());
 }
 
 QString read_text_file_2(QString path) {

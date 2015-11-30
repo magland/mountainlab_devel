@@ -20,9 +20,11 @@ public:
 
 signals:
 	void currentUnitChanged();
+	void unitActivated(int num);
 
 private slots:
 	void slot_histogram_view_clicked();
+	void slot_histogram_view_activated();
 
 private:
 	MVCrossCorrelogramsWidgetPrivate *d;

@@ -57,7 +57,7 @@ FireTrackWidget::FireTrackWidget(QWidget *parent) : QMainWindow(parent)
 	}
 	X->setFromMda(XX);
 	int tmp_timepoint=d->m_plot->currentTimepoint();
-	d->m_plot->setData(X);
+	d->m_plot->setData(X,true); //added true on 11/24/15
 	d->m_plot->initialize();
 	d->m_plot->setFixedWidth(250);
 	d->m_plot->setCurrentTimepoint(tmp_timepoint);
@@ -203,7 +203,7 @@ void FireTrackWidget::slot_selected_electrodes_changed()
 	}
 	int tmp_timepoint=d->m_plot->currentTimepoint();
 	d->m_plot->setChannelLabels(channel_labels);
-	d->m_plot->setData(XX);
+	d->m_plot->setData(XX,true);
 	d->m_plot->initialize();
 	d->m_plot->setCurrentTimepoint(tmp_timepoint);
 }

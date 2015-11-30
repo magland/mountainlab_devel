@@ -85,6 +85,9 @@ int main(int argc, char *argv[]) {
     QString cluster_path=CLP.named_parameters.value("cluster");
     QString primary_channels_path=CLP.named_parameters.value("primary-channels");
     QString cross_correlograms_path=CLP.named_parameters.value("cross-correlograms");
+	QString clips_path=CLP.named_parameters.value("clips");
+	QString clips_whitened_path=CLP.named_parameters.value("clips-whitened");
+	QString clips_index_path=CLP.named_parameters.value("clips-index");
 
     if (!QFile::exists(templates_whitened_path)) templates_whitened_path="";
     if (!QFile::exists(raw_whitened_path)) raw_whitened_path="";
@@ -109,15 +112,27 @@ int main(int argc, char *argv[]) {
     if (!raw_path.isEmpty()) {
         DiskArrayModel *X=new DiskArrayModel;
         X->setPath(raw_path);
-        X->createFileHierarchyIfNeeded();
-        W.setRaw(X);
+		W.setRaw(X,true);
     }
     if (!raw_whitened_path.isEmpty()) {
         DiskArrayModel *X=new DiskArrayModel;
         X->setPath(raw_whitened_path);
-        X->createFileHierarchyIfNeeded();
-        W.setRawWhitened(X);
+		W.setRawWhitened(X,true);
     }
+	if (!clips_path.isEmpty()) {
+		DiskArrayModel *X=new DiskArrayModel;
+		X->setPath(clips_path);
+		W.setClips(X,true);
+	}
+	if (!clips_whitened_path.isEmpty()) {
+		DiskArrayModel *X=new DiskArrayModel;
+		X->setPath(clips_whitened_path);
+		W.setClipsWhitened(X,true);
+	}
+	if (!clips_index_path.isEmpty()) {
+		Mda X; X.read(clips_index_path);
+		W.setClipsIndex(X);
+	}
     if (!times_path.isEmpty()) {
         Mda T; T.read(times_path);
         Mda L;

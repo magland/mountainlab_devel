@@ -15,6 +15,7 @@
 #include "split_clusters.h"
 #include "templates.h"
 #include "consolidate.h"
+#include "extract_clips.h"
 #include "get_principal_components.h"
 
 void register_processors(ProcessTracker &PT) {
@@ -105,6 +106,16 @@ void register_processors(ProcessTracker &PT) {
 		P.version="0.17";
         PT.registerProcessor(P);
     }
+	{
+		PTProcessor P;
+		P.command="extract_clips";
+		P.input_file_pnames << "input";
+		P.input_file_pnames << "cluster";
+		P.output_file_pnames << "output";
+		P.output_file_pnames << "index_out";
+		P.version="0.1";
+		PT.registerProcessor(P);
+	}
 }
 
 void extract_usage() {
@@ -145,6 +156,10 @@ void templates_usage() {
 
 void consolidate_usage() {
     printf("mountainsort consolidate --cluster=cluster.mda --templates=templates.mda --cluster_out=cluster_out.mda --templates_out=templates_out.mda --load_channels_out=load_channels.mda\n");
+}
+
+void extract_clips_usage() {
+	printf("mountainsort extract_clips --input=raw.mda --cluster=cluster.mda --output=clips.mda --index_out=clips_index.mda --clip_size=100\n");
 }
 
 /*
@@ -455,6 +470,21 @@ int main(int argc,char *argv[]) {
             return -1;
         }
     }
+	else if (command=="extract_clips") {
+		QString input_path=CLP.named_parameters["input"];
+		QString cluster_path=CLP.named_parameters["cluster"];
+		QString output_path=CLP.named_parameters["output"];
+		QString index_out_path=CLP.named_parameters["index_out"];
+		int clip_size=CLP.named_parameters["clip_size"].toInt();
+
+		if ((input_path.isEmpty())||(cluster_path.isEmpty())) {extract_usage(); return -1;}
+		if ((output_path.isEmpty())||(index_out_path.isEmpty())) {extract_usage(); return -1;}
+
+		if (!extract_clips(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),index_out_path.toLatin1().data(),clip_size)) {
+			printf("Error in extract_clips.\n");
+			return -1;
+		}
+	}
 	else {
 		printf("Unknown command: %s\n",command.toLatin1().data());
 		return -1;
