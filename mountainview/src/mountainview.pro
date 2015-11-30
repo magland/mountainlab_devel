@@ -11,14 +11,14 @@ MOC_DIR=../build
 TARGET = mountainview
 TEMPLATE = app
 
-HEADERS += mountainviewwidget.h \
+HEADERS += \
     histogramview.h \
     mvoverviewwidget.h \
     mvstatisticswidget.h \
     mvcrosscorrelogramswidget.h \
     mvunitwidget.h \
     diskarraymodelclipssubset.h
-SOURCES += mountainviewmain.cpp mountainviewwidget.cpp \
+SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
     mvstatisticswidget.cpp \

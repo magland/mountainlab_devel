@@ -27,10 +27,10 @@ public:
 	MVUnitWidget *q;
 
 	Mda m_primary_channels;
-	Mda m_templates,m_templates_whitened;
+	Mda m_templates;
 	Mda m_locations;
-	DiskArrayModel *m_raw,*m_raw_whitened;
-	bool m_own_raw,m_own_raw_whitened;
+	DiskArrayModel *m_raw;
+	bool m_own_raw;
 	Mda m_times;
 	Mda m_labels;
 	QString m_cross_correlograms_path;
@@ -62,8 +62,7 @@ MVUnitWidget::MVUnitWidget(QWidget *parent) : QMainWindow(parent)
 	d->q=this;
 
 	d->m_raw=0;
-	d->m_raw_whitened=0;
-	d->m_own_raw=d->m_own_raw_whitened=false;
+	d->m_own_raw=false;
 
 	d->m_clips=0;
 	d->m_own_clips=false;
@@ -134,10 +133,6 @@ void MVUnitWidget::setTemplates(const Mda &X)
 {
 	d->m_templates=X;
 }
-void MVUnitWidget::setTemplatesWhitened(const Mda &X)
-{
-	d->m_templates_whitened=X;
-}
 
 void MVUnitWidget::setPrimaryChannels(const Mda &X)
 {
@@ -149,13 +144,6 @@ void MVUnitWidget::setRaw(DiskArrayModel *X,bool own_it)
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
 	d->m_raw=X;
 	d->m_own_raw=own_it;
-}
-
-void MVUnitWidget::setRawWhitened(DiskArrayModel *X,bool own_it)
-{
-	if ((d->m_raw_whitened)&&(d->m_own_raw_whitened)) delete d->m_raw_whitened;
-	d->m_raw_whitened=X;
-	d->m_own_raw_whitened=own_it;
 }
 
 void MVUnitWidget::setTimesLabels(const Mda &times, const Mda &labels)
@@ -363,7 +351,6 @@ void MVUnitWidgetPrivate::set_current_clip_number(int num)
 MVUnitWidget::~MVUnitWidget()
 {
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
-	if ((d->m_raw_whitened)&&(d->m_own_raw_whitened)) delete d->m_raw_whitened;
 	if ((d->m_clips)&&(d->m_own_clips)) delete d->m_clips;
 	delete d;
 }

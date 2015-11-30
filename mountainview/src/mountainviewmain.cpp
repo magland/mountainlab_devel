@@ -76,21 +76,15 @@ int main(int argc, char *argv[]) {
 	QString output_path=CLP.named_parameters.value("output_path");
 
     QString templates_path=CLP.named_parameters.value("templates");
-    QString templates_whitened_path=CLP.named_parameters.value("templates-whitened");
     QString locations_path=CLP.named_parameters.value("locations");
     QString raw_path=CLP.named_parameters.value("raw");
-    QString raw_whitened_path=CLP.named_parameters.value("raw-whitened");
     QString times_path=CLP.named_parameters.value("times");
     QString labels_path=CLP.named_parameters.value("labels");
     QString cluster_path=CLP.named_parameters.value("cluster");
     QString primary_channels_path=CLP.named_parameters.value("primary-channels");
     QString cross_correlograms_path=CLP.named_parameters.value("cross-correlograms");
 	QString clips_path=CLP.named_parameters.value("clips");
-	QString clips_whitened_path=CLP.named_parameters.value("clips-whitened");
 	QString clips_index_path=CLP.named_parameters.value("clips-index");
-
-    if (!QFile::exists(templates_whitened_path)) templates_whitened_path="";
-    if (!QFile::exists(raw_whitened_path)) raw_whitened_path="";
 
 	//MountainViewWidget W;
 	MVOverviewWidget W;
@@ -101,10 +95,6 @@ int main(int argc, char *argv[]) {
         Mda X; X.read(templates_path);
         W.setTemplates(X);
     }
-    if (!templates_whitened_path.isEmpty()) {
-        Mda X; X.read(templates_whitened_path);
-        W.setTemplatesWhitened(X);
-    }
     if (!locations_path.isEmpty()) {
         Mda X; X.read(locations_path);
 		W.setElectrodeLocations(X);
@@ -114,20 +104,10 @@ int main(int argc, char *argv[]) {
         X->setPath(raw_path);
 		W.setRaw(X,true);
     }
-    if (!raw_whitened_path.isEmpty()) {
-        DiskArrayModel *X=new DiskArrayModel;
-        X->setPath(raw_whitened_path);
-		W.setRawWhitened(X,true);
-    }
 	if (!clips_path.isEmpty()) {
 		DiskArrayModel *X=new DiskArrayModel;
 		X->setPath(clips_path);
 		W.setClips(X,true);
-	}
-	if (!clips_whitened_path.isEmpty()) {
-		DiskArrayModel *X=new DiskArrayModel;
-		X->setPath(clips_whitened_path);
-		W.setClipsWhitened(X,true);
 	}
 	if (!clips_index_path.isEmpty()) {
 		Mda X; X.read(clips_index_path);

@@ -451,7 +451,7 @@ QPointF FTElectrodeArrayViewPrivate::ind2pix(int i)
 	m_pixel_spacing_x=m_min_electrode_spacing*factor0;
 	m_pixel_spacing_y=m_min_electrode_spacing*factor0;
 
-	return QPointF(x1,y1);
+	return QPointF(x1,q->height()-y1);
 }
 
 QColor FTElectrodeArrayViewPrivate::color_map(float pct) {

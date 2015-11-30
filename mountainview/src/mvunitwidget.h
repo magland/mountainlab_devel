@@ -19,10 +19,8 @@ public:
 
 	void setElectrodeLocations(const Mda &L);
 	void setTemplates(const Mda &X);
-	void setTemplatesWhitened(const Mda &X);
 	void setPrimaryChannels(const Mda &X);
 	void setRaw(DiskArrayModel *X,bool own_it);
-	void setRawWhitened(DiskArrayModel *X,bool own_it);
 	void setTimesLabels(const Mda &times,const Mda &labels);
 	void setCrossCorrelogramsPath(const QString &path);
 

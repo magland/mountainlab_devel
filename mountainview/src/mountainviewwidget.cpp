@@ -20,9 +20,9 @@ public:
 	MountainViewWidget *q;
 
 	Mda m_primary_channels;
-    Mda m_templates,m_templates_whitened;
+	Mda m_templates;
 	Mda m_locations;
-    DiskArrayModel *m_raw,*m_raw_whitened;
+	DiskArrayModel *m_raw,*m_raw_whitened;
     Mda m_times;
     Mda m_labels;
     DiskReadMda *m_times_labels;

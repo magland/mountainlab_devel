@@ -19,33 +19,36 @@
 #include <QSplitter>
 #include "mvunitwidget.h"
 #include "diskarraymodelclipssubset.h"
+#include "ftelectrodearrayview.h"
 
 class MVOverviewWidgetPrivate {
 public:
 	MVOverviewWidget *q;
 
 	Mda m_primary_channels;
-	Mda m_templates,m_templates_whitened;
+	Mda m_templates;
 	Mda m_locations;
-	DiskArrayModel *m_raw,*m_raw_whitened;
-	bool m_own_raw,m_own_raw_whitened;
+	DiskArrayModel *m_raw;
+	bool m_own_raw;
 	Mda m_times;
 	Mda m_labels;
 	int m_template_view_padding;
 	QString m_cross_correlograms_path;
 	int m_current_unit_number;
 
-	DiskArrayModel *m_clips,*m_clips_whitened;
-	bool m_own_clips,m_own_clips_whitened;
+	DiskArrayModel *m_clips;
+	bool m_own_clips;
 	Mda m_clips_index;
 
 	SSTimeSeriesView *m_spike_templates_view;
 	MVStatisticsWidget *m_statistics_widget;
 	MVCrossCorrelogramsWidget *m_cross_correlograms_widget;
 	SSTimeSeriesView *m_labeled_raw_view;
+	FTElectrodeArrayView *m_electrode_view;
 
 	QSplitter *m_hsplitter;
 	QSplitter *m_vsplitter;
+	QSplitter *m_left_vsplitter;
 
 	void update_spike_templates();
 	void update_sizes();
@@ -58,13 +61,12 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 	d=new MVOverviewWidgetPrivate;
 	d->q=this;
 
-	d->m_raw=0; d->m_raw_whitened=0;
-	d->m_own_raw=false; d->m_own_raw_whitened=false;
-
 	d->m_template_view_padding=30;
 
-	d->m_clips=0; d->m_clips_whitened=0;
-	d->m_own_clips=false; d->m_own_clips_whitened=false;
+	d->m_raw=0;
+	d->m_own_raw=false;
+	d->m_clips=0;
+	d->m_own_clips=false;
 
 	d->m_spike_templates_view=new SSTimeSeriesView;
 	d->m_spike_templates_view->initialize();
@@ -81,17 +83,31 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 	connect(d->m_cross_correlograms_widget,SIGNAL(currentUnitChanged()),this,SLOT(slot_cross_correlograms_current_unit_changed()));
 	connect(d->m_cross_correlograms_widget,SIGNAL(unitActivated(int)),this,SLOT(slot_unit_activated(int)));
 
-	QSplitter *vsplitter=new QSplitter(Qt::Vertical);
-	vsplitter->setHandleWidth(15);
-	vsplitter->addWidget(d->m_spike_templates_view);
-	vsplitter->addWidget(d->m_cross_correlograms_widget);
-	vsplitter->addWidget(d->m_labeled_raw_view);
-	d->m_vsplitter=vsplitter;
+	d->m_electrode_view=new FTElectrodeArrayView;
+	d->m_electrode_view->setShowChannelNumbers(true);
+	d->m_electrode_view->setNormalizeIntensity(false);
+
+	{
+		QSplitter *vsplitter=new QSplitter(Qt::Vertical);
+		vsplitter->setHandleWidth(15);
+		vsplitter->addWidget(d->m_spike_templates_view);
+		vsplitter->addWidget(d->m_cross_correlograms_widget);
+		vsplitter->addWidget(d->m_labeled_raw_view);
+		d->m_vsplitter=vsplitter;
+	}
+	{
+		QSplitter *vsplitter=new QSplitter(Qt::Vertical);
+		vsplitter->setHandleWidth(15);
+		vsplitter->addWidget(d->m_statistics_widget);
+		vsplitter->addWidget(d->m_electrode_view);
+		d->m_left_vsplitter=vsplitter;
+	}
+
 
 	QSplitter *hsplitter=new QSplitter;
 	hsplitter->setHandleWidth(15);
-	hsplitter->addWidget(d->m_statistics_widget);
-	hsplitter->addWidget(vsplitter);
+	hsplitter->addWidget(d->m_left_vsplitter);
+	hsplitter->addWidget(d->m_vsplitter);
 	d->m_hsplitter=hsplitter;
 
 	QWidget *CW=new QWidget;
@@ -109,15 +125,20 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 void MVOverviewWidget::setElectrodeLocations(const Mda &L)
 {
 	d->m_locations=L;
+	d->m_electrode_view->setElectrodeLocations(L);
 }
 
 void MVOverviewWidget::setTemplates(const Mda &X)
 {
 	d->m_templates=X;
-}
-void MVOverviewWidget::setTemplatesWhitened(const Mda &X)
-{
-	d->m_templates_whitened=X;
+
+	float max_abs=0;
+	for (int i=0; i<X.totalSize(); i++) {
+		float val=X.value1(i);
+		if (val<0) val=-val;
+		if (val>max_abs) max_abs=val;
+	}
+	d->m_electrode_view->setGlobalAbsMax(max_abs);
 }
 
 void MVOverviewWidget::setPrimaryChannels(const Mda &X)
@@ -133,13 +154,6 @@ void MVOverviewWidget::setRaw(DiskArrayModel *X,bool own_it)
 	d->m_own_raw=own_it;
 	d->m_statistics_widget->setRaw(X);
 	d->m_labeled_raw_view->setData(X,false);
-}
-
-void MVOverviewWidget::setRawWhitened(DiskArrayModel *X,bool own_it)
-{
-	if ((d->m_raw_whitened)&&(d->m_own_raw_whitened)) delete d->m_raw_whitened;
-	d->m_raw_whitened=X;
-	d->m_own_raw_whitened=own_it;
 }
 
 void MVOverviewWidget::setTimesLabels(const Mda &times, const Mda &labels)
@@ -170,13 +184,6 @@ void MVOverviewWidget::setClips(DiskArrayModel *X, bool own_it)
 	d->m_own_clips=own_it;
 }
 
-void MVOverviewWidget::setClipsWhitened(DiskArrayModel *X, bool own_it)
-{
-	if ((d->m_clips_whitened)&&(d->m_own_clips_whitened)) delete d->m_clips_whitened;
-	d->m_clips_whitened=X;
-	d->m_own_clips_whitened=own_it;
-}
-
 void MVOverviewWidget::setClipsIndex(const Mda &X)
 {
 	d->m_clips_index=X;
@@ -187,6 +194,7 @@ void MVOverviewWidget::updateWidgets()
 	d->update_spike_templates();
 	d->m_statistics_widget->updateStatistics();
 	d->m_cross_correlograms_widget->updateWidget();
+	d->m_electrode_view->update();
 }
 
 void MVOverviewWidget::resizeEvent(QResizeEvent *evt)
@@ -222,9 +230,7 @@ void MVOverviewWidget::slot_unit_activated(int num)
 	W->setElectrodeLocations(d->m_locations);
 	W->setTimesLabels(d->m_times,d->m_labels);
 	W->setRaw(d->m_raw,false);
-	W->setRawWhitened(d->m_raw_whitened,false);
 	W->setTemplates(d->m_templates);
-	W->setTemplatesWhitened(d->m_templates_whitened);
 
 	DiskArrayModelClipsSubset *clips=new DiskArrayModelClipsSubset;
 	clips->setPath(d->m_clips->path());
@@ -234,7 +240,7 @@ void MVOverviewWidget::slot_unit_activated(int num)
 	if (num>=d->m_clips_index.totalSize()) i2=d->m_clips->size(1);
 	clips->setRange(i1,i2);
 
-	W->setClips(clips,true); //handle case of whitened
+	W->setClips(clips,true);
 	W->setUnitNumber(num);
 	W->setCrossCorrelogramsPath(d->m_cross_correlograms_path);
 	W->resize(width(),height());
@@ -253,10 +259,6 @@ void MVOverviewWidgetPrivate::update_spike_templates()
 	Mda templates_formatted; templates_formatted.allocate(M,(T+padding)*K);
 	Mda TL; TL.allocate(2,K);
 	Mda *templates=&m_templates;
-	//if (sender()->property("whitened").toBool()) {
-	//	templates=&m_templates_whitened;
-	//}
-	//QList<int> order=get_template_sort_order(*templates);
 	for (int k=0; k<K; k++) {
 		TL.setValue((T+padding)*k+T/2,0,k);
 		//TL.setValue(order[k]+1,1,k);
@@ -297,6 +299,15 @@ void MVOverviewWidgetPrivate::update_sizes()
 		QList<int> sizes; sizes << H1 << H2 << H3;
 		m_vsplitter->setSizes(sizes);
 	}
+
+
+	int H2_left=H0/2;
+	if (H2_left>500) H2_left=500;
+	int H1_left=H0-H2_left;
+	{
+		QList<int> sizes; sizes << H1_left << H2_left;
+		m_left_vsplitter->setSizes(sizes);
+	}
 }
 
 void MVOverviewWidgetPrivate::set_current_unit(int num)
@@ -312,6 +323,16 @@ void MVOverviewWidgetPrivate::set_current_unit(int num)
 		m_spike_templates_view->setCurrentX(factor*(num-1)+m_templates.N2()/2);
 	}
 
+	int M=m_templates.N1();
+	int T=m_templates.N2();
+	Mda template0; template0.allocate(M,T);
+	for (int t=0; t<T; t++) {
+		for (int m=0; m<M; m++) {
+			template0.setValue(m_templates.value(m,t,num-1),m,t);
+		}
+	}
+	m_electrode_view->setWaveform(template0);
+
 
 }
 
@@ -320,9 +341,7 @@ void MVOverviewWidgetPrivate::set_current_unit(int num)
 MVOverviewWidget::~MVOverviewWidget()
 {
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
-	if ((d->m_raw_whitened)&&(d->m_own_raw_whitened)) delete d->m_raw_whitened;
 	if ((d->m_clips)&&(d->m_own_clips)) delete d->m_clips;
-	if ((d->m_clips_whitened)&&(d->m_own_clips_whitened)) delete d->m_clips_whitened;
 	delete d;
 }
 

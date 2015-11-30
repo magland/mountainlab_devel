@@ -71,6 +71,7 @@ mscmd_templates([path0,'/filt.mda'],[path0,'/cluster2.mda'],[path0,'/templates.m
 mscmd_consolidate([path0,'/cluster2.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
 
 mscmd_templates([path0,'/raw.mda'],[path0,'/cluster0.mda'],[path0,'/templates0_raw.mda'],o_templates);
+mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster0.mda'],[path0,'/templates0_filt2_white.mda'],o_templates);
 
 mscmd_extract_clips([path0,'/filt.mda'],[path0,'/cluster0.mda'],[path0,'/clips_filt.mda'],[path0,'/clips_filt_index.mda'],o_extract_clips);
 mscmd_extract_clips([path0,'/filt2_white.mda'],[path0,'/cluster0.mda'],[path0,'/clips_filt2_white.mda'],[path0,'/clips_filt2_white_index.mda'],o_extract_clips);
@@ -81,6 +82,8 @@ cluster0=readmda([path0,'/cluster0.mda']);
 writemda(CCmda,[path0,'/cross-correlograms.mda']);
 
 fprintf('Elapsed time: %g sec\n',toc(timerA));
+
+example_mscmd_view;
 
 end
 
