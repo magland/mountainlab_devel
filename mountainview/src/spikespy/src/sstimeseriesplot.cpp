@@ -171,7 +171,6 @@ void SSTimeSeriesPlot::setData(SSARRAY *data) {
 
 	d->m_image_needs_update=true;
 	update();
-
 }
 
 void SSTimeSeriesPlot::setLabels(SSLabelsModel1 *L,bool is_owner) {

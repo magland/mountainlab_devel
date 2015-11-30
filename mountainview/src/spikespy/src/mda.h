@@ -37,7 +37,9 @@ public:
 	int totalSize() const;
 	void reshape(int N1,int N2,int N3=1,int N4=1,int N5=1,int N6=1);
 	double value1(int i) const;
-	double value(int i1,int i2,int i3=0,int i4=0) const;
+	double value(int i1,int i2,int i3=0) const;
+	double value(int i1,int i2,int i3,int i4) const;
+	double value(int i1,int i2,int i3,int i4,int i5,int i6=0) const;
 	double value(int num_dims,int *ind) const;
 	void setValue1(double val,int i);
 	void setValue(double val,int i1,int i2,int i3=0,int i4=0);
@@ -54,6 +56,7 @@ public:
 	bool write(char *path);
     bool read(const QString &path);
     bool write(const QString &path);
+	double *dataPtr();
 	
 private:
 	MdaPrivate *d;

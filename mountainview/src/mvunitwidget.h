@@ -2,6 +2,7 @@
 #define MVUNITWIDGET_H
 
 #include <QMainWindow>
+#include <QThread>
 #include <QWheelEvent>
 #include "diskarraymodel.h"
 #include "mda.h"
@@ -34,6 +35,9 @@ protected:
 	void resizeEvent(QResizeEvent *evt);
 
 private slots:
+	void slot_compute_template();
+	void slot_clips_view_current_x_changed();
+	void slot_selected_data_points_changed();
 
 
 private:
@@ -43,5 +47,7 @@ signals:
 
 public slots:
 };
+
+
 
 #endif // MVUNITWIDGET_H

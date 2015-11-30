@@ -7,7 +7,6 @@
 #include "usagetracking.h"
 #include <math.h>
 #include <QDebug>
-#include <QTemporaryFile>
 
 #define CHUNKSIZE 10000
 
@@ -26,7 +25,7 @@ public:
 	QString m_path;
 	int m_data_type;
 	int m_size[MDAIO_MAX_DIMS];
-    QTemporaryFile *m_temporary_file;
+	Mda *m_mda;
 
 	int get_index(int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
 	float *load_chunk(int i);
@@ -39,7 +38,6 @@ DiskReadMda::DiskReadMda(const QString &path) : QObject()
 {
 	d=new DiskReadMdaPrivate;
 	d->q=this;
-    d->m_temporary_file=0;
 	d->initialize_contructor();
 
 	if (!path.isEmpty()) setPath(path);
@@ -49,31 +47,41 @@ DiskReadMda::DiskReadMda(const DiskReadMda &other) : QObject()
 {
 	d=new DiskReadMdaPrivate;
 	d->q=this;
-    d->m_temporary_file=0;
+	d->m_mda=0;
 	d->initialize_contructor();
 
-    setPath(other.d->m_path);
+	if (other.d->m_mda) {
+		d->m_mda=new Mda;
+		(*d->m_mda)=*(other.d->m_mda);
+	}
+	else {
+		setPath(other.d->m_path);
+	}
 }
 
 DiskReadMda::DiskReadMda(Mda &X)
 {
     d=new DiskReadMdaPrivate;
     d->q=this;
-    d->m_temporary_file=0;
     d->initialize_contructor();
-
-    d->m_temporary_file=new QTemporaryFile();
-    d->m_temporary_file->open();
-    d->m_temporary_file->close();
-
-    QString path=d->m_temporary_file->fileName();
-    X.write(path);
-    this->setPath(path);
+	d->m_mda=new Mda;
+	(*d->m_mda)=X;
 }
 
 void DiskReadMda::operator=(const DiskReadMda &other)
 {
-	setPath(other.d->m_path);
+	if (d->m_mda) delete d->m_mda;
+	d->m_mda=0;
+	d->m_path="";
+	d->clear_chunks();
+	if (other.d->m_mda) {
+		d->m_mda=new Mda;
+		(*d->m_mda)=*(other.d->m_mda);
+	}
+	else {
+		setPath(other.d->m_path);
+	}
+
 }
 
 DiskReadMda::~DiskReadMda()
@@ -81,12 +89,14 @@ DiskReadMda::~DiskReadMda()
 	d->clear_chunks();
 	if (d->m_file)
 		jfclose(d->m_file);
-    if (d->m_temporary_file) delete d->m_temporary_file;
+	if (d->m_mda) delete d->m_mda;
 	delete d;
 }
 
 void DiskReadMda::setPath(const QString &path)
 {
+	if (d->m_mda) delete d->m_mda;
+	d->m_mda=0;
 	d->clear_chunks();
 	if (d->m_file) jfclose(d->m_file); d->m_file=0;
 	d->m_path=path;
@@ -106,10 +116,12 @@ int DiskReadMda::N6() const {return size(5);}
 
 int DiskReadMda::totalSize() const
 {
+	if (d->m_mda) return d->m_mda->totalSize();
 	return d->m_total_size;
 }
 
 int DiskReadMda::size(int dim) const {
+	if (d->m_mda) return d->m_mda->size(dim);
 	if (dim>=MDAIO_MAX_DIMS) return 1;
 
 	return d->m_size[dim];
@@ -117,6 +129,7 @@ int DiskReadMda::size(int dim) const {
 
 float DiskReadMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
 {
+	if (d->m_mda) return d->m_mda->value(i1,i2,i3,i4,i5,i6);
 	int ind=d->get_index(i1,i2,i3,i4,i5,i6);
 	float *X=d->load_chunk(ind/CHUNKSIZE);
 	if (!X) {
@@ -128,6 +141,7 @@ float DiskReadMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
 
 float DiskReadMda::value1(int ind)
 {
+	if (d->m_mda) return d->m_mda->value1(ind);
 	float *X=d->load_chunk(ind/CHUNKSIZE);
 	if (!X) return 0;
 	return X[ind%CHUNKSIZE];
@@ -135,6 +149,10 @@ float DiskReadMda::value1(int ind)
 
 void DiskReadMda::reshape(int N1, int N2, int N3, int N4, int N5, int N6)
 {
+	if (d->m_mda) {
+		qWarning() << "Cannot reshape DiskReadMda with m_mda defined!!!!!!!";
+		return;
+	}
 	int tot=N1*N2*N3*N4*N5*N6;
 	if (tot!=d->m_total_size) {
 		printf("Warning: unable to reshape %d <> %d: %s\n",tot,d->m_total_size,d->m_path.toLatin1().data());
@@ -275,5 +293,6 @@ void DiskReadMdaPrivate::initialize_contructor()
 	m_num_bytes_per_entry=0;
 	m_total_size=0;
 	m_data_type=MDAIO_TYPE_FLOAT32;
+	m_mda=0;
 	for (int i=0; i<MDAIO_MAX_DIMS; i++) m_size[i]=1;
 }

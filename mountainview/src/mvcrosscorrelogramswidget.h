@@ -17,6 +17,8 @@ public:
 
 	int currentUnit();
 	void setCurrentUnit(int num);
+	int baseUnit();
+	void setBaseUnit(int num);
 
 signals:
 	void currentUnitChanged();

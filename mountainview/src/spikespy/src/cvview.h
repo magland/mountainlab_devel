@@ -18,6 +18,8 @@ public:
 	void setLabelColors(const QList<QColor> colors);
 	CVLine selectedLine();
 	QList<int> selectedDataPointIndices();
+	void setSelectedDataPointIndices(const QList<int> &L);
+	void setNumDataPointsToSelect(int num);
 
 protected:
 	void paintEvent(QPaintEvent *evt);

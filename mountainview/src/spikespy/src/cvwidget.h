@@ -20,7 +20,9 @@ public:
 	Q_INVOKABLE void autoSetRange();
 	Q_INVOKABLE void refresh();
 
+	void setSelectedDataPointIndices(const QList<int> &L);
 	QList<int> selectedDataPointIndices();
+	void setNumDataPointsToSelect(int num);
 
 signals:
 	void selectedDataPointsChanged();

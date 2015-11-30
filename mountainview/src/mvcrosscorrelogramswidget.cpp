@@ -11,6 +11,7 @@ class MVCrossCorrelogramsWidgetPrivate {
 public:
 	MVCrossCorrelogramsWidget *q;
 	QString m_path;
+	int m_base_unit_num;
 	int m_current_unit_num;
 	QList<HistogramView *> m_histogram_views;
 
@@ -23,6 +24,7 @@ MVCrossCorrelogramsWidget::MVCrossCorrelogramsWidget()
 	d=new MVCrossCorrelogramsWidgetPrivate;
 	d->q=this;
 	d->m_current_unit_num=0;
+	d->m_base_unit_num=0;
 }
 
 MVCrossCorrelogramsWidget::~MVCrossCorrelogramsWidget()
@@ -66,7 +68,7 @@ void MVCrossCorrelogramsWidget::updateWidget()
 {
 	if (d->m_path.isEmpty()) return;
 
-	int k0=0;
+	int k0=d->m_base_unit_num;
 
 	DiskReadMda X;
 	X.setPath(d->m_path);
@@ -115,6 +117,16 @@ void MVCrossCorrelogramsWidget::setCurrentUnit(int num)
 		d->do_highlighting();
 		emit currentUnitChanged();
 	}
+}
+
+int MVCrossCorrelogramsWidget::baseUnit()
+{
+	return d->m_base_unit_num;
+}
+
+void MVCrossCorrelogramsWidget::setBaseUnit(int num)
+{
+	d->m_base_unit_num=num;
 }
 
 void MVCrossCorrelogramsWidget::slot_histogram_view_clicked()

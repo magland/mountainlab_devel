@@ -503,6 +503,7 @@ Mda *DiskArrayModelPrivate::load_chunk(int scale,int chunk_ind) {
 	if (m_loaded_chunks.contains(code)) {
 		return m_loaded_chunks[code];
 	}
+	//printf("Loading chunk %d/%d\n",scale,chunk_ind); QTime timer; timer.start();
 	QString path=get_multiscale_file_name(scale);
 	Mda *X=load_chunk_from_file(path,scale,chunk_ind);
 	if (X) {

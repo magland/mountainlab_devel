@@ -36,7 +36,13 @@ int DiskArrayModelClipsSubset::size(int dim)
 
 int DiskArrayModelClipsSubset::dim3()
 {
-	return DiskArrayModel::dim3()/(DiskArrayModel::size(1)/size(1));
+	int dim3a=DiskArrayModel::dim3();
+	int size1a=DiskArrayModel::size(1);
+	int size1=size(1);
+
+	if (size1==0) return dim3a;
+	if (size1a==0) return dim3a;
+	return (int)(dim3a*(size1*1.0/size1a));
 }
 
 void DiskArrayModelClipsSubset::setRange(int t1, int t2)

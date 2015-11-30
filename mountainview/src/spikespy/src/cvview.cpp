@@ -110,6 +110,20 @@ QList<int> CVView::selectedDataPointIndices()
 	return d->m_selected_point_indices;
 }
 
+void CVView::setSelectedDataPointIndices(const QList<int> &L)
+{
+	d->m_selected_line=cvline(0,0,0,0,0,0);
+	d->m_selected_point_indices=L;
+	emit selectedLineChanged();
+	emit selectedDataPointsChanged();
+	d->start_update_view();
+}
+
+void CVView::setNumDataPointsToSelect(int num)
+{
+	d->m_num_datapoints_to_select=num;
+}
+
 float compute_distance_from_point_to_line(const CVPoint &P,const CVLine &L) {
 	//is there a faster formula? If anyone can help it would be appreciated.
 

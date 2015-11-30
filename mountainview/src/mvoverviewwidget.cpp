@@ -233,10 +233,10 @@ void MVOverviewWidget::slot_unit_activated(int num)
 	int i2=(int)d->m_clips_index.value1(num)*T;
 	if (num>=d->m_clips_index.totalSize()) i2=d->m_clips->size(1);
 	clips->setRange(i1,i2);
-	qDebug() << i1 << i2 << d->m_clips_index.value1(num-1) << d->m_clips_index.value1(num) << num << d->m_clips_index.totalSize();
 
 	W->setClips(clips,true); //handle case of whitened
 	W->setUnitNumber(num);
+	W->setCrossCorrelogramsPath(d->m_cross_correlograms_path);
 	W->resize(width(),height());
 	W->show();
 	W->updateWidgets();

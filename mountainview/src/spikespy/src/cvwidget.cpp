@@ -140,7 +140,15 @@ void CVWidget::refresh()
 //			pts << dp_test;
 //		}
 	}
+
+	printf("adding %d points\n",pts.count());
+
 	d->m_view->addDataPoints(pts);
+}
+
+void CVWidget::setSelectedDataPointIndices(const QList<int> &L)
+{
+	d->m_view->setSelectedDataPointIndices(L);
 }
 
 QList<int> CVWidget::selectedDataPointIndices()
@@ -148,7 +156,10 @@ QList<int> CVWidget::selectedDataPointIndices()
 	return d->m_view->selectedDataPointIndices();
 }
 
-
+void CVWidget::setNumDataPointsToSelect(int num)
+{
+	d->m_view->setNumDataPointsToSelect(num);
+}
 
 
 QColor CVWidgetPrivate::get_label_color(int label)
@@ -160,6 +171,8 @@ QColor CVWidgetPrivate::get_label_color(int label)
 
 void CVWidgetPrivate::generate_features_from_clips()
 {
+	//TO DO -- this should be replaced by a procedure that does not involve system call
+	/*
     if (m_clips.totalSize()<=1) {
 		QMessageBox::critical(q,"Problem generating features.","Problem generating features. m_clips is null.");
 		return;
@@ -192,4 +205,5 @@ void CVWidgetPrivate::generate_features_from_clips()
 	}
 
 	m_features=DiskReadMda(outpath);
+	*/
 }

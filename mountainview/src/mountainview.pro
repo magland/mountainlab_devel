@@ -26,6 +26,9 @@ SOURCES += mountainviewmain.cpp mountainviewwidget.cpp \
     mvunitwidget.cpp \
     diskarraymodelclipssubset.cpp
 
+HEADERS += get_principal_components.h
+SOURCES += get_principal_components.cpp
+
 HEADERS += get_command_line_params.h
 SOURCES += get_command_line_params.cpp
 

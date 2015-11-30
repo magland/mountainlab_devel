@@ -166,12 +166,28 @@ void Mda::reshape(int N1, int N2, int N3, int N4, int N5, int N6)
 double Mda::value1(int i) const {
 	return d->m_data_real[i];
 }
+double Mda::value(int i1,int i2,int i3) const {
+	if ((i1<0)||(i1>=size(0))) return 0;
+	if ((i2<0)||(i2>=size(1))) return 0;
+	if ((i3<0)||(i3>=size(2))) return 0;
+	return d->m_data_real[i1+size(0)*i2+size(0)*size(1)*i3];
+}
 double Mda::value(int i1,int i2,int i3,int i4) const {
 	if ((i1<0)||(i1>=size(0))) return 0;
 	if ((i2<0)||(i2>=size(1))) return 0;
 	if ((i3<0)||(i3>=size(2))) return 0;
 	if ((i4<0)||(i4>=size(3))) return 0;
 	return d->m_data_real[i1+size(0)*i2+size(0)*size(1)*i3+size(0)*size(1)*size(2)*i4];
+}
+double Mda::value(int i1,int i2,int i3,int i4,int i5,int i6) const {
+	if ((i5==0)&&(i6==0)) return value(i1,i2,i3,i4);
+	if ((i1<0)||(i1>=size(0))) return 0;
+	if ((i2<0)||(i2>=size(1))) return 0;
+	if ((i3<0)||(i3>=size(2))) return 0;
+	if ((i4<0)||(i4>=size(3))) return 0;
+	if ((i5<0)||(i5>=size(4))) return 0;
+	if ((i6<0)||(i6>=size(5))) return 0;
+	return d->m_data_real[i1+size(0)*i2+size(0)*size(1)*i3+size(0)*size(1)*size(2)*i4+size(0)*size(1)*size(2)*size(3)*i5+size(0)*size(1)*size(2)*size(3)*size(4)*i6];
 }
 double Mda::value(int num_dims,int *ind) const {
 	int tmp=0;
@@ -447,7 +463,12 @@ bool Mda::read(const QString &path)
 
 bool Mda::write(const QString &path)
 {
-    return write(path.toLatin1().data());
+	return write(path.toLatin1().data());
+}
+
+double *Mda::dataPtr()
+{
+	return d->m_data_real;
 }
 
 bool MdaPrivate::do_write(FILE *outf) {

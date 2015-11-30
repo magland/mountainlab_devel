@@ -565,6 +565,11 @@ void MountainViewWidgetPrivate::connect_clips_view(SSTimeSeriesView *V)
 }
 
 Mda extract_clips(DiskArrayModel *X,const Mda &times,const Mda &labels,int label) {
+
+	//TO DO: replace call to X->value with X->loadData (should be way faster)
+	Mda empty;
+	return empty;
+	/*
     Mda clips;
 
     QList<int> times0;
@@ -595,6 +600,7 @@ Mda extract_clips(DiskArrayModel *X,const Mda &times,const Mda &labels,int label
         }
     }
     return clips;
+	*/
 }
 
 Mda format_clips(const Mda &clips,int padding) {
