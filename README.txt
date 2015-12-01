@@ -2,6 +2,8 @@
 
 **** Quick Start for Ubuntu Users ******************
 
+> sudo apt-get install git libfftw3-dev
+
 git clone -b dev-11-14-15 https://github.com/magland/mountainsort.git
 > cd mountainsort
 
