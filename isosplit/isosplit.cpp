@@ -208,7 +208,9 @@ void attempt_to_redistribute_two_clusters(QVector<int> &ii1,QVector<int> &ii2,bo
 	int M=X.N1();
 	//int N=X.N2();
 	double *Xptr=X.dataPtr();
-	QVector<int> inds12=inds1; inds12.append(inds2);
+	QVector<int> inds12=inds1;
+	//inds12.append(inds2);
+	inds12+=inds2; //jfm 12/1/15
 	//X1=X(:,inds1);
 	//X2=X(:,inds2);
 	//the vector from one centroid to another
