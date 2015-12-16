@@ -53,8 +53,8 @@ mountainsortmain.cpp \
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit
 VPATH += ../../isosplit
-HEADERS += isosplit1d.h mda.h jisotonic.h isosplit.h
-SOURCES += isosplit1d.cpp mda.cpp jisotonic.cpp isosplit.cpp
+HEADERS += isocut.h mda.h jisotonic.h isosplit.h
+SOURCES += isocut.cpp mda.cpp jisotonic.cpp isosplit.cpp
 
 HEADERS += qjson.h
 SOURCES += qjson.cpp

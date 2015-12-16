@@ -74,7 +74,7 @@ void register_processors(ProcessTracker &PT) {
         P.command="cluster";
         P.input_file_pnames << "input";
         P.output_file_pnames << "output";
-        P.version="0.11";
+		P.version="0.14";
         PT.registerProcessor(P);
     }
 	{

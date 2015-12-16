@@ -3,7 +3,7 @@
 #include <QVector>
 #include <QDebug>
 #include <math.h>
-#include "isosplit1d.h"
+#include "isocut.h"
 
 //choose K distinct (sorted) integers between 0 and N-1. If K>N then it will repeat the last integer a suitable number of times
 QList<int> choose_random_indices(int N,int K) {;
@@ -200,7 +200,7 @@ QVector<int> find_inds_for_label(const QVector<int> &labels,int label) {
 	return ret;
 }
 
-void attempt_to_redistribute_two_clusters(QVector<int> &ii1,QVector<int> &ii2,bool &redistributed,  Mda &X,const QVector<int> &inds1,const QVector<int> &inds2,double *C1,double *C2,double split_threshold) {
+void attempt_to_redistribute_two_clusters(QVector<int> &ii1,QVector<int> &ii2,bool &redistributed,  Mda &X,const QVector<int> &inds1,const QVector<int> &inds2,double *C1,double *C2,double isocut_threshold) {
 	ii1.clear();
 	ii2.clear();
 	redistributed=false;
@@ -237,14 +237,12 @@ void attempt_to_redistribute_two_clusters(QVector<int> &ii1,QVector<int> &ii2,bo
 	}
 
 	//This is the core procedure -- split based on isotonic regression
-	double pp;
-	if (!isosplit1d(NN,labels,pp,XX)) {
-		qWarning() << "Unexpected problem in isosplit1d: NN =" << NN;
-	}
-	if (pp>split_threshold) {
+	double cutpoint;
+	bool significant_split=isocut(NN,cutpoint,XX,isocut_threshold);
+	if (significant_split) {
         //It was a statistically significant split -- so let's redistribute!
 		for (int ii=0; ii<NN; ii++) {
-			if (labels[ii]==1) {
+			if (XX[ii]<=cutpoint) {
 				ii1 << inds12[ii];
 			}
 			else {
@@ -297,7 +295,7 @@ double compute_centroid_distance(Mda &centroids,int k1,int k2) {
 
 QVector<int> isosplit(Mda &X) {
     int K_initial=25;
-	double split_threshold=0.9;
+	double isocut_threshold=1.4;
 
 	int M=X.N1();
     int N=X.N2();
@@ -331,7 +329,7 @@ QVector<int> isosplit(Mda &X) {
 		QVector<int> inds2=find_inds_for_label(labels,label2);
 		QVector<int> ii1,ii2;
 		bool redistributed;
-        attempt_to_redistribute_two_clusters(ii1,ii2,redistributed, X,inds1,inds2,&Cptr[label1*M],&Cptr[label2*M],split_threshold);
+		attempt_to_redistribute_two_clusters(ii1,ii2,redistributed, X,inds1,inds2,&Cptr[label1*M],&Cptr[label2*M],isocut_threshold);
 		if (redistributed) {
 			//okay, we've changed something. Now let's updated the labels
 			for (int jj=0; jj<ii1.count(); jj++) {
