@@ -16,11 +16,15 @@ public:
 	void setTimesLabels(const Mda &times,const Mda &labels);
 	void setCurrentLabel(int val);
 	int currentLabel();
+	void setCurrentTimepoint(int t0);
+	int currentTimepoint();
 protected:
 	void paintEvent(QPaintEvent *evt);
 	void resizeEvent(QResizeEvent *evt);
 	void mousePressEvent(QMouseEvent *evt);
 signals:
+	void currentLabelChanged();
+	void currentTimepointChanged();
 
 private slots:
 

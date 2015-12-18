@@ -76,6 +76,7 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 
 	d->m_labeled_raw_view=new SSTimeSeriesView;
 	d->m_labeled_raw_view->initialize();
+	connect(d->m_labeled_raw_view,SIGNAL(currentXChanged()),this,SLOT(slot_current_raw_timepoint_changed()));
 
 	d->m_statistics_widget=new MVStatisticsWidget;
 	connect(d->m_statistics_widget,SIGNAL(currentUnitChanged()),this,SLOT(slot_statistics_widget_current_unit_changed()));
@@ -90,6 +91,8 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 	d->m_electrode_view->setNormalizeIntensity(false);
 
 	d->m_cdf_view=new MVCdfView;
+	connect(d->m_cdf_view,SIGNAL(currentLabelChanged()),this,SLOT(slot_cdf_view_current_label_changed()));
+	connect(d->m_cdf_view,SIGNAL(currentTimepointChanged()),this,SLOT(slot_cdf_view_current_timepoint_changed()));
 
 	{
 		QSplitter *vsplitter=new QSplitter(Qt::Vertical);
@@ -107,7 +110,6 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 		vsplitter->addWidget(d->m_electrode_view);
 		d->m_left_vsplitter=vsplitter;
 	}
-
 
 	QSplitter *hsplitter=new QSplitter;
 	hsplitter->setHandleWidth(15);
@@ -265,7 +267,6 @@ void MVOverviewWidget::slot_current_clip_number_changed()
 	if (!W) return;
 	int unit_num=W->property("unit_number").toInt();
 	int clip_num=W->currentClipNumber();
-	printf("############################ %d,%d ############################\n",unit_num,clip_num);
 	int jj=0;
 	for (int i=0; i<d->m_labels.totalSize(); i++) {
 		int label0=(int)d->m_labels.value1(i);
@@ -279,6 +280,21 @@ void MVOverviewWidget::slot_current_clip_number_changed()
 			jj++;
 		}
 	}
+}
+
+void MVOverviewWidget::slot_cdf_view_current_label_changed()
+{
+	d->set_current_unit(d->m_cdf_view->currentLabel());
+}
+
+void MVOverviewWidget::slot_cdf_view_current_timepoint_changed()
+{
+	d->m_labeled_raw_view->setCurrentTimepoint(d->m_cdf_view->currentTimepoint());
+}
+
+void MVOverviewWidget::slot_current_raw_timepoint_changed()
+{
+	d->m_cdf_view->setCurrentTimepoint(d->m_labeled_raw_view->currentTimepoint());
 }
 
 void MVOverviewWidgetPrivate::update_spike_templates()
@@ -323,7 +339,6 @@ void MVOverviewWidgetPrivate::update_sizes()
 	int H1=H0/3;
 	int H2=H0/3;
 	int H3=H0-H1-H2;
-
 	{
 		QList<int> sizes; sizes << W1 << W2;
 		m_hsplitter->setSizes(sizes);
@@ -332,7 +347,6 @@ void MVOverviewWidgetPrivate::update_sizes()
 		QList<int> sizes; sizes << H1 << H2 << H3;
 		m_vsplitter->setSizes(sizes);
 	}
-
 
 	int H1_left=H0/3;
 	int H2_left=H0/3;
@@ -369,12 +383,9 @@ void MVOverviewWidgetPrivate::set_current_unit(int num)
 	m_cdf_view->setCurrentLabel(num);
 }
 
-
-
 MVOverviewWidget::~MVOverviewWidget()
 {
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
 	if ((d->m_clips)&&(d->m_own_clips)) delete d->m_clips;
 	delete d;
 }
-

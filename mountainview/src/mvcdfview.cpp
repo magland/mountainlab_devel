@@ -13,9 +13,11 @@ public:
 	int m_max_time;
 	int m_max_count;
 	int m_current_label;
+	int m_current_timepoint;
 	QList<QPainterPath> m_painter_paths;
 
 	QPointF coord2pix(const QPointF &pt);
+	QPointF pix2coord(const QPointF &pt);
 	int find_closest_label(QPointF &pt);
 };
 
@@ -26,6 +28,7 @@ MVCdfView::MVCdfView()
 	d->m_max_time=0;
 	d->m_max_count=0;
 	d->m_current_label=0;
+	d->m_current_timepoint=-1;
 }
 
 MVCdfView::~MVCdfView()
@@ -53,6 +56,7 @@ void MVCdfView::setCurrentLabel(int val)
 {
 	if (val!=d->m_current_label) {
 		d->m_current_label=val;
+		emit currentLabelChanged();
 		update();
 	}
 }
@@ -60,6 +64,19 @@ void MVCdfView::setCurrentLabel(int val)
 int MVCdfView::currentLabel()
 {
 	return d->m_current_label;
+}
+
+void MVCdfView::setCurrentTimepoint(int t0)
+{
+	if (d->m_current_timepoint==t0) return;
+	d->m_current_timepoint=t0;
+	emit currentTimepointChanged();
+	update();
+}
+
+int MVCdfView::currentTimepoint()
+{
+	return d->m_current_timepoint;
 }
 
 typedef QList<int> IntList;
@@ -85,6 +102,16 @@ void MVCdfView::paintEvent(QPaintEvent *evt)
 	}
 	d->m_max_time=max_time;
 	d->m_max_count=max_count;
+
+	if (d->m_current_timepoint>=0) {
+		QPointF pt0=d->coord2pix(QPointF(d->m_current_timepoint,0));
+		QPointF pt1=d->coord2pix(QPointF(d->m_current_timepoint,d->m_max_count));
+		QPen pen=painter.pen();
+		QColor col(20,20,20,50);
+		pen.setColor(col); pen.setWidth(4);
+		painter.setPen(pen);
+		painter.drawLine(pt0,pt1);
+	}
 
 	d->m_painter_paths.clear(); d->m_painter_paths << QPainterPath();
 	for (int pass=1; pass<=2; pass++) {
@@ -114,6 +141,7 @@ void MVCdfView::paintEvent(QPaintEvent *evt)
 			}
 		}
 	}
+
 }
 
 void MVCdfView::resizeEvent(QResizeEvent *evt)
@@ -127,6 +155,10 @@ void MVCdfView::mousePressEvent(QMouseEvent *evt)
 	QPointF pt=evt->pos();
 	int closest_label=d->find_closest_label(pt);
 	this->setCurrentLabel(closest_label);
+
+	QPointF pt2=d->pix2coord(pt);
+	int time0=(int)pt2.x();
+	this->setCurrentTimepoint(time0);
 }
 
 
@@ -152,6 +184,30 @@ QPointF MVCdfViewPrivate::coord2pix(const QPointF &pt)
 	float y0=H0-margin_bottom-pct_y*(H0-margin_bottom-margin_top);
 
 	return QPointF(x0,y0);
+}
+
+QPointF MVCdfViewPrivate::pix2coord(const QPointF &pt)
+{
+	float x0=pt.x();
+	float y0=pt.y();
+
+	int W0=q->width();
+	int H0=q->height();
+
+	if ((W0<=30)||(H0<=30)) {
+		return QPointF(0,0);
+	}
+
+	float margin_left=10,margin_right=10;
+	float margin_top=10,margin_bottom=10;
+
+	float pct_x=(x0-margin_left)/(W0-margin_left-margin_right);
+	float pct_y=(H0-margin_bottom-y0)/(H0-margin_bottom-margin_top);
+
+	float time0=pct_x*m_max_time;
+	float count0=pct_y*m_max_count;
+
+	return QPointF(time0,count0);
 }
 
 float compute_dist(QPointF pt1,QPointF pt2) {

@@ -37,6 +37,9 @@ private slots:
 	void slot_statistics_widget_current_unit_changed();
 	void slot_unit_activated(int num);
 	void slot_current_clip_number_changed();
+	void slot_cdf_view_current_label_changed();
+	void slot_cdf_view_current_timepoint_changed();
+	void slot_current_raw_timepoint_changed();
 
 
 private:
