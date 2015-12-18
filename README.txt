@@ -4,7 +4,7 @@
 
 > sudo apt-get install git libfftw3-dev
 
-git clone -b dev-11-14-15 https://github.com/magland/mountainsort.git
+git clone https://github.com/magland/mountainsort.git
 > cd mountainsort
 
 To install Qt5, run:
