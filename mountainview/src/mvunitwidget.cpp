@@ -35,6 +35,7 @@ public:
 	Mda m_labels;
 	QString m_cross_correlograms_path;
 	int m_current_clip_number;
+	Mda m_TL;
 
 	DiskArrayModel *m_clips;
 	bool m_own_clips;
@@ -173,17 +174,16 @@ void MVUnitWidget::setTimesLabels(const Mda &times, const Mda &labels)
 		if (d->m_labels.value1(ii)==d->m_unit_number)
 			N0++;
 	}
-	qDebug() << "N0=" << N0;
 	Mda TL; TL.allocate(2,N0);
 	int jj=0;
 	for (int ii=0; ii<NN; ii++) {
 		if (d->m_labels.value1(ii)==d->m_unit_number) {
-			qDebug() << "Setting label" << d->m_labels.value1(ii) << d->m_unit_number;
 			TL.setValue(d->m_times.value1(ii),0,jj);
 			TL.setValue(d->m_labels.value1(ii),1,jj);
 			jj++;
 		}
 	}
+	d->m_TL=TL;
 
 	d->m_labeled_raw_view->setLabels(new DiskReadMda(TL),true);
 }
@@ -311,6 +311,8 @@ void MVUnitWidget::slot_clips_view_current_x_changed()
 	int x=d->m_clips_view->currentX();
 	int clip_number=x/T;
 	d->set_current_clip_number(clip_number);
+
+	d->m_labeled_raw_view->setCurrentTimepoint((int)d->m_TL.value(0,clip_number));
 }
 
 void MVUnitWidget::slot_selected_data_points_changed()
@@ -364,7 +366,6 @@ void MVUnitWidgetPrivate::set_current_clip_number(int num)
 
 	m_current_clip_number=num;
 	QList<int> L; L << m_current_clip_number;
-	qDebug() << "setSelectedDataPointIndices" << L;
 	m_cluster_widget->setSelectedDataPointIndices(L);
 
 	{

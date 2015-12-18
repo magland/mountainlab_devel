@@ -4,6 +4,7 @@
 #include <QDebug>
 #include <QMouseEvent>
 #include <math.h>
+#include "static_neuron_colors.h"
 
 class MVCdfViewPrivate {
 public:
@@ -84,6 +85,7 @@ void MVCdfView::paintEvent(QPaintEvent *evt)
 {
 	Q_UNUSED(evt)
 	QPainter painter(this);
+	painter.setRenderHint(QPainter::Antialiasing);
 
 	QList<IntList> label_times;
 
@@ -127,12 +129,13 @@ void MVCdfView::paintEvent(QPaintEvent *evt)
 				}
 				QPen pen=painter.pen();
 				if (k==d->m_current_label) {
-					pen.setColor(Qt::darkRed);
-					pen.setWidth(5);
+					pen.setColor(Qt::black);
+					pen.setWidth(4);
 				}
 				else {
-					pen.setColor(Qt::blue);
-					pen.setWidth(2);
+					QColor col=static_neuron_color(k);
+					pen.setColor(col);
+					pen.setWidth(0);
 				}
 				if (pass==1) {
 					d->m_painter_paths << path0;

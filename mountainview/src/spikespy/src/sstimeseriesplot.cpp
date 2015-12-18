@@ -6,6 +6,7 @@
 #include <QTime>
 #include <QMap>
 #include <QTimer>
+#include <QMouseEvent>
 #include "sscommon.h"
 #define MIN_NUM_PIXELS 4000
 
@@ -18,6 +19,8 @@ public:
 	int m_max_timepoint;
 	int m_num_channels;
 	int m_dim3;
+	int m_control_panel_height;
+	int m_bar_width;
 
 	QList<double> m_minvals;
 	QList<double> m_maxvals;
@@ -43,6 +46,8 @@ public:
 	void setup_plot_area();
     void schedule_setup_plot_area();
     bool m_setup_plot_area_scheduled;
+
+	void draw_control_panel(QPainter *P);
 };
 
 SSTimeSeriesPlot::SSTimeSeriesPlot(QWidget *parent) : SSAbstractPlot(parent) {
@@ -58,6 +63,8 @@ SSTimeSeriesPlot::SSTimeSeriesPlot(QWidget *parent) : SSAbstractPlot(parent) {
 	d->m_max_timepoint=0;
 	d->m_num_channels=1;
 	d->m_dim3=1;
+	d->m_control_panel_height=16;
+	d->m_bar_width=1;
 
 	d->m_uniform_vertical_channel_spacing=true;
 
@@ -100,7 +107,7 @@ SSTimeSeriesPlot::SSTimeSeriesPlot(QWidget *parent) : SSAbstractPlot(parent) {
             << "#D08080";
     */
     //color_strings << "#CCBBFF";
-    color_strings << "#FF0000";
+	color_strings << "#AA0000";
 
 	for (int i=0; i<color_strings.size(); i++) {
 		d->m_label_colors << QColor(color_strings[i]);
@@ -145,15 +152,53 @@ void SSTimeSeriesPlot::paintPlot(QPainter *painter) {
 		d->m_image_needs_update=true;
 	}
 
+	int control_panel_height=d->m_control_panel_height;
+
+	int W0=width();
+	int H0=height()-control_panel_height;
+
 	if (d->m_image_needs_update) {
-		d->m_image=QPixmap(width(),height());
+		d->m_image=QPixmap(W0,H0);
 		d->m_image.fill(QColor(0,0,0,0));
 		QPainter painter2(&d->m_image);
 		d->m_plot_area.refresh(&painter2);
 		d->m_image_needs_update=false;
 	}
 
-	painter->drawPixmap(0,0,d->m_image);
+	painter->drawPixmap(0,control_panel_height,d->m_image);
+	d->draw_control_panel(painter);
+}
+
+void SSTimeSeriesPlot::mousePressEvent(QMouseEvent *evt)
+{
+	if (evt->pos().y()<=d->m_control_panel_height) {
+
+	}
+	else {
+		SSAbstractPlot::mousePressEvent(evt);
+	}
+}
+
+void SSTimeSeriesPlot::mouseReleaseEvent(QMouseEvent *evt)
+{
+	if (evt->pos().y()<=d->m_control_panel_height) {
+		float frac0=evt->pos().x()*1.0/d->m_bar_width;
+		int t0=(int)((d->m_max_timepoint+1)*frac0);
+		emit requestMoveToTimepoint(t0);
+	}
+	else {
+		SSAbstractPlot::mouseReleaseEvent(evt);
+	}
+}
+
+void SSTimeSeriesPlot::mouseMoveEvent(QMouseEvent *evt)
+{
+	if (evt->pos().y()<=d->m_control_panel_height) {
+
+	}
+	else {
+		SSAbstractPlot::mouseMoveEvent(evt);
+	}
 }
 
 void SSTimeSeriesPlot::setData(SSARRAY *data) {
@@ -473,7 +518,33 @@ void SSTimeSeriesPlotPrivate::schedule_setup_plot_area()
 {
     if (m_setup_plot_area_scheduled) return;
     m_setup_plot_area_scheduled=true;
-    QTimer::singleShot(0,q,SLOT(slot_setup_plot_area()));
+	QTimer::singleShot(0,q,SLOT(slot_setup_plot_area()));
+}
+
+void SSTimeSeriesPlotPrivate::draw_control_panel(QPainter *P)
+{
+	QColor col1(50,50,50,20);
+	QColor col2(50,50,50,40);
+
+	m_bar_width=q->width();
+	int bar_width=m_bar_width;
+	QRect RR1(0,0,bar_width,m_control_panel_height);
+	P->fillRect(RR1,col1);
+
+
+	Vec2 tmp=q->xRange(); int t0=tmp.x,t1=tmp.y;
+	if ((t0<0)||(t0<0)) {
+		P->fillRect(RR1,col2);
+	}
+	else {
+		int num_timepoints=m_max_timepoint+1;
+		int xpix0=bar_width*1.0*t0/num_timepoints;
+		int xpix1=bar_width*1.0*t1/num_timepoints;
+		if (xpix1<xpix0-3) xpix1=xpix0+3;
+		QRect RR2(xpix0,0,xpix1-xpix0,m_control_panel_height);
+		P->fillRect(RR2,col2);
+	}
+
 }
 
 Vec2 SSTimeSeriesPlot::coordToPix(Vec2 coord) {
@@ -536,3 +607,4 @@ void SSTimeSeriesPlot::setYRange(const Vec2 &range) {
 		d->m_plot_area.setYRange(range.x,range.y);
 	}
 }
+

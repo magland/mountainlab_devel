@@ -48,8 +48,12 @@ private:
 
 protected:
 	virtual void paintPlot(QPainter *painter);
+	void mousePressEvent(QMouseEvent *evt);
+	void mouseReleaseEvent(QMouseEvent *evt);
+	void mouseMoveEvent(QMouseEvent *evt);
 
 signals:
+	void requestMoveToTimepoint(int t0);
 
 public slots:
 };

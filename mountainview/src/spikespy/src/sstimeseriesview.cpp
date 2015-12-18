@@ -35,8 +35,9 @@ SSTimeSeriesView::SSTimeSeriesView(QWidget *parent) : SSAbstractView(parent) {
 	d->m_clip_mode=false;
 
 	d->m_plot=new SSTimeSeriesPlot;
-	d->m_plot->setMargins(0,0,20,20);
+	d->m_plot->setMargins(0,0,30,30);
 	//d->m_plot->setUnderlayPainter(d->m_underlay_painter);
+	connect(d->m_plot,SIGNAL(requestMoveToTimepoint(int)),this,SLOT(slot_request_move_to_timepoint(int)));
 
 	QVBoxLayout *layout=new QVBoxLayout;
 	layout->setSpacing(0);
@@ -57,6 +58,11 @@ SSTimeSeriesView::~SSTimeSeriesView() {
 SSTimeSeriesPlot *SSTimeSeriesView::plot()
 {
 	return d->m_plot;
+}
+
+void SSTimeSeriesView::slot_request_move_to_timepoint(int t0)
+{
+	this->setCurrentX(t0);
 }
 
 QString SSTimeSeriesView::viewType()

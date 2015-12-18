@@ -28,6 +28,9 @@ private slots:
 	void slot_histogram_view_clicked();
 	void slot_histogram_view_activated();
 
+protected:
+	void keyPressEvent(QKeyEvent *);
+
 private:
 	MVCrossCorrelogramsWidgetPrivate *d;
 };

@@ -91,7 +91,7 @@ void SSAbstractPlot::paintEvent(QPaintEvent *evt)
 
 	QPainter painter(this);
 
-	painter.fillRect(0,0,width(),height(),QColor(230,230,240));
+	painter.fillRect(0,0,width(),height(),QColor(230,230,230));
 
 	painter.setRenderHint( QPainter::Antialiasing );
 

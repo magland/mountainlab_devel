@@ -153,7 +153,7 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 
 	QRect R(0,0,width(),height());
 	if ((d->m_hovered)&&(!d->m_highlighted)) {
-        painter.fillRect(R,QColor(0,0,0,30));
+		painter.fillRect(R,QColor(150,150,150,80));
     }
 	else if ((!d->m_hovered)&&(d->m_highlighted)) {
 		painter.setPen(QPen(Qt::darkBlue,10));
@@ -163,6 +163,9 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 		painter.setPen(QPen(Qt::darkBlue,10));
 		painter.drawRect(R);
 		painter.fillRect(R,QColor(0,0,0,30));
+	}
+	else {
+
 	}
 
 	if (d->m_update_required) {

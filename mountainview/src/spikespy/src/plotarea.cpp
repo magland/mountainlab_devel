@@ -97,10 +97,12 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
 	P->fillRect(qMin(PP0.x,PP1.x),qMin(PP0.y,PP1.y), qAbs(PP0.x-PP1.x), qAbs(PP0.y-PP1.y),QBrush(QColor(0,0,0,0)));
 	*/
 
-	P->fillRect(QRect(m_left_panel_width,m_plot_rect.top(),m_plot_rect.width()-m_left_panel_width-m_right_panel_width,m_plot_rect.height()),QBrush(QColor(240,240,240)));
-
 	m_left_panel_width=qMax(40,qMin(20,m_plot_rect.width()/100));
 	m_right_panel_width=m_left_panel_width;
+
+	P->fillRect(QRect(m_left_panel_width,m_plot_rect.top(),m_plot_rect.width()-m_left_panel_width-m_right_panel_width,m_plot_rect.height()),QBrush(QColor(240,240,240)));
+
+
 
     //left/right panel
     for (int pass=1; pass<=2; pass++) {

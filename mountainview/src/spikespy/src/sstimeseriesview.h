@@ -34,6 +34,9 @@ public:
 
     SSTimeSeriesPlot *plot();
 
+private slots:
+	void slot_request_move_to_timepoint(int t0);
+
 signals:
 	void requestCenterOnCursor();
 

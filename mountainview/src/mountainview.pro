@@ -18,7 +18,8 @@ HEADERS += \
     mvcrosscorrelogramswidget.h \
     mvunitwidget.h \
     diskarraymodelclipssubset.h \
-    mvcdfview.h
+    mvcdfview.h \
+    static_neuron_colors.h
 SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
@@ -26,7 +27,8 @@ SOURCES += mountainviewmain.cpp \
     mvcrosscorrelogramswidget.cpp \
     mvunitwidget.cpp \
     diskarraymodelclipssubset.cpp \
-    mvcdfview.cpp
+    mvcdfview.cpp \
+    static_neuron_colors.cpp
 
 HEADERS += get_principal_components.h
 SOURCES += get_principal_components.cpp
