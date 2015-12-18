@@ -38,12 +38,13 @@ public:
 
 	DiskArrayModel *m_clips;
 	bool m_own_clips;
-	bool m_unit_number;
+	int m_unit_number;
 
 	MVCrossCorrelogramsWidget *m_cross_correlograms_widget;
 	SSTimeSeriesView *m_clips_view;
 	SSTimeSeriesView *m_template_view;
 	CVWidget *m_cluster_widget;
+	SSTimeSeriesView *m_labeled_raw_view;
 
 	QSplitter *m_hsplitter;
 	QSplitter *m_vsplitter;
@@ -84,11 +85,16 @@ MVUnitWidget::MVUnitWidget(QWidget *parent) : QMainWindow(parent)
 
 	d->m_status_label=new QLabel;
 
+	d->m_labeled_raw_view=new SSTimeSeriesView;
+	d->m_labeled_raw_view->initialize();
+	//connect(d->m_labeled_raw_view,SIGNAL(currentXChanged()),this,SLOT(slot_current_raw_timepoint_changed()));
+
 	{
 		QSplitter *vsplitter=new QSplitter(Qt::Vertical);
 		vsplitter->setHandleWidth(15);
 		vsplitter->addWidget(d->m_clips_view);
 		vsplitter->addWidget(d->m_cross_correlograms_widget);
+		vsplitter->addWidget(d->m_labeled_raw_view);
 		d->m_vsplitter=vsplitter;
 	}
 
@@ -144,6 +150,8 @@ void MVUnitWidget::setRaw(DiskArrayModel *X,bool own_it)
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
 	d->m_raw=X;
 	d->m_own_raw=own_it;
+
+	d->m_labeled_raw_view->setData(X,false);
 }
 
 void MVUnitWidget::setTimesLabels(const Mda &times, const Mda &labels)
@@ -158,6 +166,26 @@ void MVUnitWidget::setTimesLabels(const Mda &times, const Mda &labels)
 //	}
 
 //	d->m_clips_view->setLabels(new DiskReadMda(TL),true);
+
+	int NN=d->m_times.totalSize();
+	int N0=0;
+	for (int ii=0; ii<NN; ii++) {
+		if (d->m_labels.value1(ii)==d->m_unit_number)
+			N0++;
+	}
+	qDebug() << "N0=" << N0;
+	Mda TL; TL.allocate(2,N0);
+	int jj=0;
+	for (int ii=0; ii<NN; ii++) {
+		if (d->m_labels.value1(ii)==d->m_unit_number) {
+			qDebug() << "Setting label" << d->m_labels.value1(ii) << d->m_unit_number;
+			TL.setValue(d->m_times.value1(ii),0,jj);
+			TL.setValue(d->m_labels.value1(ii),1,jj);
+			jj++;
+		}
+	}
+
+	d->m_labeled_raw_view->setLabels(new DiskReadMda(TL),true);
 }
 
 void MVUnitWidget::setCrossCorrelogramsPath(const QString &path)

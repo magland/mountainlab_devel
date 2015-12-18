@@ -236,6 +236,7 @@ void MVOverviewWidget::slot_statistics_widget_current_unit_changed()
 void MVOverviewWidget::slot_unit_activated(int num)
 {
 	MVUnitWidget *W=new MVUnitWidget;
+	W->setUnitNumber(num);
 	W->setAttribute(Qt::WA_DeleteOnClose);
 	W->setElectrodeLocations(d->m_locations);
 	W->setTimesLabels(d->m_times,d->m_labels);
@@ -251,7 +252,6 @@ void MVOverviewWidget::slot_unit_activated(int num)
 	clips->setRange(i1,i2);
 
 	W->setClips(clips,true);
-	W->setUnitNumber(num);
 	W->setCrossCorrelogramsPath(d->m_cross_correlograms_path);
 	W->resize(width(),height());
 	W->show();

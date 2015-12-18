@@ -3,6 +3,7 @@
 #include "mda.h"
 #include "get_principal_components.h"
 #include "isosplit.h"
+#include "omp.h"
 
 QList<int> get_times(DiskReadMda &C,int k);
 int get_K(DiskReadMda &C);
@@ -23,6 +24,7 @@ bool split_clusters(const char *input_path,const char *cluster_path,const char *
     int K=get_K(C);
 
     int kk=1;
+	//#pragma omp parallel for
     for (int k=1; k<=K; k++) {
 		printf("k=%d/%d... ",k,K);
         QList<int> times=get_times(C,k);
