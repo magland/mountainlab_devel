@@ -23,11 +23,15 @@ public:
 	void setRaw(DiskArrayModel *X,bool own_it);
 	void setTimesLabels(const Mda &times,const Mda &labels);
 	void setCrossCorrelogramsPath(const QString &path);
+	int currentClipNumber();
 
 	void setClips(DiskArrayModel *C,bool own_it);
 	void setUnitNumber(int num);
 
 	void updateWidgets();
+
+signals:
+	void currentClipNumberChanged();
 
 protected:
 	void resizeEvent(QResizeEvent *evt);

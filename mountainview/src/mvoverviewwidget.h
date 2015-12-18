@@ -36,6 +36,7 @@ private slots:
 	void slot_cross_correlograms_current_unit_changed();
 	void slot_statistics_widget_current_unit_changed();
 	void slot_unit_activated(int num);
+	void slot_current_clip_number_changed();
 
 
 private:

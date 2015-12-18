@@ -20,6 +20,7 @@
 #include "mvunitwidget.h"
 #include "diskarraymodelclipssubset.h"
 #include "ftelectrodearrayview.h"
+#include "mvcdfview.h"
 
 class MVOverviewWidgetPrivate {
 public:
@@ -45,6 +46,7 @@ public:
 	MVCrossCorrelogramsWidget *m_cross_correlograms_widget;
 	SSTimeSeriesView *m_labeled_raw_view;
 	FTElectrodeArrayView *m_electrode_view;
+	MVCdfView *m_cdf_view;
 
 	QSplitter *m_hsplitter;
 	QSplitter *m_vsplitter;
@@ -87,6 +89,8 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 	d->m_electrode_view->setShowChannelNumbers(true);
 	d->m_electrode_view->setNormalizeIntensity(false);
 
+	d->m_cdf_view=new MVCdfView;
+
 	{
 		QSplitter *vsplitter=new QSplitter(Qt::Vertical);
 		vsplitter->setHandleWidth(15);
@@ -99,6 +103,7 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 		QSplitter *vsplitter=new QSplitter(Qt::Vertical);
 		vsplitter->setHandleWidth(15);
 		vsplitter->addWidget(d->m_statistics_widget);
+		vsplitter->addWidget(d->m_cdf_view);
 		vsplitter->addWidget(d->m_electrode_view);
 		d->m_left_vsplitter=vsplitter;
 	}
@@ -169,6 +174,9 @@ void MVOverviewWidget::setTimesLabels(const Mda &times, const Mda &labels)
 
 	d->m_statistics_widget->setTimesLabels(times,labels);
 	d->m_labeled_raw_view->setLabels(new DiskReadMda(TL),true);
+
+	d->m_cdf_view->setTimesLabels(times,labels);
+	d->m_cdf_view->update();
 }
 
 void MVOverviewWidget::setCrossCorrelogramsPath(const QString &path)
@@ -245,7 +253,32 @@ void MVOverviewWidget::slot_unit_activated(int num)
 	W->setCrossCorrelogramsPath(d->m_cross_correlograms_path);
 	W->resize(width(),height());
 	W->show();
+	W->setProperty("unit_number",num);
 	W->updateWidgets();
+
+	connect(W,SIGNAL(currentClipNumberChanged()),this,SLOT(slot_current_clip_number_changed()));
+}
+
+void MVOverviewWidget::slot_current_clip_number_changed()
+{
+	MVUnitWidget *W=(MVUnitWidget *)sender();
+	if (!W) return;
+	int unit_num=W->property("unit_number").toInt();
+	int clip_num=W->currentClipNumber();
+	printf("############################ %d,%d ############################\n",unit_num,clip_num);
+	int jj=0;
+	for (int i=0; i<d->m_labels.totalSize(); i++) {
+		int label0=(int)d->m_labels.value1(i);
+		if (label0==unit_num) {
+			if (jj==clip_num) {
+				int time0=(int)d->m_times.value1(i);
+				printf("Setting timepoint %d\n",time0);
+				d->m_labeled_raw_view->setCurrentTimepoint(time0);
+				break;
+			}
+			jj++;
+		}
+	}
 }
 
 void MVOverviewWidgetPrivate::update_spike_templates()
@@ -301,11 +334,11 @@ void MVOverviewWidgetPrivate::update_sizes()
 	}
 
 
-	int H2_left=H0/2;
-	if (H2_left>500) H2_left=500;
-	int H1_left=H0-H2_left;
+	int H1_left=H0/3;
+	int H2_left=H0/3;
+	int H3_left=H0-H1_left-H2_left;
 	{
-		QList<int> sizes; sizes << H1_left << H2_left;
+		QList<int> sizes; sizes << H1_left << H2_left << H3_left;
 		m_left_vsplitter->setSizes(sizes);
 	}
 }
@@ -333,7 +366,7 @@ void MVOverviewWidgetPrivate::set_current_unit(int num)
 	}
 	m_electrode_view->setWaveform(template0);
 
-
+	m_cdf_view->setCurrentLabel(num);
 }
 
 

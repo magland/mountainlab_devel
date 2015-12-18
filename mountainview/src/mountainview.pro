@@ -17,14 +17,16 @@ HEADERS += \
     mvstatisticswidget.h \
     mvcrosscorrelogramswidget.h \
     mvunitwidget.h \
-    diskarraymodelclipssubset.h
+    diskarraymodelclipssubset.h \
+    mvcdfview.h
 SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
     mvstatisticswidget.cpp \
     mvcrosscorrelogramswidget.cpp \
     mvunitwidget.cpp \
-    diskarraymodelclipssubset.cpp
+    diskarraymodelclipssubset.cpp \
+    mvcdfview.cpp
 
 HEADERS += get_principal_components.h
 SOURCES += get_principal_components.cpp

@@ -166,6 +166,11 @@ void MVUnitWidget::setCrossCorrelogramsPath(const QString &path)
 	d->m_cross_correlograms_widget->setCrossCorrelogramsPath(path);
 }
 
+int MVUnitWidget::currentClipNumber()
+{
+	return d->m_current_clip_number;
+}
+
 Mda compute_mean_waveform(DiskArrayModel *C) {
 	Mda ret;
 	if (!C->dim3()) return ret;
@@ -328,6 +333,7 @@ void MVUnitWidgetPrivate::set_status_text(const QString &txt)
 void MVUnitWidgetPrivate::set_current_clip_number(int num)
 {
 	if (m_current_clip_number==num) return;
+
 	m_current_clip_number=num;
 	QList<int> L; L << m_current_clip_number;
 	qDebug() << "setSelectedDataPointIndices" << L;
@@ -346,6 +352,9 @@ void MVUnitWidgetPrivate::set_current_clip_number(int num)
 			m_clips_view->setCurrentX(num*T+T/2);
 		}
 	}
+
+	emit q->currentClipNumberChanged();
+
 }
 
 MVUnitWidget::~MVUnitWidget()
