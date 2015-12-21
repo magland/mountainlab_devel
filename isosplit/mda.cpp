@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #define UNUSED(expr) do { (void)(expr); } while (0);
-#ifdef __QT__
+#ifdef QT_CORE_LIB
 #include <QDebug>
 #include "usagetracking.h"
 #else
@@ -317,7 +317,7 @@ Mda Mda::transpose() const {
 	jfree(size);
 	return ret;
 }
-bool Mda::read(char *path) {
+bool Mda::read(const char *path) {
 	allocate(1, 1);
 
 	FILE *inf=jfopen(path,"rb");
@@ -433,7 +433,7 @@ unsigned char MdaPrivate::read_unsigned_char(FILE *inf) {
 	return ret;
 }
 
-bool Mda::write(char *path) {
+bool Mda::write(const char *path) {
 
 	FILE *outf=jfopen(path,"wb");
 	if (!outf) {
@@ -448,7 +448,7 @@ bool Mda::write(char *path) {
     return ret;
 }
 
-#ifdef __QT__
+#ifdef QT_CORE_LIB
 bool Mda::read(const QString &path)
 {
     return read(path.toLatin1().data());

@@ -10,7 +10,7 @@
 #define MDA_TYPE_INT32 -5
 #define MDA_TYPE_UINT16 -6
 
-#ifdef __QT__
+#ifdef QT_CORE_LIB
 #include <QString>
 #endif
 
@@ -52,9 +52,9 @@ public:
 	Mda getDataXZ(int num_inds,int *inds) const;
 	Mda getDataYZ(int num_inds,int *inds) const;
 	Mda transpose() const;
-	bool read(char *path);
-	bool write(char *path);
-    #ifdef __QT__
+    bool read(const char *path);
+    bool write(const char *path);
+    #ifdef QT_CORE_LIB
     bool read(const QString &path);
     bool write(const QString &path);
     #endif

@@ -238,7 +238,7 @@ void attempt_to_redistribute_two_clusters(QVector<int> &ii1,QVector<int> &ii2,bo
 
 	//This is the core procedure -- split based on isotonic regression
 	double cutpoint;
-	bool significant_split=isocut(NN,cutpoint,XX,isocut_threshold);
+    bool significant_split=isocut(NN,&cutpoint,XX,isocut_threshold);
 	if (significant_split) {
         //It was a statistically significant split -- so let's redistribute!
 		for (int ii=0; ii<NN; ii++) {

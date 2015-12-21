@@ -4,7 +4,7 @@
 #include "jisotonic.h"
 #include <stdio.h>
 #include <stdlib.h>
-#ifdef __QT__
+#ifdef QT_CORE_LIB
 #include <QCoreApplication>
 #include <QDebug>
 #include <QTime>

@@ -22,9 +22,6 @@ for k2=1:NN
 end;
 end;
 
-
-
-
 end
 
 function ret=do_test1(X,XI,k1,k2,verbose)
