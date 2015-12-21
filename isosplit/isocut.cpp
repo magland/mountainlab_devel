@@ -1,11 +1,14 @@
-#include <QCoreApplication>
 #include "isocut.h"
 #include "mda.h"
 #include <math.h>
 #include "jisotonic.h"
 #include <stdio.h>
+#include <stdlib.h>
+#ifdef __QT__
+#include <QCoreApplication>
 #include <QDebug>
 #include <QTime>
+#endif
 
 double compute_ks(int N1,int N2,double *samples1,double *samples2);
 
@@ -86,19 +89,32 @@ void sort(int N,double *out,double *in) {
 //	for (int j=0; j<N; j++) out[j]=in0[j];
 }
 
-bool isocut(int N,double &cutpoint,double *samples_in,double threshold,int minsize) {
-	cutpoint=0;
+bool isocut(int N,double *cutpoint,double *samples_in) {
+    return isocut(N,cutpoint,samples_in,1.4,4);
+}
+
+bool isocut(int N,double *cutpoint,double *samples_in,double threshold) {
+    return isocut(N,cutpoint,samples_in,threshold,4);
+}
+
+bool isocut(int N,double *cutpoint,double *samples_in,double threshold,int minsize) {
+	*cutpoint=0;
 	double *samples=(double *)malloc(sizeof(double)*N);
 	sort(N,samples,samples_in);
-	QVector<int> N0s;
+    
+    int *N0s=(int *)malloc(sizeof(int)*(N*2+2)); //conservative malloc
+    int num_N0s=0;
 	for (int ii=2; ii<=floor(log2(N/2*1.0)); ii++) {
-		N0s << pow(2,ii);
-		N0s << -pow(2,ii);
+		N0s[num_N0s]=pow(2,ii);
+        num_N0s++;
+		N0s[num_N0s]=-pow(2,ii);
+        num_N0s++;
 	}
-	N0s << N;
+	N0s[num_N0s]=N;
+    num_N0s++;
 
 	bool found=false;
-	for (int jj=0; (jj<N0s.count())&&(!found); jj++) {
+	for (int jj=0; (jj<num_N0s)&&(!found); jj++) {
 		int N0=N0s[jj];
 		int NN0=N0; if (N0<0) NN0=-N0;
 		double *samples0=(double *)malloc(sizeof(double)*NN0);
@@ -140,7 +156,7 @@ bool isocut(int N,double &cutpoint,double *samples_in,double threshold,int minsi
 						max_ind=ii;
 					}
 				}
-				cutpoint=(samples0[max_ind]+samples0[max_ind+1])/2;
+				*cutpoint=(samples0[max_ind]+samples0[max_ind+1])/2;
 				found=true;
 			}
 		}
@@ -151,6 +167,7 @@ bool isocut(int N,double &cutpoint,double *samples_in,double threshold,int minsi
 		free(samples0_fit);
 	}
 
+    free(N0s);
 	free(samples);
 
 	return found;

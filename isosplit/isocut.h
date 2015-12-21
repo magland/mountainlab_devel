@@ -1,7 +1,15 @@
 #ifndef isocut_h
 #define isocut_h
 
+/*
+ * MCWRAP [ cutpoint[1,1] ] = isocut(X[1,N])
+ * SET_INPUT N = size(X,2)
+ * SOURCES isocut.cpp mda.cpp jisotonic.cpp
+ * HEADERS isocut.h
+ */
+bool isocut(int N,double *cutpoint,double *X);
+bool isocut(int N,double *cutpoint,double *X,double threshold);
+bool isocut(int N,double *cutpoint,double *X,double threshold,int minsize);
 //return true if split is statistically significant
-bool isocut(int N,double &cutpoint,double *X,double threshold=1.4,int minsize=4);
 
 #endif

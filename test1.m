@@ -7,7 +7,7 @@ XI=readmda('example_data/clips_filt2_white_index.mda');
 
 do_test1(X,XI,30,31,1); return;
 
-NN=38;
+NN=10;
 
 close all;
 fA=figure;

@@ -3,8 +3,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #define UNUSED(expr) do { (void)(expr); } while (0);
+#ifdef __QT__
 #include <QDebug>
 #include "usagetracking.h"
+#else
+#define jmalloc malloc
+#define jfree free
+#define jfread fread
+#define jfopen fopen
+#define jfclose fclose
+#endif
 
 class MdaPrivate {
 public:
@@ -152,7 +160,7 @@ int Mda::totalSize() const {
 void Mda::reshape(int N1, int N2, int N3, int N4, int N5, int N6)
 {
 	if (N1*N2*N3*N4*N5*N6!=totalSize()) {
-		qWarning() << "Unable to reshape. Inconsistent size." << N1 << N2 << N3 << N4 << N5 << N6 << totalSize();
+		printf("WARNING: Unable to reshape. Inconsistent size. %d,%d,%d,%d,%d,%d %d",N1,N2,N3,N4,N5,N6,totalSize());
 		return;
 	}
 	d->m_size[0]=N1;
@@ -440,6 +448,7 @@ bool Mda::write(char *path) {
     return ret;
 }
 
+#ifdef __QT__
 bool Mda::read(const QString &path)
 {
     return read(path.toLatin1().data());
@@ -449,6 +458,7 @@ bool Mda::write(const QString &path)
 {
     return write(path.toLatin1().data());
 }
+#endif
 
 double *Mda::dataPtr()
 {
