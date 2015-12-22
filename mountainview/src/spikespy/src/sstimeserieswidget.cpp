@@ -153,7 +153,12 @@ void SSTimeSeriesWidget::addView(SSAbstractView *V) {
 
 void SSTimeSeriesWidget::setClipData(const Mda &X)
 {
-	d->m_clip_data=X;
+    d->m_clip_data=X;
+}
+
+void SSTimeSeriesWidget::hideMenu()
+{
+    d->m_menubar->hide();
 }
 
 void SSTimeSeriesWidgetPrivate::set_info(QString txt) {

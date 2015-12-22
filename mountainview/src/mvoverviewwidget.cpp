@@ -44,7 +44,7 @@ public:
 	SSTimeSeriesView *m_spike_templates_view;
 	MVStatisticsWidget *m_statistics_widget;
 	MVCrossCorrelogramsWidget *m_cross_correlograms_widget;
-	SSTimeSeriesView *m_labeled_raw_view;
+    SSTimeSeriesView *m_labeled_raw_view;
 	FTElectrodeArrayView *m_electrode_view;
 	MVCdfView *m_cdf_view;
 
@@ -74,9 +74,12 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 	d->m_spike_templates_view->initialize();
 	connect(d->m_spike_templates_view,SIGNAL(currentXChanged()),this,SLOT(slot_spike_templates_current_x_changed()));
 
-	d->m_labeled_raw_view=new SSTimeSeriesView;
-	d->m_labeled_raw_view->initialize();
+    d->m_labeled_raw_view=new SSTimeSeriesView;
+    d->m_labeled_raw_view->initialize();
 	connect(d->m_labeled_raw_view,SIGNAL(currentXChanged()),this,SLOT(slot_current_raw_timepoint_changed()));
+    SSTimeSeriesWidget *labeled_raw_widget=new SSTimeSeriesWidget;
+    labeled_raw_widget->addView(d->m_labeled_raw_view);
+    labeled_raw_widget->hideMenu();
 
 	d->m_statistics_widget=new MVStatisticsWidget;
 	connect(d->m_statistics_widget,SIGNAL(currentUnitChanged()),this,SLOT(slot_statistics_widget_current_unit_changed()));
@@ -99,7 +102,7 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 		vsplitter->setHandleWidth(15);
 		vsplitter->addWidget(d->m_spike_templates_view);
 		vsplitter->addWidget(d->m_cross_correlograms_widget);
-		vsplitter->addWidget(d->m_labeled_raw_view);
+        vsplitter->addWidget(labeled_raw_widget);
 		d->m_vsplitter=vsplitter;
 	}
 	{

@@ -67,18 +67,21 @@ mscmd_features([path0,'/filt2_white.mda'],[path0,'/detect.mda'],[path0,'/adjacen
 mscmd_cluster([path0,'/features.mda'],[path0,'/cluster.mda'],o_cluster);
 
 mscmd_split_clusters([path0,'/filt2_white.mda'],[path0,'/cluster.mda'],[path0,'/cluster2.mda'],o_split_clusters);
-mscmd_templates([path0,'/filt.mda'],[path0,'/cluster2.mda'],[path0,'/templates.mda'],o_templates);
+mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster2.mda'],[path0,'/templates.mda'],o_templates);
 mscmd_consolidate([path0,'/cluster2.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
 
-mscmd_templates([path0,'/raw.mda'],[path0,'/cluster0.mda'],[path0,'/templates0_raw.mda'],o_templates);
-mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster0.mda'],[path0,'/templates0_filt2_white.mda'],o_templates);
+mscmd_fit([path0,'/filt2_white.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/cluster0b.mda']);
+%writemda(readmda([path0,'/cluster0.mda']),[path0,'/cluster0b.mda']);
 
-mscmd_extract_clips([path0,'/filt.mda'],[path0,'/cluster0.mda'],[path0,'/clips_filt.mda'],[path0,'/clips_filt_index.mda'],o_extract_clips);
-mscmd_extract_clips([path0,'/filt2_white.mda'],[path0,'/cluster0.mda'],[path0,'/clips_filt2_white.mda'],[path0,'/clips_filt2_white_index.mda'],o_extract_clips);
+mscmd_templates([path0,'/raw.mda'],[path0,'/cluster0b.mda'],[path0,'/templates0_raw.mda'],o_templates);
+mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster0b.mda'],[path0,'/templates0_filt2_white.mda'],o_templates);
+
+mscmd_extract_clips([path0,'/filt.mda'],[path0,'/cluster0b.mda'],[path0,'/clips_filt.mda'],[path0,'/clips_filt_index.mda'],o_extract_clips);
+mscmd_extract_clips([path0,'/filt2_white.mda'],[path0,'/cluster0b.mda'],[path0,'/clips_filt2_white.mda'],[path0,'/clips_filt2_white_index.mda'],o_extract_clips);
 
 fprintf('Computing cross-correlograms...\n');
-cluster0=readmda([path0,'/cluster0.mda']);
-[CC,CCmda]=ms_cross_correlograms(cluster0(2,:),cluster0(3,:),o_cross_correlograms.max_dt);
+cluster0b=readmda([path0,'/cluster0b.mda']);
+[CC,CCmda]=ms_cross_correlograms(cluster0b(2,:),cluster0b(3,:),o_cross_correlograms.max_dt);
 writemda(CCmda,[path0,'/cross-correlograms.mda']);
 
 fprintf('Elapsed time: %g sec\n',toc(timerA));
