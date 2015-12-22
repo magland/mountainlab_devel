@@ -5,79 +5,247 @@
 #include <QTime>
 #include <QList>
 #include "mda.h"
+#include "diskreadmda.h"
 
-int fit_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_file,long timepoint1,long timepoint2,long overlap,int inner_window_width,int outer_window_width,double threshold);
-
-struct Event {
-    int channel;
-    int timepoint;
-    int label;
-};
+void sort_cluster_by_time(Mda &cluster);
+void compute_scores(Mda &scores,Mda &X,Mda &templates,int num_events,int *times,int *labels,bool *score_update_needed);
+Mda load_chunk(DiskReadMda &X,int tt1,int tt2);
+int do_fit(bool *to_include,Mda &X,Mda &templates,int num_events,int *times,int *labels);
 
 bool fit(const char *input_path,const char *templates_path,const char *cluster_in_path,const char *cluster_out_path) {
     printf("fit %s %s %s %s..\n",input_path,templates_path,cluster_in_path,cluster_out_path);
 
-    FILE *input_file=fopen(input_path,"rb");
-    if (!input_file) {
-        printf("Unable to open file for reading: %s\n",input_path);
-        return false;
-    }
-
+    DiskReadMda input;
+    input.setPath(input_path);
+    Mda cluster; cluster.read(cluster_in_path);
     Mda templates; templates.read(templates_path);
-    Mda cluster_in; cluster_in.read(cluster_in_path);
-    QList<Event> events_in;
-    for (int i=0; i<cluster_in.N2(); i++) {
-        Event EE;
-        EE.channel=(int)cluster_in.value(0,i);
-        EE.timepoint=(int)cluster_in.value(1,i);
-        EE.label=(int)cluster_in.value(2,i);
-        events_in << EE;
+
+    sort_cluster_by_time(cluster);
+
+    int num_events=cluster.N2();
+
+    bool to_include[num_events];
+    int times[num_events];
+    int labels[num_events];
+    for (int i=0; i<num_events; i++) {
+        to_include[i]=0;
+        times[i]=cluster.value(1,i);
+        labels[i]=cluster.value(2,i);
     }
 
-    /*
-    long chunk_size=pow(2,15); // 2^15 = 32,768
-    if (chunk_size>N) chunk_size=N;
-    long overlap=chunk_size;
-    if (overlap<2000) overlap=2000;
+    int chunk_size=1000000;
+    int num_chunks=(input.N2()+1)/chunk_size + 1;
+    int overlap=10000;
 
-    QTime timer; timer.start();
-    int total_num_events=0;
-    for (long tt=0; tt<N; tt+=chunk_size) {
-        if ((tt==0)||(timer.elapsed()>1000)) {
-            float pct=tt*1.0/N;
-            printf("Processing chunk %ld/%ld (%d%%)\n",(tt/chunk_size)+1,(N/chunk_size)+1,(int)(pct*100));
-            timer.restart();
+    for (int chunk=0; chunk<num_chunks; chunk++) {
+        int timepoint1=chunk*chunk_size;
+        int timepoint2=timepoint1+chunk_size;
+        if (timepoint2>input.N2()) timepoint2=input.N2();
+        int tt1=timepoint1-overlap; if (tt1<0) tt1=0;
+        int tt2=timepoint2+overlap; if (tt2>input.N2()) tt2=input.N2();
+        Mda X=load_chunk(input,tt1,tt2);
+        int num_events0=0;
+        for (int j=0; j<num_events; j++) {
+            if ((times[j]>=tt1)&&(times[j]<tt2)) num_events0++;
         }
-        long tt2=tt+chunk_size;
-        if (tt2>N) tt2=N;
-
-        int timepoint1=tt;
-        int timepoint2=tt2;
-
-        long overlap1=overlap;
-        if (timepoint1-overlap1<0) overlap1=timepoint1;
-        long overlap2=overlap;
-        if (timepoint2+overlap2>H.dims[1]) overlap2=H.dims[1]-timepoint2;
-        long NN=N+overlap1+overlap2;
-
-        float *X=(float *)malloc(sizeof(float)*M*NN);
-        fseek(input_file,H.header_size+H.num_bytes_per_entry*M*(timepoint1-overlap1),SEEK_SET);
-        mda_read_float32(X,&H,M*NN,input_file);
-
-        fit_2(M,NN,X,templates,cluster_in,cluster_out);
-
-        free(X);
+        int times0[num_events0];
+        int labels0[num_events0];
+        bool to_include0[num_events];
+        {
+            int ii=0;
+            for (int j=0; j<num_events; j++) {
+                if ((times[j]>=tt1)&&(times[j]<tt2)) {
+                    times0[ii]=times[j]-tt1;
+                    labels0[ii]=labels[j];
+                    ii++;
+                }
+            }
+        }
+        printf("chunk %d/%d %d events... ",chunk,num_chunks,num_events0);
+        int num_passes=do_fit(to_include0,X,templates,num_events0,times0,labels0);
+        int num_events_used=0;
+        {
+            int ii=0;
+            for (int j=0; j<num_events; j++) {
+                if ((times[j]>=tt1)&&(times[j]<tt2)) {
+                    if (to_include0[ii]) num_events_used++;
+                    if ((times[j]>=timepoint1)&&(times[j]<timepoint2)) {
+                        to_include[j]=to_include0[ii];
+                    }
+                    ii++;
+                }
+            }
+        }
+        printf("%d events used in %d passes\n",num_events_used,num_passes);
     }
-    printf("total_num_events=%d\n",total_num_events);
-    fseek(output_file,0,SEEK_SET);
-    H_out.dims[1]=total_num_events;
-    mda_write_header(&H_out,output_file); //now that H_out.dims[1] has been set, rewrite the header
 
-    fclose(input_file);
-    fclose(output_file);
-    printf("[done].\n");
-    */
+    int num_to_include=0;
+    for (int j=0; j<num_events; j++) {
+        if (to_include[j]) num_to_include++;
+    }
+
+    printf("Including %d / %d events.\n",num_to_include,num_events);
+    Mda cluster_out; cluster_out.allocate(3,num_to_include);
+    int i=0;
+    for (int j=0; j<num_events; j++) {
+        if (to_include[j]) {
+            cluster_out.setValue(cluster.value(0,j),0,i);
+            cluster_out.setValue(cluster.value(1,j),1,i);
+            cluster_out.setValue(cluster.value(2,j),2,i);
+            i++;
+        }
+    }
+
+    cluster_out.write(cluster_out_path);
 
     return true;
 }
 
+int do_fit(bool *to_include,Mda &X,Mda &templates,int num_events,int *times,int *labels) {
+    int M=X.N1();
+    int clip_size=templates.N2();
+    int tt1=-(int)(clip_size/2);
+    int tt2=tt1+clip_size-1;
+    int K=templates.N3();
+
+    for (int j=0; j<num_events; j++) {
+        to_include[j]=false;
+    }
+
+    bool coeffs_to_use[m*clip_size*K];
+    for (int k=0; k<)
+
+    bool score_update_needed[num_events];
+    for (int j=0; j<num_events; j++) score_update_needed[j]=true;
+
+    int num_passes=0;
+    Mda scores; scores.allocate(1,num_events);
+    while (true) {
+        num_passes++;
+        compute_scores(scores,X,templates,num_events,times,labels,score_update_needed);
+        for (int j=0; j<num_events; j++) score_update_needed[j]=false;
+        int num_changed=0;
+        for (int j=0; j<num_events; j++) {
+            if ((!to_include[j])&&(scores.value1(j)>0)) {
+                bool best=true;
+                int k=j-1;
+                while ((k>=0)&&(fabs(times[k]-times[j])<=clip_size)) {
+                    if (scores.value1(k)>scores.value1(j)) {
+                        best=0;
+                        break;
+                    }
+                    k--;
+                }
+                if (best) {
+                    int k=j+1;
+                    while ((k<num_events)&&(fabs(times[k]-times[j])<=clip_size)) {
+                        if (scores.value1(k)>scores.value1(j)) {
+                            best=0;
+                            break;
+                        }
+                        k++;
+                    }
+                }
+                if (best) {
+                    if ((times[j]+tt1>=0)&&(times[j]+tt2<X.N2())) {
+                        to_include[j]=true;
+                        num_changed++;
+                        for (int tt=tt1; tt<=tt2; tt++) {
+                            for (int m=0; m<M; m++) {
+                                float val1=X.value(m,times[j]+tt);
+                                val1-=templates.value(m,tt-tt1,labels[j]-1);
+                                X.setValue(val1,m,times[j]+tt);
+                            }
+                        }
+
+                        {
+                            int k=j;
+                            while ((k>=0)&&(fabs(times[k]-times[j])<=clip_size)) {
+                                score_update_needed[k]=true;
+                                k--;
+                            }
+                        }
+                        {
+                            int k=j+1;
+                            while ((k>=0)&&(fabs(times[k]-times[j])<=clip_size)) {
+                                score_update_needed[k]=true;
+                                k--;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (num_changed==0) break;
+    }
+    return num_passes;
+}
+
+void compute_scores(Mda &scores,Mda &X,Mda &templates,int num_events,int *times,int *labels,bool *score_update_needed) {
+    int M=X.N1();
+    int clip_size=templates.N2();
+    int tt1=-(int)(clip_size/2);
+    int tt2=tt1+clip_size-1;
+
+    for (int j=0; j<num_events; j++) {
+        if (score_update_needed[j]) {
+            if ((times[j]+tt1>=0)&&(times[j]+tt2<X.N2())) {
+                double sumsqr1=0;
+                double sumsqr2=0;
+                for (int tt=0; tt<clip_size; tt++) {
+                    for (int m=0; m<M; m++) {
+                        float X0=X.value(m,times[j]+tt1+tt);
+                        float T0=templates.value(m,tt,labels[j]-1);
+                        sumsqr1+=X0*X0;
+                        sumsqr2+=(X0-T0)*(X0-T0);
+                    }
+                }
+                scores.setValue1(sumsqr1-sumsqr2,j);
+            }
+            else scores.setValue1(0,j);
+        }
+    }
+}
+
+struct SortRec {
+    double val;
+    int index;
+};
+bool caseInsensitiveLessThan2(const SortRec &R1, const SortRec &R2)
+{
+  return R1.val<R2.val;
+}
+
+
+void sort_cluster_by_time(Mda &cluster) {
+    QList<SortRec> list;
+    for (int i=0; i<cluster.N2(); i++) {
+        SortRec SR;
+        SR.index=i;
+        SR.val=cluster.value(1,i);
+        list << SR;
+    }
+    qSort(list.begin(),list.end(),caseInsensitiveLessThan2);
+    Mda cluster2; cluster2.allocate(cluster.N1(),cluster.N2());
+
+    for (int i=0; i<list.count(); i++) {
+        for (int jj=0; jj<cluster.N1(); jj++) {
+            cluster2.setValue(cluster.value(jj,list[i].index),jj,i);
+        }
+    }
+
+    cluster=cluster2;
+}
+
+Mda load_chunk(DiskReadMda &X,int tt1,int tt2) {
+    Mda ret;
+    int M=X.N1();
+    int NN=tt2-tt1;
+    ret.allocate(M,NN);
+    for (int n=0; n<NN; n++) {
+        for (int m=0; m<M; m++) {
+            ret.setValue(X.value(m,n+tt1),m,n);
+        }
+    }
+    return ret;
+}
