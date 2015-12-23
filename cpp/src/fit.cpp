@@ -8,7 +8,7 @@
 #include "diskreadmda.h"
 
 void sort_cluster_by_time(Mda &cluster);
-void compute_scores(Mda &scores,Mda &X,Mda &templates,int num_events,int *times,int *labels,bool *score_update_needed);
+void compute_scores(Mda &scores,Mda &X,Mda &templates,int num_events,int *times,int *labels,bool *score_update_needed,bool *coeffs_to_use);
 Mda load_chunk(DiskReadMda &X,int tt1,int tt2);
 int do_fit(bool *to_include,Mda &X,Mda &templates,int num_events,int *times,int *labels);
 
@@ -112,8 +112,22 @@ int do_fit(bool *to_include,Mda &X,Mda &templates,int num_events,int *times,int 
         to_include[j]=false;
     }
 
-    bool coeffs_to_use[m*clip_size*K];
-    for (int k=0; k<)
+	bool coeffs_to_use[M*clip_size*K];
+	for (int k=0; k<K; k++) {
+		float maxval=0;
+		for (int t=0; t<clip_size; t++) {
+			for (int m=0; m<M; m++) {
+				float val=templates.value(m,t,k);
+				if (fabs(val)>maxval) maxval=fabs(val);
+			}
+		}
+		for (int t=0; t<clip_size; t++) {
+			for (int m=0; m<M; m++) {
+				float val=templates.value(m,t,k);
+				to_include[m+M*t+M*clip_size*k]=(fabs(val)>=maxval*0.2);
+			}
+		}
+	}
 
     bool score_update_needed[num_events];
     for (int j=0; j<num_events; j++) score_update_needed[j]=true;
@@ -122,7 +136,7 @@ int do_fit(bool *to_include,Mda &X,Mda &templates,int num_events,int *times,int 
     Mda scores; scores.allocate(1,num_events);
     while (true) {
         num_passes++;
-        compute_scores(scores,X,templates,num_events,times,labels,score_update_needed);
+		compute_scores(scores,X,templates,num_events,times,labels,score_update_needed,coeffs_to_use);
         for (int j=0; j<num_events; j++) score_update_needed[j]=false;
         int num_changed=0;
         for (int j=0; j<num_events; j++) {
@@ -181,7 +195,7 @@ int do_fit(bool *to_include,Mda &X,Mda &templates,int num_events,int *times,int 
     return num_passes;
 }
 
-void compute_scores(Mda &scores,Mda &X,Mda &templates,int num_events,int *times,int *labels,bool *score_update_needed) {
+void compute_scores(Mda &scores,Mda &X,Mda &templates,int num_events,int *times,int *labels,bool *score_update_needed,bool *coeffs_to_use) {
     int M=X.N1();
     int clip_size=templates.N2();
     int tt1=-(int)(clip_size/2);
@@ -190,14 +204,18 @@ void compute_scores(Mda &scores,Mda &X,Mda &templates,int num_events,int *times,
     for (int j=0; j<num_events; j++) {
         if (score_update_needed[j]) {
             if ((times[j]+tt1>=0)&&(times[j]+tt2<X.N2())) {
+				int k=labels[j]-1;
+				bool *to_use=&coeffs_to_use[M*clip_size*k];
                 double sumsqr1=0;
                 double sumsqr2=0;
                 for (int tt=0; tt<clip_size; tt++) {
                     for (int m=0; m<M; m++) {
-                        float X0=X.value(m,times[j]+tt1+tt);
-                        float T0=templates.value(m,tt,labels[j]-1);
-                        sumsqr1+=X0*X0;
-                        sumsqr2+=(X0-T0)*(X0-T0);
+						if (to_use[m+M*tt]) {
+							float X0=X.value(m,times[j]+tt1+tt);
+							float T0=templates.value(m,tt,k);
+							sumsqr1+=X0*X0;
+							sumsqr2+=(X0-T0)*(X0-T0);
+						}
                     }
                 }
                 scores.setValue1(sumsqr1-sumsqr2,j);
