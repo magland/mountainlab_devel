@@ -6,53 +6,62 @@
 #include <QDebug>
 #include "mda.h"
 
-int features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size);
+Mda features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,int num_features,int clip_size);
 
 bool features(const char *input_path,const char *detect_path,const char *adjacency_path,const char *output_path,int num_features,int clip_size) {
     printf("features %s %s %s %d %d...\n",input_path,detect_path,output_path,num_features,clip_size);
-    FILE *output_file=fopen(output_path,"wb");
-    if (!output_file) {
-        printf("Unable to open file for writing: %s\n",output_path);
-        return false;
-    }
 
-    DiskReadMda X; X.setPath(input_path);
-    DiskReadMda D; D.setPath(detect_path);
 	Mda A; A.read(adjacency_path);
 
-    int M=X.N1();
-
-    // channel, timepoint, feature1, feature2, ..., feature6
-    MDAIO_HEADER H_out;
-    H_out.data_type=MDAIO_TYPE_FLOAT32;
-    H_out.num_bytes_per_entry=4;
-    H_out.num_dims=2;
-    H_out.dims[0]=num_features+2;
-    H_out.dims[1]=2; //to be replaced later
-    mda_write_header(&H_out,output_file);
-
-    int total_num_events=0;
-	//#pragma omp parallel
+	int M=0;
 	{
-		//#pragma omp for
+		DiskReadMda X; X.setPath(input_path);
+		M=X.N1();
+	}
+
+	QList<Mda> all_features;
+	for (int ch=1; ch<=M; ch++) {
+		Mda X;
+		all_features << X;
+	}
+
+	#pragma omp parallel
+	{
+		#pragma omp for
 		for (int ch=1; ch<=M; ch++) {
+			DiskReadMda X; X.setPath(input_path); //important to do these here? for multi-threaded safety?
+			DiskReadMda D; D.setPath(detect_path);
 			printf("ch=%d... ",ch);
-			int num_events=features_2(ch,X,D,A,&H_out,output_file,num_features,clip_size);
+			Mda features=features_2(ch,X,D,A,num_features,clip_size);
+			int num_events=features.N2();
 			printf("%d events...\n",num_events);
-			total_num_events+=num_events;
+			all_features[ch-1]=features;
 		}
 	}
 
-    H_out.dims[1]=total_num_events;
-    fseek(output_file,0,SEEK_SET);
-    mda_write_header(&H_out,output_file);
+	int total_num_events=0;
+	for (int ch=0; ch<M; ch++) {
+		total_num_events+=all_features[ch].N2();
+	}
 
-    fclose(output_file);
+	Mda output; output.allocate(num_features+2,total_num_events);
+	int ie=0;
+	for (int ch=0; ch<M; ch++) {
+		Mda X=all_features[ch];
+		for (int ii=0; ii<X.N2(); ii++) {
+			for (int jj=0; jj<X.N1(); jj++) {
+				output.setValue(X.value(jj,ii),jj,ie);
+			}
+			ie++;
+		}
+	}
+
+	output.write(output_path);
 
     return true;
 }
 
-int features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,MDAIO_HEADER *H_out,FILE *output_file,int num_features,int clip_size) {
+Mda features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,int num_features,int clip_size) {
     int M=X.N1();
     int N=X.N2();
     int NT=D.N2();
@@ -81,7 +90,7 @@ int features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,MDAIO_HEADER *H
             }
         }
     }
-    if (num_events==0) return 0;
+	if (num_events==0) return Mda();
     float *Y=(float *)malloc(sizeof(float)*M0*clip_size*num_events);
     int *times=(int *)malloc(sizeof(int)*num_events);
     int ie=0;
@@ -102,41 +111,24 @@ int features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,MDAIO_HEADER *H
 		}
 	}
 
-    /*
-    float *components=(float *)malloc(sizeof(float)*M0*clip_size*num_features);
-    get_principal_components(M0*clip_size,num_events,num_features,components,Y);
-    for (int ie=0; ie<num_events; ie++) {
-        float features[num_features];
-        int time0=times[ie];
-        for (int cc=0; cc<num_features; cc++) {
-            float *component=&components[M0*clip_size*cc];
-            float ip=0;
-            for (int t=0; t<clip_size; t++) {
-                for (int im=0; im<M; im++) {
-                    ip+=component[im+M0*t]*Y[im+M0*t+M0*clip_size*ie];
-                }
-            }
-            features[cc]=ip;
-        }
-        float cc_tt[2]; cc_tt[0]=ch; cc_tt[1]=time0;
-        mda_write_float32(cc_tt,H_out,2,output_file);
-        mda_write_float32(features,H_out,num_features,output_file);
-    }
-    */
     float *all_features=(float *)malloc(sizeof(float)*num_features*N);
 	get_pca_features(M0*clip_size,num_events,num_features,all_features,Y);
+
+	Mda ret;
+	ret.allocate(num_features+2,num_events);
     for (int ie=0; ie<num_events; ie++) {
-        int time0=times[ie];
-        float cc_tt[2]; cc_tt[0]=ch; cc_tt[1]=time0;
-        mda_write_float32(cc_tt,H_out,2,output_file);
-        mda_write_float32(&all_features[num_features*ie],H_out,num_features,output_file);
+		int time0=times[ie];
+		ret.setValue(ch,0,ie);
+		ret.setValue(time0,1,ie);
+		for (int ff=0; ff<num_features; ff++) {
+			ret.setValue(all_features[num_features*ie+ff],ff+2,ie);
+		}
     }
 
     free(all_features);
-
     free(Y);
     //free(components);
 
-    return num_events;
+	return ret;
 }
 

@@ -18,6 +18,7 @@
 #include "extract_clips.h"
 #include "get_principal_components.h"
 #include "fit.h"
+#include <QTime>
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -67,7 +68,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "detect";
         P.input_file_pnames << "adjacency";
         P.output_file_pnames << "output";
-        P.version="0.13";
+		P.version="0.15";
         PT.registerProcessor(P);
     }
     {
@@ -84,7 +85,7 @@ void register_processors(ProcessTracker &PT) {
 		P.input_file_pnames << "input";
 		P.input_file_pnames << "cluster";
 		P.output_file_pnames << "output";
-		P.version="0.1";
+		P.version="0.11";
 		PT.registerProcessor(P);
 	}
     {
@@ -93,7 +94,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "input";
         P.input_file_pnames << "cluster";
         P.output_file_pnames << "output";
-        P.version="0.1";
+		P.version="0.13";
         PT.registerProcessor(P);
     }
     {
@@ -114,7 +115,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "cluster";
         P.output_file_pnames << "templates";
         P.output_file_pnames << "cluster_out";
-        P.version="0.1";
+		P.version="0.12";
         PT.registerProcessor(P);
     }
 	{
@@ -335,6 +336,8 @@ int main(int argc,char *argv[]) {
 	}
 	CLP.named_parameters.remove("force");
 
+	QTime timer; timer.start();
+
 	if (command=="extract") {
 		QString input_path=CLP.named_parameters["input"];
 		QString output_path=CLP.named_parameters["output"];
@@ -520,6 +523,8 @@ int main(int argc,char *argv[]) {
 	}
 
 	PT.reportProcessCompleted(CLP);
+
+	printf("Elapsed time for %s: %.2f seconds\n",command.toLatin1().data(),timer.elapsed()*1.0/1000);
 
 	return 0;
 }

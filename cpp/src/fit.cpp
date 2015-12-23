@@ -124,7 +124,7 @@ int do_fit(bool *to_include,Mda &X,Mda &templates,int num_events,int *times,int 
 		for (int t=0; t<clip_size; t++) {
 			for (int m=0; m<M; m++) {
 				float val=templates.value(m,t,k);
-				to_include[m+M*t+M*clip_size*k]=(fabs(val)>=maxval*0.2);
+				coeffs_to_use[m+M*t+M*clip_size*k]=(fabs(val)>=maxval*0.2);
 			}
 		}
 	}
@@ -139,6 +139,7 @@ int do_fit(bool *to_include,Mda &X,Mda &templates,int num_events,int *times,int 
 		compute_scores(scores,X,templates,num_events,times,labels,score_update_needed,coeffs_to_use);
         for (int j=0; j<num_events; j++) score_update_needed[j]=false;
         int num_changed=0;
+		#pragma omp parallel for
         for (int j=0; j<num_events; j++) {
             if ((!to_include[j])&&(scores.value1(j)>0)) {
                 bool best=true;
@@ -201,6 +202,7 @@ void compute_scores(Mda &scores,Mda &X,Mda &templates,int num_events,int *times,
     int tt1=-(int)(clip_size/2);
     int tt2=tt1+clip_size-1;
 
+	#pragma omp parallel for
     for (int j=0; j<num_events; j++) {
         if (score_update_needed[j]) {
             if ((times[j]+tt1>=0)&&(times[j]+tt2<X.N2())) {

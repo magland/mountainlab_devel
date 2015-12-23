@@ -47,8 +47,8 @@ bool templates(const char *input_path,const char *cluster_path,const char *outpu
     DiskReadMda X; X.setPath(input_path);
 
     float *buf=(float *)malloc(sizeof(float)*M*clip_size);
+	printf("Computing %d templates ...\n",K);
     for (int k=1; k<=K; k++) {
-        printf("Computing template %d/%d...\n",k,K);
         if (!compute_template(M,clip_size,buf,X,CC,k)) {
             fclose(output_file);
             return false;
@@ -85,7 +85,6 @@ bool compute_template(int M,int T,float *ret,DiskReadMda &X,DiskReadMda &CC,int 
             }
         }
     }
-    printf("cluster %d, count %d\n",k,count);
 
     if (count>0) {
         for (int ii=0; ii<M*T; ii++) {
