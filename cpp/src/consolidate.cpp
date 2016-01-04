@@ -47,59 +47,131 @@ QList<int> get_template_sort_order(const Mda &X) {
 	return inds;
 }
 
-bool consolidate(const char *cluster_path,const char *templates_path,const char *cluster_out_path,const char *templates_out_path,const char *load_channels_out_path) {
-    DiskReadMda cluster; cluster.setPath(cluster_path);
+bool prelim_templates_are_about_the_same(Mda &templates,int k1,int k2) {
+	int M=templates.N1();
+	int T=templates.N2();
+
+	float maxvals1[M];
+	float maxvals2[M];
+	for (int m=0; m<M; m++) {
+		maxvals1[m]=0;
+		maxvals2[m]=0;
+		for (int t=0; t<T; t++) {
+			float val1=templates.value(m,t,k1-1);
+			float val2=templates.value(m,t,k2-1);
+			if (fabs(val1)>maxvals1[m]) maxvals1[m]=fabs(val1);
+			if (fabs(val2)>maxvals2[m]) maxvals2[m]=fabs(val2);
+		}
+	}
+	float best_channel1=0;
+	float best_channel1_val=0;
+	for (int m=0; m<M; m++) {
+		if (maxvals1[m]>best_channel1_val) {
+			best_channel1_val=maxvals1[m];
+			best_channel1=m;
+		}
+	}
+	int ch=best_channel1;
+	return (maxvals1[ch]>maxvals2[ch]*0.5)&&(maxvals2[ch]>maxvals1[ch]*0.5);
+}
+
+bool templates_are_about_the_same(Mda &templates,int k1,int k2,float threshold,bool *first_is_bigger) {
+	*first_is_bigger=false;
+	if (!prelim_templates_are_about_the_same(templates,k1,k2)) {
+		return false;
+	}
+	int M=templates.N1();
+	int T=templates.N2();
+	for (int timeshift=-T/4; timeshift<=T/4; timeshift++) {
+		double sumsqr1=0,sumsqr2=0,sumsqr3=0;
+		for (int t=0; t<T; t++) {
+			int t2=(t+timeshift)%T;
+			for (int m=0; m<M; m++) {
+				float val1=templates.value(m,t,k1-1);
+				float val2=templates.value(m,t2,k2-1);
+				sumsqr1+=val1*val1;
+				sumsqr2+=val2*val2;
+				sumsqr3+=(val1-val2)*(val1-val2);
+			}
+		}
+		*first_is_bigger=(sumsqr1>sumsqr2);
+		if ((sqrt(sumsqr3)<sqrt(sumsqr1)*threshold)&&(sqrt(sumsqr3)<sqrt(sumsqr2)*threshold))
+			return true;
+	}
+	return false;
+}
+
+bool consolidate(const char *cluster_path,const char *templates_path,const char *cluster_out_path,const char *templates_out_path,const char *load_channels_out_path,float compare_threshold) {
+	DiskReadMda cluster; cluster.setPath(cluster_path);
 	Mda templates; templates.read(templates_path);
 
-    int M=templates.N1();
-    int T=templates.N2();
-    int K=templates.N3();
+	int M=templates.N1();
+	int T=templates.N2();
+	int K=templates.N3();
 
 	Mda load_channels=get_load_channels(K,cluster);
 
-    bool to_use[K+1];
-    int num_to_use=0;
-    for (int k=1; k<=K; k++) {
-        float energies[M+1];
-        for (int m=1; m<=M; m++) {
-            float sumsqr=0;
-            for (int t=0; t<T; t++) {
-                float val=templates.value(m-1,t,k-1);
-                sumsqr+=val*val;
-            }
-            energies[m]=sumsqr;
-        }
+	bool to_use[K+1];
+	int num_to_use=0;
+	for (int k=1; k<=K; k++) { //loop through each spike type
+		float energies[M+1]; //compute the per-channel energies
+		for (int m=1; m<=M; m++) {
+			float sumsqr=0;
+			for (int t=0; t<T; t++) {
+				float val=templates.value(m-1,t,k-1);
+				sumsqr+=val*val;
+			}
+			energies[m]=sumsqr;
+		}
 		int ch=load_channels.value(0,k-1);
-        bool okay=true;
-        for (int m=1; m<=M; m++) {
-            if (m!=ch) {
-                if (energies[ch]<=0.9*energies[m]) {
-                    okay=false;
-                }
-            }
-        }
-        to_use[k]=okay;
-        if (okay) num_to_use++;
-    }
+		bool okay=true;
+		for (int m=1; m<=M; m++) {
+			if (m!=ch) {
+				if (energies[ch]<=0.9*energies[m]) { //if the energy is higher on any of the other channels, remove it
+					okay=false;
+				}
+			}
+		}
+		to_use[k]=okay;
+		if (okay) num_to_use++;
+	}
 
-    int K2=num_to_use;
-    int num_events2=0;
-    for (int i=0; i<cluster.N2(); i++) {
-        int k=(int)cluster.value(2,i);
-        if (to_use[k]) num_events2++;
-    }
+	for (int k1=1; k1<=K; k1++) {
+		for (int k2=k1+1; k2<=K; k2++) {
+			if ((to_use[k1])&&(to_use[k2])) {
+				if (load_channels.value(0,k1-1)!=load_channels.value(0,k2-1)) {
+					bool first_is_bigger;
+					if (templates_are_about_the_same(templates,k1,k2,compare_threshold,&first_is_bigger)) {
+						printf("Templates are about the same, removing smaller: %d,%d\n",k1,k2);
+						if (first_is_bigger)
+							to_use[k2]=false;
+						else
+							to_use[k1]=false;
+						num_to_use--;
+					}
+				}
+			}
+		}
+	}
 
-    int kk=1;
+	int K2=num_to_use;
+	int num_events2=0;
+	for (int i=0; i<cluster.N2(); i++) {
+		int k=(int)cluster.value(2,i);
+		if (to_use[k]) num_events2++;
+	}
+
+	int kk=1;
 	int cluster_mapping1[K+1];
-    for (int i=1; i<=K; i++) {
-        if (to_use[i]) {
+	for (int i=1; i<=K; i++) {
+		if (to_use[i]) {
 			cluster_mapping1[i]=kk;
-            kk++;
-        }
-        else {
+			kk++;
+		}
+		else {
 			cluster_mapping1[i]=0;
-        }
-    }
+		}
+	}
 
 	Mda templates1;
 	templates1.allocate(M,T,K2);
@@ -138,93 +210,40 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
 		}
 	}
 
-    MDAIO_HEADER H_cluster;
-    H_cluster.data_type=MDAIO_TYPE_FLOAT32;
-    H_cluster.num_bytes_per_entry=4;
-    H_cluster.num_dims=2;
-    H_cluster.dims[0]=3;
-    H_cluster.dims[1]=num_events2;
-    {
-        FILE *outf=fopen(cluster_out_path,"wb");
-        if (!outf) {
-            printf("Unable to open file for writing: %s\n",cluster_out_path);
-            return false;
-        }
-        mda_write_header(&H_cluster,outf);
-        for (int i=0; i<cluster.N2(); i++) {
-            int k0=(int)cluster.value(2,i);
+	MDAIO_HEADER H_cluster;
+	H_cluster.data_type=MDAIO_TYPE_FLOAT32;
+	H_cluster.num_bytes_per_entry=4;
+	H_cluster.num_dims=2;
+	H_cluster.dims[0]=3;
+	H_cluster.dims[1]=num_events2;
+	{
+		FILE *outf=fopen(cluster_out_path,"wb");
+		if (!outf) {
+			printf("Unable to open file for writing: %s\n",cluster_out_path);
+			return false;
+		}
+		mda_write_header(&H_cluster,outf);
+		for (int i=0; i<cluster.N2(); i++) {
+			int k0=(int)cluster.value(2,i);
 			if (cluster_mapping2[k0]) {
 				int k=cluster_mapping2[k0];
-                float ch_tt_k[3];
-                ch_tt_k[0]=cluster.value(0,i);
-                ch_tt_k[1]=cluster.value(1,i);
-                ch_tt_k[2]=k;
-                mda_write_float32(ch_tt_k,&H_cluster,3,outf);
-            }
-        }
-        fclose(outf);
-    }
+				float ch_tt_k[3];
+				ch_tt_k[0]=cluster.value(0,i);
+				ch_tt_k[1]=cluster.value(1,i);
+				ch_tt_k[2]=k;
+				mda_write_float32(ch_tt_k,&H_cluster,3,outf);
+			}
+		}
+		fclose(outf);
+	}
 
 
 	templates2.write(templates_out_path);
 	load_channels2.write(load_channels_out_path);
 
-	/*
-    MDAIO_HEADER H_templates;
-    H_templates.data_type=MDAIO_TYPE_FLOAT32;
-    H_templates.num_bytes_per_entry=4;
-    H_templates.num_dims=3;
-    H_templates.dims[0]=M;
-    H_templates.dims[1]=T;
-    H_templates.dims[2]=K2;
-    {
-        FILE *outf=fopen(templates_out_path,"wb");
-        if (!outf) {
-            printf("Unable to open file for writing: %s\n",templates_out_path);
-            return false;
-        }
-        mda_write_header(&H_templates,outf);
-        for (int i=1; i<=K; i++) {
-            if (to_use[i]) {
-                float *buf=(float *)malloc(sizeof(float)*M*T);
-                int aa=0;
-                for (int t=0; t<T; t++) {
-                    for (int m=0; m<M; m++) {
-                        buf[aa]=templates.value(m,t,i-1);
-                        aa++;
-                    }
-                }
-                mda_write_float32(buf,&H_templates,M*T,outf);
-                free(buf);
-            }
-        }
-        fclose(outf);
-    }
+	printf("Using %d clusters\n",num_to_use);
 
-    MDAIO_HEADER H_load_channels;
-    H_load_channels.data_type=MDAIO_TYPE_FLOAT32;
-    H_load_channels.num_bytes_per_entry=4;
-    H_load_channels.num_dims=2;
-    H_load_channels.dims[0]=1;
-    H_load_channels.dims[1]=K2;
-    {
-        FILE *outf=fopen(load_channels_out_path,"wb");
-        if (!outf) {
-            printf("Unable to open file for writing: %s\n",load_channels_out_path);
-            return false;
-        }
-        mda_write_header(&H_load_channels,outf);
-        for (int i=1; i<=K; i++) {
-            if (to_use[i]) {
-                float val=load_channels[i];
-                mda_write_float32(&val,&H_load_channels,1,outf);
-            }
-        }
-        fclose(outf);
-    }
-	*/
-
-    return true;
+	return true;
 }
 
 Mda get_load_channels(int K,DiskReadMda &cluster) {
@@ -241,11 +260,11 @@ Mda get_load_channels(int K,DiskReadMda &cluster) {
 
 /*
 void get_load_channels(int K,int *load_channels,DiskReadMda &cluster) {
-    for (int k=0; k<=K; k++) load_channels[k]=0;
-    for (int i=0; i<cluster.N2(); i++) {
-        int ch=(int)cluster.value(0,i);
-        int k=(int)cluster.value(2,i);
-        if ((1<=k)&&(k<=K)) load_channels[k]=ch;
-    }
+	for (int k=0; k<=K; k++) load_channels[k]=0;
+	for (int i=0; i<cluster.N2(); i++) {
+		int ch=(int)cluster.value(0,i);
+		int k=(int)cluster.value(2,i);
+		if ((1<=k)&&(k<=K)) load_channels[k]=ch;
+	}
 }
 */

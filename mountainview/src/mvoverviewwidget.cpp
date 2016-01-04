@@ -9,6 +9,7 @@
 #include "sstimeseriesview.h"
 #include "diskreadmda.h"
 #include <QList>
+#include <QMenuBar>
 #include <QMessageBox>
 #include <QTextBrowser>
 #include "firetrackwidget.h"
@@ -18,6 +19,7 @@
 #include "mvcrosscorrelogramswidget.h"
 #include <QSplitter>
 #include "mvunitwidget.h"
+#include "mvcomparisonwidget.h"
 #include "diskarraymodelclipssubset.h"
 #include "ftelectrodearrayview.h"
 #include "mvcdfview.h"
@@ -55,10 +57,11 @@ public:
 	void update_spike_templates();
 	void update_sizes();
 	void set_current_unit(int num);
+	void do_compare_units(const QList<int> &unit_numbers);
 };
 
 
-MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
+MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QWidget(parent)
 {
 	d=new MVOverviewWidgetPrivate;
 	d->q=this;
@@ -120,11 +123,22 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QMainWindow(parent)
 	hsplitter->addWidget(d->m_vsplitter);
 	d->m_hsplitter=hsplitter;
 
-	QWidget *CW=new QWidget;
-	QHBoxLayout *hlayout=new QHBoxLayout;
-	hlayout->addWidget(hsplitter);
-	CW->setLayout(hlayout);
-	this->setCentralWidget(CW);
+	QMenuBar *menu_bar=new QMenuBar(this);
+	{
+		QMenu *menu=new QMenu("Tools");
+		menu_bar->addMenu(menu);
+		{
+			QAction *A=new QAction("Compare Neurons",this);
+			connect(A,SIGNAL(triggered(bool)),this,SLOT(slot_compare_neurons()));
+			menu->addAction(A);
+		}
+	}
+	menu_bar->setMaximumHeight(40); //otherwise we have weird sizing problems
+
+	QVBoxLayout *vlayout=new QVBoxLayout;
+	vlayout->addWidget(menu_bar);
+	vlayout->addWidget(hsplitter);
+	this->setLayout(vlayout);
 
 	//this->setWindowFlags(Qt::Window|Qt::WindowStaysOnTopHint);
 	//this->setWindowFlags(Qt::Window|Qt::Tool);
@@ -300,6 +314,17 @@ void MVOverviewWidget::slot_current_raw_timepoint_changed()
 	d->m_cdf_view->setCurrentTimepoint(d->m_labeled_raw_view->currentTimepoint());
 }
 
+void MVOverviewWidget::slot_compare_neurons()
+{
+	QList<int> units=d->m_cross_correlograms_widget->selectedUnits();
+	qSort(units);
+	if (units.count()<=1) {
+		QMessageBox::information(this,"Compare Neurons","You must select more than one neuron in the cross-correlogram view. Use the Control key to select multiple neurons.");
+		return;
+	}
+	d->do_compare_units(units);
+}
+
 void MVOverviewWidgetPrivate::update_spike_templates()
 {
 	SSTimeSeriesView *V=m_spike_templates_view;
@@ -384,6 +409,47 @@ void MVOverviewWidgetPrivate::set_current_unit(int num)
 	m_electrode_view->setWaveform(template0);
 
 	m_cdf_view->setCurrentLabel(num);
+}
+
+void MVOverviewWidgetPrivate::do_compare_units(const QList<int> &unit_numbers)
+{
+	MVComparisonWidget *W=new MVComparisonWidget;
+	W->setUnitNumbers(unit_numbers);
+	W->setAttribute(Qt::WA_DeleteOnClose);
+	W->setElectrodeLocations(m_locations);
+	W->setTimesLabels(m_times,m_labels);
+	W->setRaw(m_raw,false);
+	W->setTemplates(m_templates);
+
+	QList<DiskArrayModel *> clips;
+	for (int i=0; i<unit_numbers.count(); i++) {
+		int num=unit_numbers[i];
+		DiskArrayModelClipsSubset *clips0=new DiskArrayModelClipsSubset;
+		clips0->setPath(m_clips->path());
+		int T=m_clips->size(1)/m_clips->dim3();
+		int i1=(int)m_clips_index.value1(num-1)*T;
+		int i2=(int)m_clips_index.value1(num)*T;
+		if (num>=m_clips_index.totalSize()) i2=m_clips->size(1);
+		clips0->setRange(i1,i2);
+		clips << clips0;
+	}
+
+//	DiskArrayModelClipsSubset *clips=new DiskArrayModelClipsSubset;
+//	clips->setPath(d->m_clips->path());
+//	int T=d->m_clips->size(1)/d->m_clips->dim3();
+//	int i1=(int)d->m_clips_index.value1(num-1)*T;
+//	int i2=(int)d->m_clips_index.value1(num)*T;
+//	if (num>=d->m_clips_index.totalSize()) i2=d->m_clips->size(1);
+//	clips->setRange(i1,i2);
+
+	W->setClips(clips,true);
+	W->setCrossCorrelogramsPath(m_cross_correlograms_path);
+	W->resize(q->width(),q->height());
+	W->show();
+	//W->setProperty("unit_number",num);
+	W->updateWidgets();
+
+	//connect(W,SIGNAL(currentClipNumberChanged()),this,SLOT(slot_current_clip_number_changed()));
 }
 
 MVOverviewWidget::~MVOverviewWidget()

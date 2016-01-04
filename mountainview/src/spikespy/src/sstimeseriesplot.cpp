@@ -276,6 +276,7 @@ void SSTimeSeriesPlotPrivate::set_data2() {
 		m_minvals << 0;
 		m_maxvals << 0;
 	}
+	/*
 	if (data0->size(1)>1) {
 		for (int ch = 0; ch < M; ch++) {
 			if (N > 0) {
@@ -299,6 +300,38 @@ void SSTimeSeriesPlotPrivate::set_data2() {
 			m_maxvals[ch]=1;
 		}
 	}
+	*/
+	//fixed on 12/4/15
+	if (data0->size(1)>1) {
+		for (int ch = 0; ch < M; ch++) {
+			if (N > 0) {
+				m_minvals[ch] = data0->value(ch, 0);
+				m_maxvals[ch] = data0->value(ch, 0);
+			}
+			int NN=data0->size(1)*data0->size(2);
+			for (int i = 0; i < NN; i++) {
+				double val = data0->value1(ch+i*M);
+				if (val>50000) qDebug() << "@@@@@" << ch << i << val;
+				if (val < m_minvals[ch]) {
+					m_minvals[ch] = val;
+				}
+				if (val > m_maxvals[ch]) {
+					m_maxvals[ch] = val;
+				}
+			}
+		}
+
+	} else {
+		for (int ch=0; ch<M; ch++) {
+			m_minvals[ch]=0;
+			m_maxvals[ch]=1;
+		}
+	}
+
+	qDebug() << "Scale" << scale0;
+	qDebug() << "Dimensions" << data0->N1() << data0->N2() << data0->N3();
+	qDebug() << "m_minvals" << m_minvals;
+	qDebug() << "m_maxvals" << m_maxvals;
 
 	q->update();
 

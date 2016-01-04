@@ -1,14 +1,14 @@
 #ifndef MVOVERVIEWWIDGET_H
 #define MVOVERVIEWWIDGET_H
 
-#include <QMainWindow>
+#include <QWidget>
 #include <QWheelEvent>
 #include "diskarraymodel.h"
 #include "mda.h"
 
 class MVOverviewWidgetPrivate;
 
-class MVOverviewWidget : public QMainWindow
+class MVOverviewWidget : public QWidget
 {
 	Q_OBJECT
 public:
@@ -40,7 +40,7 @@ private slots:
 	void slot_cdf_view_current_label_changed();
 	void slot_cdf_view_current_timepoint_changed();
 	void slot_current_raw_timepoint_changed();
-
+	void slot_compare_neurons();
 
 private:
 	MVOverviewWidgetPrivate *d;

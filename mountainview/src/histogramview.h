@@ -20,7 +20,8 @@ public:
 	void setLineColor(const QColor &col);
     void setTitle(const QString &title);
 
-	void setHighlighted(bool val);
+	void setCurrent(bool val);
+	void setSelected(bool val);
 
 protected:
 	void paintEvent(QPaintEvent *evt);
@@ -31,6 +32,7 @@ protected:
 	void mouseDoubleClickEvent(QMouseEvent *evt);
 signals:
     void clicked();
+	void control_clicked();
 	void activated();
 
 public slots:

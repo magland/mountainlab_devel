@@ -18,7 +18,8 @@ public:
 	int m_margin_left,m_margin_right,m_margin_top,m_margin_bottom;
     QString m_title;
     bool m_hovered;
-	bool m_highlighted;
+	bool m_current;
+	bool m_selected;
 
 	void update_bin_counts();
 	QPointF coord2pix(QPointF pt);
@@ -39,7 +40,8 @@ HistogramView::HistogramView(QWidget *parent) : QWidget(parent)
     d->m_hovered_bin_index=-1;
 	d->m_margin_left=d->m_margin_right=d->m_margin_top=d->m_margin_bottom=5;
     d->m_hovered=false;
-	d->m_highlighted=false;
+	d->m_current=false;
+	d->m_selected=false;
 
 	d->m_fill_color=QColor(100,100,150);
 	d->m_line_color=QColor(150,150,150);
@@ -122,13 +124,19 @@ void HistogramView::setTitle(const QString &title)
 	update();
 }
 
-void HistogramView::setHighlighted(bool val)
+void HistogramView::setCurrent(bool val)
 {
-	if (d->m_highlighted!=val) {
-		d->m_highlighted=val;
+	if (d->m_current!=val) {
+		d->m_current=val;
 		this->update();
 	}
-
+}
+void HistogramView::setSelected(bool val)
+{
+	if (d->m_selected!=val) {
+		d->m_selected=val;
+		this->update();
+	}
 }
 
 QRectF make_rect(QPointF p1,QPointF p2) {
@@ -152,15 +160,24 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 	QPainter painter(this);
 
 	QRect R(0,0,width(),height());
-	if ((d->m_hovered)&&(!d->m_highlighted)) {
+	if ((d->m_hovered)&&(!d->m_selected)&&(!d->m_current)) {
 		painter.fillRect(R,QColor(150,150,150,80));
     }
-	else if ((!d->m_hovered)&&(d->m_highlighted)) {
+	else if ((!d->m_hovered)&&(d->m_current)) {
 		painter.setPen(QPen(Qt::darkBlue,10));
 		painter.drawRect(R);
 	}
-	else if ((d->m_hovered)&&(d->m_highlighted)) {
+	else if ((d->m_hovered)&&(d->m_current)) {
 		painter.setPen(QPen(Qt::darkBlue,10));
+		painter.drawRect(R);
+		painter.fillRect(R,QColor(0,0,0,30));
+	}
+	else if ((!d->m_hovered)&&(d->m_selected)) {
+		painter.setPen(QPen(Qt::darkRed,10));
+		painter.drawRect(R);
+	}
+	else if ((d->m_hovered)&&(d->m_selected)) {
+		painter.setPen(QPen(Qt::darkRed,10));
 		painter.drawRect(R);
 		painter.fillRect(R,QColor(0,0,0,30));
 	}
@@ -201,7 +218,12 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 void HistogramView::mousePressEvent(QMouseEvent *evt)
 {
     Q_UNUSED(evt);
-    emit clicked();
+	if (evt->modifiers()&Qt::ControlModifier) {
+		emit control_clicked();
+	}
+	else {
+		emit clicked();
+	}
 }
 
 void HistogramView::mouseMoveEvent(QMouseEvent *evt)

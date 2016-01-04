@@ -10,14 +10,16 @@ NN=size(TT,3);
 AA=zeros(NN,NN);
 for k1=1:NN
 for k2=1:NN
-    tmp1=TT(:,:,k1); tmp1=tmp1(:);
-    tmp2=TT(:,:,k2); tmp2=tmp2(:);
-    val=(tmp1'*tmp2)/sqrt(tmp1'*tmp1*tmp2'*tmp2);
-    if (val>0.5)
-        fprintf('%d,%d\n',k1,k2);
-        auc=do_test1(X,XI,k1,k2,1);
-        AA(k1,k2)=1-auc;
-    end;
+    %if (k1==6)&&(k2==7)
+        tmp1=TT(:,:,k1); tmp1=tmp1(:);
+        tmp2=TT(:,:,k2); tmp2=tmp2(:);
+        val=(tmp1'*tmp2)/sqrt(tmp1'*tmp1*tmp2'*tmp2);
+        if (val>0.5)
+            fprintf('%d,%d\n',k1,k2);
+            auc=do_test1(X,XI,k1,k2,1);
+            AA(k1,k2)=1-auc;
+        end;
+    %end;
 end;
 end;
 figure; imagesc(AA); colormap('gray'); colorbar;

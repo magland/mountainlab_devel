@@ -78,6 +78,11 @@ QString DiskArrayModel::path()
 	return d->m_path;
 }
 
+double safe_value1(Mda &X,int ii) {
+	if (ii<X.totalSize()) return X.value1(ii);
+	else return 0;
+}
+
 Mda DiskArrayModel::loadData(int scale,int t1,int t2) {
     QTime timer; timer.start();
 
@@ -85,27 +90,30 @@ Mda DiskArrayModel::loadData(int scale,int t1,int t2) {
 	int d3=2;
 	X.allocate(d->m_num_channels,t2-t1+1,d3);
 
+
 	if (d->m_set_from_mda) {
+		int M=d->m_mda.N1();
+
 		if (scale==1) {
 			for (int tt=t1; tt<=t2; tt++) {
 				for (int mm=0; mm<d->m_num_channels; mm++) {
-					X.setValue(d->m_mda.value(mm,tt),mm,tt-t1,0);
-					X.setValue(d->m_mda.value(mm,tt),mm,tt-t1,1);
+					X.setValue(safe_value1(d->m_mda,mm+tt*M),mm,tt-t1,0);
+					X.setValue(safe_value1(d->m_mda,mm+tt*M),mm,tt-t1,1);
 				}
 			}
 		}
 		else {
 			for (int tt=t1; tt<=t2; tt++) {
 				for (int mm=0; mm<d->m_num_channels; mm++) {
-					float minval=d->m_mda.value(mm,tt*scale);
-					float maxval=d->m_mda.value(mm,tt*scale);
+					float minval=safe_value1(d->m_mda,mm+tt*scale*M);
+					float maxval=safe_value1(d->m_mda,mm+tt*scale*M);
 					for (int dt=0; dt<scale; dt++) {
-						float tmpval=d->m_mda.value(mm,tt*scale+dt);
+						float tmpval=safe_value1(d->m_mda,mm+(tt*scale+dt)*M);
 						if (tmpval<minval) minval=tmpval;
 						if (tmpval>maxval) maxval=tmpval;
 					}
-                    //X.setValue(d->m_mda.value(mm,tt),mm,tt-t1,minval);
-                    //X.setValue(d->m_mda.value(mm,tt),mm,tt-t1,maxval);
+					//X.setValue(d->m_mda.value1(mm+tt*M),mm,tt-t1,minval);
+					//X.setValue(d->m_mda.value1(mm+tt*M),mm,tt-t1,maxval);
                     //oops!!! this problem was fixed on 11/5/2015
                     X.setValue(minval,mm,tt-t1,0);
                     X.setValue(maxval,mm,tt-t1,1);
@@ -150,7 +158,8 @@ Mda DiskArrayModel::loadData(int scale,int t1,int t2) {
 
 float DiskArrayModel::value(int ch,int t) {
 	if (d->m_set_from_mda) {
-		return d->m_mda.value(ch,t);
+		int M=d->m_mda.N1();
+		return safe_value1(d->m_mda,ch+t*M);
 	}
 	Mda tmp=loadData(1,t,t);
 	return tmp.value(ch,0);

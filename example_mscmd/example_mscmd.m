@@ -18,7 +18,7 @@ o_filter.freq_min=300;
 o_filter.freq_max=4000;
 o_filter.outlier_threshold=400;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-o_whiten.ncomp=4;
+o_whiten.ncomp=8;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_filter2.samplefreq=30000;
 o_filter2.freq_min=600;
@@ -37,9 +37,9 @@ o_cluster=struct;
 o_split_clusters.num_features=3;
 o_split_clusters.clip_size=o_features.clip_size;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-o_remove_outliers=struct;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_templates.clip_size=o_features.clip_size;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+o_consolidate.compare_threshold=0.5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_cross_correlograms.max_dt=1500;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,7 +68,7 @@ mscmd_cluster([path0,'/features.mda'],[path0,'/cluster.mda'],o_cluster);
 
 mscmd_split_clusters([path0,'/filt2_white.mda'],[path0,'/cluster.mda'],[path0,'/cluster2.mda'],o_split_clusters);
 mscmd_templates([path0,'/filt2_white.mda'],[path0,'/cluster2.mda'],[path0,'/templates.mda'],o_templates);
-mscmd_consolidate([path0,'/cluster2.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda']);
+mscmd_consolidate([path0,'/cluster2.mda'],[path0,'/templates.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/load_channels0.mda'],o_consolidate);
 
 mscmd_fit([path0,'/filt2_white.mda'],[path0,'/cluster0.mda'],[path0,'/templates0.mda'],[path0,'/cluster0b.mda']);
 %writemda(readmda([path0,'/cluster0.mda']),[path0,'/cluster0b.mda']);

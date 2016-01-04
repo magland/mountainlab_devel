@@ -16,9 +16,12 @@ public:
 	void updateWidget();
 
 	int currentUnit();
+	QList<int> selectedUnits();
 	void setCurrentUnit(int num);
 	int baseUnit();
 	void setBaseUnit(int num);
+
+	void setUnitNumbers(const QList<int> &numbers);
 
 signals:
 	void currentUnitChanged();
@@ -26,6 +29,7 @@ signals:
 
 private slots:
 	void slot_histogram_view_clicked();
+	void slot_histogram_view_control_clicked();
 	void slot_histogram_view_activated();
 
 protected:

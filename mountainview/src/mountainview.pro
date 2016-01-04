@@ -17,18 +17,22 @@ HEADERS += \
     mvstatisticswidget.h \
     mvcrosscorrelogramswidget.h \
     mvunitwidget.h \
+    mvcomparisonwidget.h \
     diskarraymodelclipssubset.h \
     mvcdfview.h \
-    static_neuron_colors.h
+    static_neuron_colors.h \
+    mvutils.h
 SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
     mvstatisticswidget.cpp \
     mvcrosscorrelogramswidget.cpp \
     mvunitwidget.cpp \
+    mvcomparisonwidget.cpp \
     diskarraymodelclipssubset.cpp \
     mvcdfview.cpp \
-    static_neuron_colors.cpp
+    static_neuron_colors.cpp \
+    mvutils.cpp
 
 HEADERS += get_principal_components.h
 SOURCES += get_principal_components.cpp

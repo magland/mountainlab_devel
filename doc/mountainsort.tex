@@ -5,8 +5,8 @@
 \usepackage{enumerate}
 \usepackage{url}
 \usepackage{amsfonts}
-\usepackage{algpseudocode}
-\usepackage{algorithm}
+
+\usepackage[linesnumbered,ruled,vlined]{algorithm2e}
 
 \usepackage{listings}
 \usepackage{color}
@@ -46,82 +46,69 @@ Our objectives are threefold. First we will implement an automated spike sorting
 
 Manual human intervention as part of a spike sorting pipeline is problematic for a number of reasons. The workload may not be practical for a single operator since hundreds of large datasets can be acquired over the course of a few days. Operator bias becomes an issue if the task is shared among several users or the sorting methods of a single user drift over time. Assessing reproducibility or sorting reliability is near impossible since the user cannot be asked to supervise processing of the same dataset multiple times in an unbiased manner. Finally, human-supervised processing cannot easily be transferred between labs and is not combatible with objective comparisons between alternative methods. 
 
-With that said, it is not reasonable to expect a single algorithm to work for all datasets. The experimental setup, noise properties, and hardware-specific artifacts vary significantly between laboratories. We therefore consider two distinct steps in the overall processing pipeline: (a) preprocessing and (b) spike sorting. 
+With that said, it is not reasonable to expect a single algorithm to work for all datasets. The experimental setup, noise properties, and hardware-specific artifacts vary significantly between laboratories. A certain degree of tweaking of parameters should be expected. Whenever possible, these should be applied during the preprocessing stage rather than at the end of automated sorting.
 
-The input to the preprocessing stage is an $M\times N$ array $Y$ of raw data collected over $M$ timepoints and $N$ electrode channels. The preprocessing then applies bandpass filters, prewhitening, or other techniques to produce three $M\times N$ data arrays $Y_b$, $Y_d$, and $Y_s$. The first is simply a bandpass-filtered version of the data used for visualization of the results. The second, $Y_d$, is used for spike detection whereas $Y_s$ is used for the clustering and fitting stages. The same data can be used for the latter two arrays, although it may be desirable to use a more agressive filter for detection since the fine details of the spikes are not needed at that stage.
+\section {The algorithm}
 
-A few basic parameters need to be input into the main sorting stage. An integer $T_w$ specifies the size of a time window (in time steps), which should be large enough to contain any single spike event. A second integer $T_m$ represents the minimum separation (in time points) between events on the same channel during the detection and clustering stage (note that overlapping events are not handled until the fitting stage). A real number $\sigma_\text{thresh}$ is the threshold used during event detection in terms of the number of standard deviations above or below the mean.
+\subsection {Preprocessing}
 
-If a multi-electrode array is used and the user wishes to provide information about the geometry of the detectors, an $M\times M$ binary adjacency matrix may be supplied to specify the neighbors to each channel.
+The input to the preprocessing stage is an $M\times N$ array $Y$ of raw data collected over $N$ timepoints and $M$ electrode channels. The output is two $M\times N$ preprocessed arrays, $Y_\texttt{filt}$ and $Y_\texttt{white}$. The first is used for visualization only and the second is used in the subsequent sorting steps. The options are documented in the MATLAB code.
+
+\begin{algorithm}
+\DontPrintSemicolon % Some LaTeX compilers require you to use \dontprintsemicolon instead
+\KwIn{$Y$ - $M\times N$ array of raw data}
+\KwIn{$o_\texttt{filter}$, $o_\texttt{whiten}$, $o_\texttt{filter2}$ - options}
+\KwOut{$Y_\texttt{filt}$ - $M\times N$ array of bandpass filtered data}
+\KwOut{$Y_\texttt{white}$ - $M\times N$ array of bandpass filtered and whitened data}
+
+$Y_\texttt{filt}\gets\texttt{bandpass}(Y,o_\texttt{filter})$\;
+$Y_0\gets\texttt{whiten}(Y_\texttt{filt},o_\texttt{whiten})$\;
+$Y_\texttt{white}\gets\texttt{bandpass}(Y_0,o_\texttt{filter2})$\;
+
+\caption{{\sc Preprocess}}
+\label{algo:preprocess}
+\end{algorithm}
+
+\subsection {Detection}
+
+Events are detected on a per-channel basis. The output is a collection of timepoints (for each channel) where spike events have been detected. The same event will usually be identified on more than one electrode channel, but this redundancy is handled in subsequent steps. Events are identified whenever the absolute voltage exceeds $\tau\cdot \sigma$ where $\tau$ is a threshold parameter (e.g., $\tau=5$) and $\sigma$ is the standard deviation of the signal on a particular channel. However, to avoid detecting the same event more than once, we do not allow two events to occur within a certain number of timepoints ($\texttt{window\_width}$, for example $40$). Specifically, an event occurs at timepoint $t$ and channel $m$ if $$|Y(m,t)|\geq \tau\sigma$$ and 
+$$|Y(m,t)|>|Y(m,t^\prime)|\text{ }\forall t^\prime \text{ s.t. } |t-t^\prime|\leq \texttt{window\_width}.$$
+
+\subsection {Feature Extraction}
+
+Principal component features are extracted for each channel separately, using data from the channel and its neighbors. The set of neighboring channels is determined by the geometric electrode layout and is specified by an $M\times M$ adjacency matrix. Time clips of $T$ timepoints centered around each event are extracted, and principal component analysis is applied on resulting set of vectors. The dimension of the vectors is $M_m\cdot T$ where $M_m$ is the number of channels adjacent to channel $m$. The output for each channel is a $P\times E_m$ array of PCA features, where $P$ is the number PCA components (e.g., 3) and $E_m$ is the number of events detected on channel $m$.
+
+\subsection {Clustering}
+
+Clustering is performed on each channel separately by applying the ISO-SPLIT algorithm to the extracted feature vectors. This algorithm is designed to have zero adjustable parameters. For example, unlike $k$-means, the number of clusters does not need to be specified in advance. It is a density-based algorithm that assumes that clusters are unimodal and that any two distinct clusters are separated by a region of relatively lesser density. A statistical test is used at each iteration to determine whether clusters should be merged or redistributed. More details can be found on the arXiv (http://arxiv.org/abs/1508.04841).
+
+The output for each channel $m$ is a list of integer labels between $1$ and $K_m$, one for each event, where $K_m$ is the number of clusters identified by the algorithm.
+
+\subsection {Cluster Splitting}
+
+The clustering stage above only uses data from the neighborhood of each electrode channel. Sometimes this is insufficient to separate clusters that may differ only on channels that are geometrically separated from the primary loading channel. Therefore a second clustering stage is used to test each previously-identified cluster for splitting, using data from all channels. Again, PCA features are extracted and ISO-SPLIT is employed.
+
+\subsection {Template Extraction}
+
+A $M\times T$ template $W_k$ is computed for each cluster $k=1,\dots,K$ identified in the previous steps. This is done by taking the average of time clips of size $T$ extracted at all event timepoints labeled as cluster $k$. Note that at this stage the set of templates will have redundancies since the same neuron will usually be identified on more than on channel.
+
+\subsection {Consolidation}
+
+As mentioned above, the same neuron will usually be identified on more than one channel, and therefore redundancies need to be eliminated. In most cases, each neuron will have a primary electrode on which it loads with greater energy than on any other electrode. Therefore, if cluster $k$ was identified from channel $m_k$ and 
+$$\|W_k(m_k,\cdot)\|_2<\mu \|W_k(m^\prime,\cdot)\|_2$$
+for some other channel $m^\prime$, then we know that $k$ is a redundant cluster and can therefore be eliminated. Here, $\mu<1$ is a tolerance constant (e.g., $\mu=0.9$). In other words, we eliminate all clusters that whose primary load channel is not the channel used to identify the cluster.
+
+The above heuristic handles most redundancies. However, sometimes a neuron fires with around the same energy on two nearby electrodes. We therefore use a second criterion (in a second pass) to eliminate these situations. We decide that two clusters $k_1$ and $k_2$ on different channels are the same if 
+$$\|W_{k_1}-W_{k_2}\|_2\leq \eta W_{k_i}$$
+for $i=1,2$ where $0<\eta<1$ is a constant (e.g., $\eta=0.5$). Note that all time shifts of $W_{k_1}$ must be considered since the peak amplitude on channel $m_{k_1}$ will often occur at a slightly different time than on channel $m_{k_2}$.
+
+%If a multi-electrode array is used and the user wishes to provide information about the geometry of the detectors, an $M\times M$ binary adjacency matrix may be supplied to specify the neighbors to each channel.
 
 \section {Installation}
 
-\definecolor{color1}{rgb}{0.258, 0.038, 0.06}
-
 The core MountainSort software is written in Qt5/C++. It requires Qt5 development environment to be installed on your system. For now MountainSort runs on Linux. It should work on Mac without too much trouble. Windows is a pain.
 
-\subsection {Linux/Ubuntu Installation}
-
-\noindent
-\textbf{Install Qt5}
-
-{\color{color1}
-\begin{lstlisting}[language=bash]
-sudo apt-add-repository ppa:ubuntu-sdk-team/ppa
-sudo apt-get update
-sudo apt-get install qtdeclarative5-dev
-sudo apt-get install qt5-default qtbase5-dev qtscript5-dev make g++
-\end{lstlisting}}
-
-\noindent
-\textbf{Download and compile MountainSort}
-{\color{color1}
-\begin{lstlisting}[language=bash]
-sudo apt-get install git
-git clone https://github.com/magland/mountainsort.git
-cd mountainsort
-cd cpp/src
-qmake
-make -j 10
-cd ../../mountainview/src
-qmake
-make -j 10
-cd ../..
-\end{lstlisting}}
-
-%\noindent
-%\textbf{Install cmake and git}.
-%{\color{color1}
-%\begin{lstlisting}[language=bash]
-%sudo apt-get install cmake git
-%\end{lstlisting}}
-
-%\noindent
-%\textbf{Install armadillo}. Download and extract the stable armadillo source code from here:
-
-%\href{http://arma.sourceforge.net/download.html}{http://arma.sourceforge.net/download.html}
-
-%{\color{color1}
-%\begin{lstlisting}[language=bash]
-%sudo apt-get install liblapack-dev
-%cd armadillo-*
-%./configure
-%make
-%sudo make install
-%\end{lstlisting}}
-
-%\noindent
-%\textbf{Install libpca}. Download and extract the libpca source code from here:
-
-%\href{http://sourceforge.net/projects/libpca/}{http://sourceforge.net/projects/libpca/}
-
-%{\color{color1}
-%\begin{lstlisting}[language=bash]
-%cd libpca-*
-%./configure
-%make
-%sudo make install
-%\end{lstlisting}}
+See the README.txt file for detailed instructions.
 
 
 \end{document}

@@ -1,4 +1,4 @@
-#include "mvunitwidget.h"
+#include "mvcomparisonwidget.h"
 #include <QDebug>
 #include <QDir>
 #include <QHBoxLayout>
@@ -23,9 +23,9 @@
 #include "get_principal_components.h"
 #include "mvutils.h"
 
-class MVUnitWidgetPrivate {
+class MVComparisonWidgetPrivate {
 public:
-	MVUnitWidget *q;
+	MVComparisonWidget *q;
 
 	Mda m_primary_channels;
 	Mda m_templates;
@@ -38,9 +38,9 @@ public:
 	int m_current_clip_number;
 	Mda m_TL;
 
-	DiskArrayModel *m_clips;
+	QList<DiskArrayModel *> m_clips;
 	bool m_own_clips;
-	int m_unit_number;
+	QList<int> m_unit_numbers;
 
 	MVCrossCorrelogramsWidget *m_cross_correlograms_widget;
 	SSTimeSeriesView *m_clips_view;
@@ -59,17 +59,15 @@ public:
 };
 
 
-MVUnitWidget::MVUnitWidget(QWidget *parent) : QWidget(parent)
+MVComparisonWidget::MVComparisonWidget(QWidget *parent) : QWidget(parent)
 {
-	d=new MVUnitWidgetPrivate;
+	d=new MVComparisonWidgetPrivate;
 	d->q=this;
 
 	d->m_raw=0;
 	d->m_own_raw=false;
 
-	d->m_clips=0;
 	d->m_own_clips=false;
-	d->m_unit_number=0;
 	d->m_current_clip_number=-1;
 
 	d->m_clips_view=new SSTimeSeriesView;
@@ -130,22 +128,22 @@ MVUnitWidget::MVUnitWidget(QWidget *parent) : QWidget(parent)
 	//this->setWindowFlags(this->windowFlags() ^ Qt::WindowCloseButtonHint);
 }
 
-void MVUnitWidget::setElectrodeLocations(const Mda &L)
+void MVComparisonWidget::setElectrodeLocations(const Mda &L)
 {
 	d->m_locations=L;
 }
 
-void MVUnitWidget::setTemplates(const Mda &X)
+void MVComparisonWidget::setTemplates(const Mda &X)
 {
 	d->m_templates=X;
 }
 
-void MVUnitWidget::setPrimaryChannels(const Mda &X)
+void MVComparisonWidget::setPrimaryChannels(const Mda &X)
 {
 	d->m_primary_channels=X;
 }
 
-void MVUnitWidget::setRaw(DiskArrayModel *X,bool own_it)
+void MVComparisonWidget::setRaw(DiskArrayModel *X,bool own_it)
 {
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
 	d->m_raw=X;
@@ -154,8 +152,10 @@ void MVUnitWidget::setRaw(DiskArrayModel *X,bool own_it)
 	d->m_labeled_raw_view->setData(X,false);
 }
 
-void MVUnitWidget::setTimesLabels(const Mda &times, const Mda &labels)
+void MVComparisonWidget::setTimesLabels(const Mda &times, const Mda &labels)
 {
+	QSet<int> the_set=d->m_unit_numbers.toSet();
+
 	d->m_times=times;
 	d->m_labels=labels;
 //	int NN=d->m_times.totalSize();
@@ -170,14 +170,14 @@ void MVUnitWidget::setTimesLabels(const Mda &times, const Mda &labels)
 	int NN=d->m_times.totalSize();
 	int N0=0;
 	for (int ii=0; ii<NN; ii++) {
-		if (d->m_labels.value1(ii)==d->m_unit_number) {
+		if (the_set.contains(d->m_labels.value1(ii))) {
 			N0++;
 		}
 	}
 	Mda TL; TL.allocate(2,N0);
 	int jj=0;
 	for (int ii=0; ii<NN; ii++) {
-		if (d->m_labels.value1(ii)==d->m_unit_number) {
+		if (the_set.contains(d->m_labels.value1(ii))) {
 			TL.setValue(d->m_times.value1(ii),0,jj);
 			TL.setValue(d->m_labels.value1(ii),1,jj);
 			jj++;
@@ -188,67 +188,90 @@ void MVUnitWidget::setTimesLabels(const Mda &times, const Mda &labels)
 	d->m_labeled_raw_view->setLabels(new DiskReadMda(TL),true);
 }
 
-void MVUnitWidget::setCrossCorrelogramsPath(const QString &path)
+void MVComparisonWidget::setCrossCorrelogramsPath(const QString &path)
 {
 	d->m_cross_correlograms_path=path;
 	d->m_cross_correlograms_widget->setCrossCorrelogramsPath(path);
 }
 
-int MVUnitWidget::currentClipNumber()
+void MVComparisonWidget::setClips(const QList<DiskArrayModel *> &C, bool own_it)
 {
-	return d->m_current_clip_number;
-}
-
-void MVUnitWidget::setClips(DiskArrayModel *C, bool own_it)
-{
-	if ((d->m_clips)&&(d->m_own_clips)) delete d->m_clips;
+	if (d->m_own_clips) qDeleteAll(d->m_clips);
 	d->m_clips=C;
 	d->m_own_clips=own_it;
-	d->m_clips_view->setData(C,false);
+	DiskArrayModelConcat *X=new DiskArrayModelConcat;
+	X->setArrays(C);
+	d->m_clips_view->setData(X,false);
 	int max0=10000;
-	if (C->size(1)>max0) {
+	if (X->size(1)>max0) {
 		d->m_clips_view->setXRange(vec2(0,max0-1));
 	}
 }
 
-void MVUnitWidget::setUnitNumber(int num)
+void MVComparisonWidget::setUnitNumbers(const QList<int> &numbers)
 {
-	d->m_unit_number=num;
-	d->m_cross_correlograms_widget->setBaseUnit(num);
+	d->m_unit_numbers=numbers;
+	d->m_cross_correlograms_widget->setUnitNumbers(numbers);
 }
 
-void MVUnitWidget::updateWidgets()
+void MVComparisonWidget::updateWidgets()
 {
 	d->m_cross_correlograms_widget->updateWidget();
-	QTimer::singleShot(100,this,SLOT(slot_compute_template()));
+	QTimer::singleShot(100,this,SLOT(slot_compute_templates()));
 }
 
-void MVUnitWidget::resizeEvent(QResizeEvent *evt)
+void MVComparisonWidget::resizeEvent(QResizeEvent *evt)
 {
 	Q_UNUSED(evt);
 
 	d->update_sizes();
 }
 
-void MVUnitWidget::slot_compute_template()
+void MVComparisonWidget::slot_compute_templates()
 {
+	if (d->m_clips.isEmpty()) return;
+
 	d->set_status_text("Computing Template...");
-	Mda template0=compute_mean_waveform(d->m_clips);
+	Mda template0=compute_mean_waveform(d->m_clips[0]);
+	Mda template1; template1.allocate(template0.N1(),template0.N2(),d->m_clips.count());
+	int jj=0;
+	for (int i=0; i<d->m_clips.count(); i++) {
+		Mda tmp=compute_mean_waveform(d->m_clips[i]);
+		int ii=0;
+		for (int t=0; t<template0.N2(); t++) {
+			for (int m=0; m<template0.N1(); m++) {
+				template1.setValue1(tmp.value1(ii),jj);
+				ii++;
+				jj++;
+			}
+		}
+	}
 	d->set_status_text("Ready.");
 	DiskArrayModel *template_data=new DiskArrayModel;
-	template_data->setFromMda(template0);
+	template_data->setFromMda(template1);
+	d->m_template_view->setClipMode(true);
 	d->m_template_view->setData(template_data,true);
 
 	d->set_status_text("Computing Features...");
 	Mda features0=compute_features(d->m_clips);
+	Mda labels0; labels0.allocate(1,features0.N2());
+	int ii=0;
+	for (int j=0; j<d->m_clips.count(); j++) {
+		for (int k=0; k<d->m_clips[j]->dim3(); k++) {
+			labels0.setValue1(j+1,ii);
+			ii++;
+		}
+	}
 	d->set_status_text("Ready.");
 	d->m_cluster_widget->setFeatures(features0);
+	d->m_cluster_widget->setLabels(labels0);
 	d->m_cluster_widget->autoSetRange();
 	d->m_cluster_widget->refresh();
 }
 
-void MVUnitWidget::slot_clips_view_current_x_changed()
+void MVComparisonWidget::slot_clips_view_current_x_changed()
 {
+	/*
 	if (!d->m_clips->dim3()) return;
 	//int M=d->m_clips->size(0);
 	int T=d->m_clips->size(1)/d->m_clips->dim3();
@@ -260,9 +283,10 @@ void MVUnitWidget::slot_clips_view_current_x_changed()
 	d->set_current_clip_number(clip_number);
 
 	d->m_labeled_raw_view->setCurrentTimepoint((int)d->m_TL.value(0,clip_number));
+	*/
 }
 
-void MVUnitWidget::slot_selected_data_points_changed()
+void MVComparisonWidget::slot_selected_data_points_changed()
 {
 	QList<int> L=d->m_cluster_widget->selectedDataPointIndices();
 	if (L.count()!=1) return;
@@ -271,7 +295,7 @@ void MVUnitWidget::slot_selected_data_points_changed()
 
 
 
-void MVUnitWidgetPrivate::update_sizes()
+void MVComparisonWidgetPrivate::update_sizes()
 {
 	float W0=q->width();
 	float H0=q->height();
@@ -302,13 +326,14 @@ void MVUnitWidgetPrivate::update_sizes()
 
 }
 
-void MVUnitWidgetPrivate::set_status_text(const QString &txt)
+void MVComparisonWidgetPrivate::set_status_text(const QString &txt)
 {
 	m_status_label->setText(txt);
 }
 
-void MVUnitWidgetPrivate::set_current_clip_number(int num)
+void MVComparisonWidgetPrivate::set_current_clip_number(int num)
 {
+	/*
 	if (m_current_clip_number==num) return;
 
 	m_current_clip_number=num;
@@ -330,12 +355,12 @@ void MVUnitWidgetPrivate::set_current_clip_number(int num)
 	}
 
 	emit q->currentClipNumberChanged();
-
+	*/
 }
 
-MVUnitWidget::~MVUnitWidget()
+MVComparisonWidget::~MVComparisonWidget()
 {
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
-	if ((d->m_clips)&&(d->m_own_clips)) delete d->m_clips;
+	if (d->m_own_clips) qDeleteAll(d->m_clips);
 	delete d;
 }
