@@ -7,6 +7,8 @@
 #include "histogramview.h"
 #include <QDebug>
 #include <QKeyEvent>
+#include <QLabel>
+#include <QPainter>
 
 class MVCrossCorrelogramsWidgetPrivate {
 public:
@@ -97,6 +99,60 @@ QList<FloatList> get_cross_correlogram_datas_3(DiskReadMda &X,const QList<int> &
 	return ret;
 }
 
+class TimeScaleWidget : public QWidget {
+public:
+	TimeScaleWidget();
+	int m_time_width;
+protected:
+	void paintEvent(QPaintEvent *evt);
+};
+
+TimeScaleWidget::TimeScaleWidget()
+{
+	setFixedHeight(25);
+	m_time_width=0;
+}
+
+void TimeScaleWidget::paintEvent(QPaintEvent *evt)
+{
+	Q_UNUSED(evt)
+	QPainter painter(this);
+	QPen pen=painter.pen();
+	pen.setColor(Qt::black);
+	painter.setPen(pen);
+
+	int W0=width();
+	//int H0=height();
+	int H1=8;
+	int margin1=6;
+	int len1=6;
+	QPointF pt1(0+margin1,H1);
+	QPointF pt2(W0-margin1,H1);
+	QPointF pt3(0+margin1,H1-len1);
+	QPointF pt4(W0-margin1,H1-len1);
+	painter.drawLine(pt1,pt2);
+	painter.drawLine(pt1,pt3);
+	painter.drawLine(pt2,pt4);
+
+	QFont font=painter.font();
+	font.setPixelSize(12);
+	painter.setFont(font);
+	QRect text_box(0,H1+3,W0,H1+3);
+	QString txt=QString("%1 ms").arg((int)(m_time_width+0.5));
+	painter.drawText(text_box,txt,Qt::AlignCenter|Qt::AlignTop);
+}
+
+float compute_max(const QList<FloatList> &data0) {
+	float ret=0;
+	for (int i=0; i<data0.count(); i++) {
+		QList<float> tmp=data0[i];
+		for (int j=0; j<tmp.count(); j++) {
+			if (tmp[j]>ret) ret=tmp[j];
+		}
+	}
+	return ret;
+}
+
 void MVCrossCorrelogramsWidget::updateWidget()
 {
 	if (d->m_path.isEmpty()) return;
@@ -121,17 +177,22 @@ void MVCrossCorrelogramsWidget::updateWidget()
 	int num_cols=(K+num_rows-1)/num_rows;
 	d->m_num_columns=num_cols;
 
-	QWidget *W=this;
-	W->setAttribute(Qt::WA_DeleteOnClose);
 	QGridLayout *GL=new QGridLayout;
 	GL->setHorizontalSpacing(20); GL->setVerticalSpacing(0);
 	GL->setMargin(0);
-	W->setLayout(GL);
+	this->setLayout(GL);
+
+	float sample_freq=30000; //FIX: this is hard-coded!!!
+	float bin_max=compute_max(data0);
+	float bin_min=-bin_max;
+	int num_bins=100;
+	float time_width=(bin_max-bin_min)/sample_freq*1000;
 
 	for (int k1=1; k1<=K; k1++) {
 		HistogramView *HV=new HistogramView;
 		HV->setData(data0[k1]);
-		HV->autoSetBins(50);
+		//HV->autoSetBins(50);
+		HV->setBins(bin_min,bin_max,num_bins);
 		int k2=k1; if (d->m_base_unit_num>=1) k2=d->m_base_unit_num;
 		QString title0;
 		if (!d->m_unit_numbers.isEmpty()) {
@@ -150,6 +211,10 @@ void MVCrossCorrelogramsWidget::updateWidget()
 		connect(HV,SIGNAL(activated()),this,SLOT(slot_histogram_view_activated()));
 		d->m_histogram_views << HV;
 	}
+	TimeScaleWidget *TSW=new TimeScaleWidget;
+	TSW->m_time_width=time_width;
+	GL->addWidget(TSW,num_rows,0);
+
 }
 
 int MVCrossCorrelogramsWidget::currentUnit()
@@ -262,3 +327,5 @@ void MVCrossCorrelogramsWidgetPrivate::do_highlighting()
 		}
 	}
 }
+
+
