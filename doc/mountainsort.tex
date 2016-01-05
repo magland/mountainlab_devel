@@ -71,8 +71,8 @@ $Y_\texttt{white}\gets\texttt{bandpass}(Y_0,o_\texttt{filter2})$\;
 
 \subsection {Detection}
 
-Events are detected on a per-channel basis. The output is a collection of timepoints (for each channel) where spike events have been detected. The same event will usually be identified on more than one electrode channel, but this redundancy is handled in subsequent steps. Events are identified whenever the absolute voltage exceeds $\tau\cdot \sigma$ where $\tau$ is a threshold parameter (e.g., $\tau=5$) and $\sigma$ is the standard deviation of the signal on a particular channel. However, to avoid detecting the same event more than once, we do not allow two events to occur within a certain number of timepoints ($\texttt{window\_width}$, for example $40$). Specifically, an event occurs at timepoint $t$ and channel $m$ if $$|Y(m,t)|\geq \tau\sigma$$ and 
-$$|Y(m,t)|>|Y(m,t^\prime)|\text{ }\forall t^\prime \text{ s.t. } |t-t^\prime|\leq \texttt{window\_width}.$$
+Events are detected on a per-channel basis. The output is a collection of timepoints (for each channel) where spike events have been detected. The same event will usually be identified on more than one electrode channel, but this redundancy is handled in subsequent steps. Events are identified whenever the absolute voltage exceeds $\tau\cdot \sigma$ where $\tau$ is a threshold parameter (e.g., $\tau=5$) and $\sigma$ is the standard deviation of the signal on a particular channel. However, to avoid detecting the same event more than once, we do not allow two events to occur within a certain number of timepoints $W$ (for example $40$). Specifically, an event occurs at timepoint $t$ and channel $m$ if $$|Y(m,t)|\geq \tau\sigma$$ and 
+$$|Y(m,t)|>|Y(m,t^\prime)|\text{ }\forall t^\prime \text{ s.t. } |t-t^\prime|\leq W.$$
 
 \subsection {Feature Extraction}
 
@@ -100,7 +100,27 @@ for some other channel $m^\prime$, then we know that $k$ is a redundant cluster 
 
 The above heuristic handles most redundancies. However, sometimes a neuron fires with around the same energy on two nearby electrodes. We therefore use a second criterion (in a second pass) to eliminate these situations. We decide that two clusters $k_1$ and $k_2$ on different channels are the same if 
 $$\|W_{k_1}-W_{k_2}\|_2\leq \eta W_{k_i}$$
-for $i=1,2$ where $0<\eta<1$ is a constant (e.g., $\eta=0.5$). Note that all time shifts of $W_{k_1}$ must be considered since the peak amplitude on channel $m_{k_1}$ will often occur at a slightly different time than on channel $m_{k_2}$.
+for both $i=1$ and $i=2$, where $0<\eta<1$ is a constant (e.g., $\eta=0.5$). Note that all time shifts of $W_{k_1}$ must be considered since the peak amplitude on channel $m_{k_1}$ will often occur at a slightly different time than on channel $m_{k_2}$. In the case of a duplicate, we remove the cluster corresponding to the smaller (in $L_2$ norm) template.
+
+\subsection {Fitting}
+
+At this point we have a collection of $L$ labeled events $\{(t_j,l_j,m_j)\}_{j=1}^L$, where $t_j$ is the timepoint, $l_j$ is the integer label identifying the spike type, and $m_j$ is the primary channel for this spike type. So far we haven't been trying to \emph{explain} or \emph{fit} the data array, but rather we were just detecting likely events and clustering them based on similarity. Ideally we would like
+$$Y_\texttt{white}(m,t)\approx\sum_{j=1}^L W_{l_j}(m,t-t_j),$$
+where $W_k$ is the average spike type template as defined above.
+But we haven't been using this formulation in any way. In fact, the detections of two events $(t_{j_1},l_{j_1},m_{j_1})$ and $(t_{j_2},l_{j_2},m_{j_2})$ are completely independent when $m_{j_1}\neq m_{j_2}$ even when the timepoints are equal or very close.
+
+In this fitting stage, we use a greedy fitting approach to reduce to a subset of the labeled events that best explain the whitened data. 
+
+\begin{algorithm}
+\DontPrintSemicolon % Some LaTeX compilers require you to use \dontprintsemicolon instead
+\KwIn{$Y_\texttt{white}$ - $M\times N$ array of raw data}
+\KwIn{S=$\{(t_j,l_j,m_j)\}_{j=1}^L$ - a collection of labeled events}
+\KwIn{$\{W_1,\dots,W_K\}$ - spike templates}
+\KwOut{$\tilde{S}\subset S$ - a subset of the labeled events that best explain the data}
+
+\caption{{\sc Fit}}
+\label{algo:fit}
+\end{algorithm}
 
 %If a multi-electrode array is used and the user wishes to provide information about the geometry of the detectors, an $M\times M$ binary adjacency matrix may be supplied to specify the neighbors to each channel.
 

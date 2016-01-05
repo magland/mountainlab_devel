@@ -350,7 +350,7 @@ void MVOverviewWidgetPrivate::update_spike_templates()
 	data->setFromMda(templates_formatted);
 	V->plot()->setShowMarkerLines(false);
 	V->setData(data,true);
-	V->setVerticalZoomFactor(0.6);
+	V->setVerticalZoomFactor(1.2);
 	V->setLabels(new DiskReadMda(TL),true);
 	V->initialize();
 }

@@ -132,8 +132,8 @@ int detect_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_f
 				float val=X0[detected_inds1[i]];
 				int k=i-1;
 				while ((k>=0)&&(detected_inds1[k]>=detected_inds1[i]-inner_window_width)) {
-					if (val>X0[detected_inds1[k]]) use_it[k]=0;
-					if (val<X0[detected_inds1[k]]) use_it[i]=0;
+					if (fabs(val)>fabs(X0[detected_inds1[k]])) use_it[k]=0;
+					if (fabs(val)<fabs(X0[detected_inds1[k]])) use_it[i]=0;
 					k--;
 				}
 			}

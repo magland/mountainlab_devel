@@ -58,7 +58,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="detect";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.11";
+		P.version="0.12";
 		PT.registerProcessor(P);
 	}
     {

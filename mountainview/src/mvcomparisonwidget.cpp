@@ -199,13 +199,38 @@ void MVComparisonWidget::setClips(const QList<DiskArrayModel *> &C, bool own_it)
 	if (d->m_own_clips) qDeleteAll(d->m_clips);
 	d->m_clips=C;
 	d->m_own_clips=own_it;
-	DiskArrayModelConcat *X=new DiskArrayModelConcat;
-	X->setArrays(C);
-	d->m_clips_view->setData(X,false);
+
+	if (C.isEmpty()) return;
+
+	/*
+	 * //the following takes too long!!
+	int NC=0;
+	for (int i=0; i<C.count(); i++) NC+=C[i]->dim3();
+	int M=C[0]->size(0);
+	int T=C[0]->size(1)/C[0]->dim3();
+	Mda X; X.allocate(M,T,NC);
+	int jj=0;
+	for (int i=0; i<C.count(); i++) {
+		for (int n=0; n<C[i]->dim3(); n++) {
+			for (int t=0; t<T; t++) {
+				for (int m=0; m<M; m++) {
+					X.setValue1(C[i]->value(m,t+T*n),jj);
+					jj++;
+				}
+			}
+		}
+	}
+	DiskArrayModel *X0=new DiskArrayModel;
+	X0->setFromMda(X);
+	d->m_clips_view->setData(X0,true);
 	int max0=10000;
-	if (X->size(1)>max0) {
+	if (X0->size(1)>max0) {
 		d->m_clips_view->setXRange(vec2(0,max0-1));
 	}
+	*/
+
+
+
 }
 
 void MVComparisonWidget::setUnitNumbers(const QList<int> &numbers)
