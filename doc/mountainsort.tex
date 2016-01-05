@@ -109,7 +109,7 @@ $$Y_\texttt{white}(m,t)\approx\sum_{j=1}^L W_{l_j}(m,t-t_j),$$
 where $W_k$ is the average spike type template as defined above.
 But we haven't been using this formulation in any way. In fact, the detections of two events $(t_{j_1},l_{j_1},m_{j_1})$ and $(t_{j_2},l_{j_2},m_{j_2})$ are completely independent when $m_{j_1}\neq m_{j_2}$ even when the timepoints are equal or very close.
 
-In this fitting stage, we use a greedy fitting approach to reduce to a subset of the labeled events that best explain the whitened data. 
+In this fitting stage, we use a greedy fitting approach to reduce to a subset of the labeled events that best explain the whitened data. The implementation of the algorithm is a bit tricky, and involves several passes, and efficient storage of various computed quantities. For now I just state the inputs and outputs:
 
 \begin{algorithm}
 \DontPrintSemicolon % Some LaTeX compilers require you to use \dontprintsemicolon instead
