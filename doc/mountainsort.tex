@@ -40,15 +40,27 @@ This is an overview of the MountainSort software for automated spike sorting.
 
 \section {Introduction}
 
-Our objectives are threefold. First we will implement an automated spike sorting algorithm requiring minimal user intervention. Second, we will provide interactive visualization tools for exploring the output of this and other spike sorting softwares. Finally, we will provide an algorithm-independent framework for objectively validating spike sorting performance by reporting a reliability metric for each detected neuron.
+Our objectives are threefold. The first is to implement an automated spike sorting algorithm requiring minimal user intervention. Second, we provide interactive visualization tools for exploring the output of this and other spike sorting softwares. Finally, we provide an algorithm-independent framework for objectively validating spike sorting performance by reporting a reliability metric for each detected neuron.
 
-\section {Sorting automation}
+\subsection {Automation}
 
 Manual human intervention as part of a spike sorting pipeline is problematic for a number of reasons. The workload may not be practical for a single operator since hundreds of large datasets can be acquired over the course of a few days. Operator bias becomes an issue if the task is shared among several users or the sorting methods of a single user drift over time. Assessing reproducibility or sorting reliability is near impossible since the user cannot be asked to supervise processing of the same dataset multiple times in an unbiased manner. Finally, human-supervised processing cannot easily be transferred between labs and is not combatible with objective comparisons between alternative methods. 
 
 With that said, it is not reasonable to expect a single algorithm to work for all datasets. The experimental setup, noise properties, and hardware-specific artifacts vary significantly between laboratories. A certain degree of tweaking of parameters should be expected. Whenever possible, these should be applied during the preprocessing stage rather than at the end of automated sorting.
 
-\section {The algorithm}
+\section {Processing algorithm}
+Processing comprises the following steps:
+
+\begin{itemize}
+\item \textbf{Preprocessing} - bandpass filter and prewhitening
+\item \textbf{Detection} - per channel event detect via threshold
+\item \textbf{Feature Extraction} - per channel principal component feature extraction using time clips from the electrode channel and its neighbors
+\item \textbf{Clustering} - per channel clustering using ISO-SPLIT
+\item \textbf{Cluster Splitting} - a second pass of clustering using features from all electrodes
+\item \textbf{Template Extraction} - compute average template for each cluster
+\item \textbf{Consolidation} - remove redundant clusters since the same neuron is usually identified on multiple electrodes
+\item \textbf{Fitting} - Select a subset of the events that explain the underlying data
+\end{itemize}
 
 \subsection {Preprocessing}
 
