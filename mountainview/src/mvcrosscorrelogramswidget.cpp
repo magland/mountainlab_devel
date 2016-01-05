@@ -170,6 +170,8 @@ void MVCrossCorrelogramsWidget::setCurrentUnit(int num)
 	if (num<1) return;
 	if (num>d->m_histogram_views.count()) return;
 
+	d->m_selected_unit_nums.clear();
+	d->m_selected_unit_nums.insert(num);
 	d->m_current_unit_num=num;
 	d->do_highlighting();
 	emit currentUnitChanged();
@@ -204,7 +206,7 @@ void MVCrossCorrelogramsWidget::slot_histogram_view_control_clicked()
 	if (!d->m_selected_unit_nums.contains(num)) {
 		d->m_selected_unit_nums << num;
 		d->do_highlighting();
-		setCurrentUnit(num);
+		if (d->m_current_unit_num<=0) setCurrentUnit(num);
 	}
 	else {
 		d->m_selected_unit_nums.remove(num);
