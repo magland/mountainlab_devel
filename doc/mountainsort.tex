@@ -31,8 +31,10 @@
 
 \bigskip
 \begin{abstract}
-This is an overview of the MountainSort software for automated spike sorting.
+This is an overview of the MountainSort software for automated spike sorting and visualization. Our objectives are threefold. The first is to implement an automated spike sorting algorithm requiring minimal user intervention. Second, we provide interactive visualization tools for exploring the output of this and other spike sorting softwares. Finally, we provide an algorithm-independent framework for objectively validating spike sorting performance by reporting a reliability metric for each detected neuron.
 \end{abstract}
+
+\tableofcontents
 
 \vfill
 
@@ -40,16 +42,17 @@ This is an overview of the MountainSort software for automated spike sorting.
 
 \section {Introduction}
 
+% Improve the intro
 Our objectives are threefold. The first is to implement an automated spike sorting algorithm requiring minimal user intervention. Second, we provide interactive visualization tools for exploring the output of this and other spike sorting softwares. Finally, we provide an algorithm-independent framework for objectively validating spike sorting performance by reporting a reliability metric for each detected neuron.
 
-\subsection {Automation}
+\subsection {Importance of automation}
 
-Manual human intervention as part of a spike sorting pipeline is problematic for a number of reasons. The workload may not be practical for a single operator since hundreds of large datasets can be acquired over the course of a few days. Operator bias becomes an issue if the task is shared among several users or the sorting methods of a single user drift over time. Assessing reproducibility or sorting reliability is near impossible since the user cannot be asked to supervise processing of the same dataset multiple times in an unbiased manner. Finally, human-supervised processing cannot easily be transferred between labs and is not combatible with objective comparisons between alternative methods. 
+Manual human intervention as part of a spike sorting pipeline is problematic for a number of reasons. The workload may not be practical for a single operator since hundreds of large datasets can be acquired over the course of a few days. Operator bias becomes an issue if the task is shared among several users or the sorting methods of a single user drift over time. Assessing reproducibility or sorting reliability is near impossible since the user cannot be asked to supervise processing of the same dataset multiple times in an unbiased manner. Finally, human-supervised processing cannot easily be transferred between labs and is not compatible with objective comparisons between alternative methods. 
 
 With that said, it is not reasonable to expect a single algorithm to work for all datasets. The experimental setup, noise properties, and hardware-specific artifacts vary significantly between laboratories. A certain degree of tweaking of parameters should be expected. Whenever possible, these should be applied during the preprocessing stage rather than at the end of automated sorting.
 
 \section {Processing algorithm}
-Processing comprises the following steps:
+Here we describe the algorithm we use for sorting. It comprises the following steps:
 
 \begin{itemize}
 \item \textbf{Preprocessing} - bandpass filter and prewhitening
@@ -135,6 +138,8 @@ In this fitting stage, we use a greedy fitting approach to reduce to a subset of
 \end{algorithm}
 
 %If a multi-electrode array is used and the user wishes to provide information about the geometry of the detectors, an $M\times M$ binary adjacency matrix may be supplied to specify the neighbors to each channel.
+
+\section {Installation}
 
 \section {Installation}
 
