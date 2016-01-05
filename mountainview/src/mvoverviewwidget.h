@@ -34,13 +34,16 @@ protected:
 private slots:
 	void slot_spike_templates_current_x_changed();
 	void slot_cross_correlograms_current_unit_changed();
+	void slot_cross_correlograms_selected_units_changed();
 	void slot_statistics_widget_current_unit_changed();
+	void slot_statistics_widget_selected_units_changed();
 	void slot_unit_activated(int num);
 	void slot_current_clip_number_changed();
 	void slot_cdf_view_current_label_changed();
 	void slot_cdf_view_current_timepoint_changed();
 	void slot_current_raw_timepoint_changed();
 	void slot_compare_neurons();
+	void slot_explore_neuron();
 
 private:
 	MVOverviewWidgetPrivate *d;

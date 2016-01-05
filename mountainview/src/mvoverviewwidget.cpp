@@ -85,11 +85,13 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QWidget(parent)
     labeled_raw_widget->hideMenu();
 
 	d->m_statistics_widget=new MVStatisticsWidget;
+	connect(d->m_statistics_widget,SIGNAL(selectedUnitsChanged()),this,SLOT(slot_statistics_widget_selected_units_changed()));
 	connect(d->m_statistics_widget,SIGNAL(currentUnitChanged()),this,SLOT(slot_statistics_widget_current_unit_changed()));
 	connect(d->m_statistics_widget,SIGNAL(unitActivated(int)),this,SLOT(slot_unit_activated(int)));
 
 	d->m_cross_correlograms_widget=new MVCrossCorrelogramsWidget;
 	connect(d->m_cross_correlograms_widget,SIGNAL(currentUnitChanged()),this,SLOT(slot_cross_correlograms_current_unit_changed()));
+	connect(d->m_cross_correlograms_widget,SIGNAL(selectedUnitsChanged()),this,SLOT(slot_cross_correlograms_selected_units_changed()));
 	connect(d->m_cross_correlograms_widget,SIGNAL(unitActivated(int)),this,SLOT(slot_unit_activated(int)));
 
 	d->m_electrode_view=new FTElectrodeArrayView;
@@ -128,7 +130,14 @@ MVOverviewWidget::MVOverviewWidget(QWidget *parent) : QWidget(parent)
 		QMenu *menu=new QMenu("Tools");
 		menu_bar->addMenu(menu);
 		{
+			QAction *A=new QAction("Explore Neuron",this);
+			A->setShortcut(QKeySequence("Ctrl+N"));
+			connect(A,SIGNAL(triggered(bool)),this,SLOT(slot_explore_neuron()));
+			menu->addAction(A);
+		}
+		{
 			QAction *A=new QAction("Compare Neurons",this);
+			A->setShortcut(QKeySequence("Ctrl+C"));
 			connect(A,SIGNAL(triggered(bool)),this,SLOT(slot_compare_neurons()));
 			menu->addAction(A);
 		}
@@ -244,15 +253,34 @@ void MVOverviewWidget::slot_cross_correlograms_current_unit_changed()
 	d->set_current_unit(num);
 }
 
+void MVOverviewWidget::slot_cross_correlograms_selected_units_changed()
+{
+	QList<int> nums=d->m_cross_correlograms_widget->selectedUnits();
+	d->m_statistics_widget->setSelectedUnits(nums);
+}
+
 void MVOverviewWidget::slot_statistics_widget_current_unit_changed()
 {
 	int num=d->m_statistics_widget->currentUnit();
 	d->set_current_unit(num);
+
+	QList<int> units=d->m_statistics_widget->selectedUnits();
+	d->m_cross_correlograms_widget->setSelectedUnits(units);
+}
+
+void MVOverviewWidget::slot_statistics_widget_selected_units_changed()
+{
+	int num=d->m_statistics_widget->currentUnit();
+	d->set_current_unit(num);
+
+	QList<int> units=d->m_statistics_widget->selectedUnits();
+	d->m_cross_correlograms_widget->setSelectedUnits(units);
 }
 
 void MVOverviewWidget::slot_unit_activated(int num)
 {
 	MVUnitWidget *W=new MVUnitWidget;
+	W->setWindowTitle(QString("%1 - Neuron %2").arg(this->windowTitle()).arg(num));
 	W->setUnitNumber(num);
 	W->setAttribute(Qt::WA_DeleteOnClose);
 	W->setElectrodeLocations(d->m_locations);
@@ -319,10 +347,20 @@ void MVOverviewWidget::slot_compare_neurons()
 	QList<int> units=d->m_cross_correlograms_widget->selectedUnits();
 	qSort(units);
 	if (units.count()<=1) {
-		QMessageBox::information(this,"Compare Neurons","You must select more than one neuron in the cross-correlogram view. Use the Control key to select multiple neurons.");
+		QMessageBox::information(this,"Compare Neurons","You must select more than one neuron in the auto-correlogram view. Use the Control key to select multiple neurons.");
 		return;
 	}
 	d->do_compare_units(units);
+}
+
+void MVOverviewWidget::slot_explore_neuron()
+{
+	int num=d->m_cross_correlograms_widget->currentUnit();
+	if (num<=0) {
+		QMessageBox::information(this,"Explore Neuron","You must select a neuron in the auto-correlogram view.");
+		return;
+	}
+	slot_unit_activated(num);
 }
 
 void MVOverviewWidgetPrivate::update_spike_templates()
@@ -414,6 +452,12 @@ void MVOverviewWidgetPrivate::set_current_unit(int num)
 void MVOverviewWidgetPrivate::do_compare_units(const QList<int> &unit_numbers)
 {
 	MVComparisonWidget *W=new MVComparisonWidget;
+	QString tmp;
+	foreach (int num,unit_numbers) {
+		if (!tmp.isEmpty()) tmp+=", ";
+		tmp+=QString("%1").arg(num);
+	}
+	W->setWindowTitle(QString("%1 - Neurons %2").arg(q->windowTitle()).arg(tmp));
 	W->setUnitNumbers(unit_numbers);
 	W->setAttribute(Qt::WA_DeleteOnClose);
 	W->setElectrodeLocations(m_locations);

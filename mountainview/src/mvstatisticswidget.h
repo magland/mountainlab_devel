@@ -20,16 +20,20 @@ public:
 	void setRaw(DiskArrayModel *X);
 	void updateStatistics();
 
+	QList<int> selectedUnits();
+	void setSelectedUnits(const QList<int> &units);
 	int currentUnit();
 	void setCurrentUnit(int unit);
 
 signals:
+	void selectedUnitsChanged();
 	void currentUnitChanged();
 	void unitActivated(int num);
 
 private slots:
 	void slot_item_clicked();
 	void slot_item_activated(QTreeWidgetItem *item);
+	void slot_item_selection_changed();
 
 private:
 	MVStatisticsWidgetPrivate *d;

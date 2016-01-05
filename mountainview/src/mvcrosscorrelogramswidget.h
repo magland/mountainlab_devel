@@ -18,6 +18,7 @@ public:
 	int currentUnit();
 	QList<int> selectedUnits();
 	void setCurrentUnit(int num);
+	void setSelectedUnits(const QList<int> &nums);
 	int baseUnit();
 	void setBaseUnit(int num);
 
@@ -26,6 +27,7 @@ public:
 signals:
 	void currentUnitChanged();
 	void unitActivated(int num);
+	void selectedUnitsChanged();
 
 private slots:
 	void slot_histogram_view_clicked();

@@ -177,6 +177,12 @@ void MVCrossCorrelogramsWidget::setCurrentUnit(int num)
 	emit currentUnitChanged();
 }
 
+void MVCrossCorrelogramsWidget::setSelectedUnits(const QList<int> &nums)
+{
+	d->m_selected_unit_nums=QSet<int>::fromList(nums);
+	d->do_highlighting();
+}
+
 int MVCrossCorrelogramsWidget::baseUnit()
 {
 	return d->m_base_unit_num;
@@ -212,6 +218,7 @@ void MVCrossCorrelogramsWidget::slot_histogram_view_control_clicked()
 		d->m_selected_unit_nums.remove(num);
 		d->do_highlighting();
 	}
+	emit selectedUnitsChanged();
 }
 
 void MVCrossCorrelogramsWidget::slot_histogram_view_activated()

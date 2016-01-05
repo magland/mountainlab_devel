@@ -40,13 +40,14 @@ MVStatisticsWidget::MVStatisticsWidget()
 	d->m_raw=0;
 
 	d->m_tree=new QTreeWidget;
-	d->m_tree->setSelectionMode(QTreeWidget::SingleSelection);
+	d->m_tree->setSelectionMode(QTreeWidget::ExtendedSelection);
 	d->m_tree->setSortingEnabled(true);
 	QFont font=d->m_tree->font();
 	font.setPointSize(10);
 	d->m_tree->setFont(font);
 	connect(d->m_tree,SIGNAL(currentItemChanged(QTreeWidgetItem*,QTreeWidgetItem*)),this,SLOT(slot_item_clicked()));
 	connect(d->m_tree,SIGNAL(itemActivated(QTreeWidgetItem*,int)),this,SLOT(slot_item_activated(QTreeWidgetItem*)));
+	connect(d->m_tree,SIGNAL(itemSelectionChanged()),this,SLOT(slot_item_selection_changed()));
 
 	QVBoxLayout *layout=new QVBoxLayout;
 	layout->addWidget(d->m_tree);
@@ -79,6 +80,30 @@ void MVStatisticsWidget::updateStatistics()
 	d->update_statistics();
 }
 
+QList<int> MVStatisticsWidget::selectedUnits()
+{
+	QList<QTreeWidgetItem *> items=d->m_tree->selectedItems();
+	QList<int> ret;
+	for (int i=0; i<items.count(); i++) {
+		ret << items[i]->data(0,Qt::UserRole).toInt();
+	}
+	return ret;
+}
+
+void MVStatisticsWidget::setSelectedUnits(const QList<int> &units)
+{
+	QSet<int> the_set=units.toSet();
+	for (int j=0; j<d->m_tree->topLevelItemCount(); j++) {
+		QTreeWidgetItem *item=d->m_tree->topLevelItem(j);
+		if (the_set.contains(item->data(0,Qt::UserRole).toInt())) {
+			item->setSelected(true);
+		}
+		else {
+			item->setSelected(false);
+		}
+	}
+}
+
 int MVStatisticsWidget::currentUnit()
 {
 	QTreeWidgetItem *item=d->m_tree->currentItem();
@@ -106,6 +131,11 @@ void MVStatisticsWidget::slot_item_clicked()
 void MVStatisticsWidget::slot_item_activated(QTreeWidgetItem *item)
 {
 	emit unitActivated(item->data(0,Qt::UserRole).toInt());
+}
+
+void MVStatisticsWidget::slot_item_selection_changed()
+{
+	emit selectedUnitsChanged();
 }
 
 QString read_text_file_2(QString path) {
@@ -137,7 +167,7 @@ void MVStatisticsWidgetPrivate::update_statistics()
 	}
 
 	m_tree->clear();
-	QStringList labels; labels << "" << "Unit" << "Primary Channel" << "# Spikes" << "Spikes per minute";
+	QStringList labels; labels << "" << "Neuron" << "Primary Channel" << "# Spikes" << "Spikes per minute";
 	m_tree->setHeaderLabels(labels);
 	for (int k=1; k<spike_stats.count(); k++) {
 		SpikeStats X=spike_stats[k];

@@ -88,6 +88,7 @@ int main(int argc, char *argv[]) {
 
 	//MountainViewWidget W;
 	MVOverviewWidget W;
+	W.setWindowTitle(CLP.named_parameters.value("window_title","MountainView"));
     W.show();
 	W.move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
 	W.resize(1800,1200);
