@@ -34,7 +34,7 @@ o_features.clip_size=200;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_cluster=struct;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-o_split_clusters.num_features=3;
+o_split_clusters.num_features=3; 
 o_split_clusters.clip_size=o_features.clip_size;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_templates.clip_size=o_features.clip_size;

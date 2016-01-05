@@ -12,6 +12,12 @@
 \usepackage{color}
 \usepackage{hyperref}
 
+\addtolength{\oddsidemargin}{-.5in}%
+\addtolength{\evensidemargin}{-.5in}%
+\addtolength{\textwidth}{1in}%
+\addtolength{\textheight}{1.3in}%
+\addtolength{\topmargin}{-.8in}%
+
 %\pdfminorversion=4
 % NOTE: To produce blinded version, replace "0" with "1" below.
 
@@ -139,7 +145,90 @@ In this fitting stage, we use a greedy fitting approach to reduce to a subset of
 
 %If a multi-electrode array is used and the user wishes to provide information about the geometry of the detectors, an $M\times M$ binary adjacency matrix may be supplied to specify the neighbors to each channel.
 
-\section {Installation}
+\section {Processing software}
+
+All processing routines are implemented in C++ and are runnable either as UNIX command line utilities or using one of the MATLAB wrappers provided in the source package. The input and output data are always files, usually in the .mda format (see http://magland.github.io/articles/mda-format/). To make efficient use of RAM, files are processed in chunks whenever possible. In addition, parallel processing via OpenMP is used whenever possible. For these reasons, the source code may be difficult to read, even for basic operations such as threshold-based detection. The documentation of source code will improve over time.
+
+\subsection {The command line program}
+
+All processing commands are applied by running the bin/mountainsort executable. The first command line argument is the name of the processing procedure, or processor. Then the processor-specific options are supplied as additional arguments. For example, detection is applied using the following command:
+
+\lstset{basicstyle=\ttfamily,
+  showstringspaces=false,
+  commentstyle=\color{red},
+  keywordstyle=\color{blue}
+}
+\begin{lstlisting}[language=bash]
+./mountainsort detect --input=in.mda --output=out.mda
+  --inner_window_width=40 --outer_window_width=1000
+  --threshold=5
+\end{lstlisting}
+
+Run the mountainsort program with no arguments to see a list of the available processors, and run it with a single argument to see the version of the processor and a list of available processor-specific options.
+
+\subsection {Automatic non-redundant processing}
+
+The mountainsort command line utility has a built-in provenance tracking capability so that actual computations are only performed the first time a command is run. This allows the user to conveniently rerun scripts without waiting for the entire pipeline. For example, if a parameter in the consolidation stage is modified, then only the processing for the final steps are rerun.
+
+When a mountainsort processor executes, it first checks whether the output files already exist. If they do, then it compares those files with a database of all previous runs (stored in bin/.process\_tracker) to search for a match. Two processing runs match if the input files, input parameters, and output files all match. The processor only runs if no such match is found.
+
+\subsection {MATLAB wrappers}
+
+For convenience, each mountainsort processor may be run using the corresponding MATLAB wrapper. For example, see processing/mscmd\_detect.m. Note that no data arrays are stored in MATLAB memory since all processors operate on files. In this way, automatic provenance tracking and non-redundant processing applies to the MATLAB wrappers as well as the command line utility.
+
+An example processing script that uses the MATLAB wrappers can be found in the example\_mscmd directory. Note that execution is almost instantaneous the second time the script runs.
+
+\section {Visualization software}
+
+The main visualization program is located at mountainview/bin/mountainview. This is an interactive visualization tool only and does not run any processing routines. The idea is that the same viewer may also be used to view the output of third party spike sorting software. An example call to this program via MATLAB can be found at example\_mscmd/example\_mscmd\_view.m.
+
+\subsection {Main window}
+
+A screenshot of the main MountainView window is shown in Fig. \ref{fig:mountainview_main_window}.
+The upper-left window lists the identified neurons with some statistics. This list may be sorted by any of the columns by clicking on the relevant column header. The center-left window contains a graphical view of the firing rates for the various neurons. The x-axis is time and the y-axis is the cumulative number of events. Each curve represents a different neuron. The lower-left window shows the geometric layout of the electrodes. The colors correspond to the currently selected neuron and show the maximum or minimum voltages over the duration of the template waveform. Note that this plot is most relevant when viewing non-whitened data.
+
+The upper-right view shows the template waveforms for the identified neurons. Each column is a different neuron, and the rows correspond to the different electrode channels. The center-right view shows auto-correlograms. These are histograms depicting the time differences between pairs of firing of the same neuron. Ideally, each auto-correlogram will have a dip at the center which is explained by physiologic refractory-period constraints. The lower-right window shows the preprocessed raw data. Zooming in on this view reveals the labels as vertical red bars.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=6in]{images/mountainview_main_window.png}
+\caption{
+MountainView main window.
+}
+\label{fig:mountainview_main_window}
+\end{figure}
+
+\subsection {Individual neuron window}
+
+A detailed view of the behavior of an individual neuron can be seen by double-clicking on one of the auto-correlograms in the main window (or by using the option in the Tools menu). See Fig. \ref{fig:mountainview_neuron_window}.
+
+The upper-left pane shows the template, or average waveform, for this neuron. The bottom-left pain shows a 3D-rotatable view of the first 3 principal components for all detected events associated with this neuron. The upper-right window shows all of the extracted clips. This view can be rapidly zoomed in and out to get a feel for the homogeneity of the event clips. The center-right window shows the cross-correlograms between the selected neuron and all other neurons. These histograms show the distribution of time differences between pairs of events. Ideally, these histograms should all be flat, except for the one that corresponds to an auto-correlogram, as above. The lower-right window is the raw data view with only the selected neuron labeled.
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=6in]{images/mountainview_neuron_window.png}
+\caption{
+Individual neuron window.
+}
+\label{fig:mountainview_neuron_window}
+\end{figure}
+
+\subsection {Neuron comparison window}
+
+A comparison of two or more neurons is available by selecting the corresponding auto-correlograms in the main window (using the Ctrl Key) and then selecting Tools->Compare Neurons from the menu. See Fig. \ref{fig:mountainview_compare_window}.
+
+The upper-left pane shows the template waveforms of the selected neurons. The lower-left pane is a 3D-rotatable 
+
+\begin{figure}[!h]
+\centering
+\includegraphics[width=6in]{images/mountainview_compare_window.png}
+\caption{
+Neuron comparison window.
+}
+\label{fig:mountainview_compare_window}
+\end{figure}
+
+
 
 \section {Installation}
 
