@@ -158,7 +158,12 @@ QList<int> CVWidget::selectedDataPointIndices()
 
 void CVWidget::setNumDataPointsToSelect(int num)
 {
-	d->m_view->setNumDataPointsToSelect(num);
+    d->m_view->setNumDataPointsToSelect(num);
+}
+
+void CVWidget::setLabelStrings(const QStringList &strings)
+{
+    d->m_view->setLabelStrings(strings);
 }
 
 

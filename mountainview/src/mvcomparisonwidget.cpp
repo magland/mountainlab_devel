@@ -256,42 +256,54 @@ void MVComparisonWidget::slot_compute_templates()
 {
 	if (d->m_clips.isEmpty()) return;
 
-	d->set_status_text("Computing Template...");
-	Mda template0=compute_mean_waveform(d->m_clips[0]);
-	Mda template1; template1.allocate(template0.N1(),template0.N2(),d->m_clips.count());
-	int jj=0;
-	for (int i=0; i<d->m_clips.count(); i++) {
-		Mda tmp=compute_mean_waveform(d->m_clips[i]);
-		int ii=0;
-		for (int t=0; t<template0.N2(); t++) {
-			for (int m=0; m<template0.N1(); m++) {
-				template1.setValue1(tmp.value1(ii),jj);
-				ii++;
-				jj++;
-			}
-		}
-	}
-	d->set_status_text("Ready.");
-	DiskArrayModel *template_data=new DiskArrayModel;
-	template_data->setFromMda(template1);
-	d->m_template_view->setClipMode(true);
-	d->m_template_view->setData(template_data,true);
+    {
+        d->set_status_text("Computing Templates...");
+        Mda template0=compute_mean_waveform(d->m_clips[0]);
+        Mda template1; template1.allocate(template0.N1(),template0.N2(),d->m_clips.count());
+        QList<float> times0,labels0;
+        int jj=0;
+        for (int i=0; i<d->m_clips.count(); i++) {
+            Mda tmp=compute_mean_waveform(d->m_clips[i]);
+            int ii=0;
+            for (int t=0; t<template0.N2(); t++) {
+                for (int m=0; m<template0.N1(); m++) {
+                    template1.setValue1(tmp.value1(ii),jj);
+                    ii++;
+                    jj++;
+                }
+            }
+            times0 << (int)(template0.N2()*(i+0.5));
+            labels0 << d->m_unit_numbers.value(i);
+        }
+        d->set_status_text("Ready.");
+        DiskArrayModel *template_data=new DiskArrayModel;
+        template_data->setFromMda(template1);
+        d->m_template_view->setClipMode(true);
+        d->m_template_view->setData(template_data,true);
+        d->m_template_view->setTimesLabels(times0,labels0);
+        d->m_template_view->setMarkerLinesVisible(false);
+    }
 
-	d->set_status_text("Computing Features...");
-	Mda features0=compute_features(d->m_clips);
-	Mda labels0; labels0.allocate(1,features0.N2());
-	int ii=0;
-	for (int j=0; j<d->m_clips.count(); j++) {
-		for (int k=0; k<d->m_clips[j]->dim3(); k++) {
-			labels0.setValue1(j+1,ii);
-			ii++;
-		}
-	}
-	d->set_status_text("Ready.");
-	d->m_cluster_widget->setFeatures(features0);
-	d->m_cluster_widget->setLabels(labels0);
-	d->m_cluster_widget->autoSetRange();
-	d->m_cluster_widget->refresh();
+    {
+        d->set_status_text("Computing Features...");
+        Mda features0=compute_features(d->m_clips);
+        Mda labels0; labels0.allocate(1,features0.N2());
+        QStringList label_strings; //for legend
+        int ii=0;
+        for (int j=0; j<d->m_clips.count(); j++) {
+            for (int k=0; k<d->m_clips[j]->dim3(); k++) {
+                labels0.setValue1(j+1,ii);
+                ii++;
+            }
+            label_strings << QString("%1").arg(d->m_unit_numbers.value(j));
+        }
+        d->set_status_text("Ready.");
+        d->m_cluster_widget->setFeatures(features0);
+        d->m_cluster_widget->setLabels(labels0);
+        d->m_cluster_widget->setLabelStrings(label_strings);
+        d->m_cluster_widget->autoSetRange();
+        d->m_cluster_widget->refresh();
+    }
 }
 
 void MVComparisonWidget::slot_clips_view_current_x_changed()

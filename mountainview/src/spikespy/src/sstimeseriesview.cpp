@@ -67,7 +67,13 @@ void SSTimeSeriesView::slot_request_move_to_timepoint(int t0)
 
 QString SSTimeSeriesView::viewType()
 {
-	return "SSTimeSeriesView";
+    return "SSTimeSeriesView";
+}
+
+void SSTimeSeriesView::setMarkerLinesVisible(bool val)
+{
+    if (!d->m_plot) return;
+    d->m_plot->setShowMarkerLines(val);
 }
 
 void SSTimeSeriesView::keyPressEvent(QKeyEvent *evt)
@@ -94,10 +100,10 @@ void SSTimeSeriesView::keyPressEvent(QKeyEvent *evt)
 }
 
 void SSTimeSeriesView::setData(SSARRAY *data,bool is_owner) {
-	if (!data->fileHierarchyExists()) {
+    if (!data->fileHierarchyExists()) {
 		qWarning() << "File hierarchy does not exist. Creating.";
 		data->createFileHierarchyIfNeeded();
-	}
+    }
 
 	if ((d->m_data)&&(d->m_data_is_owner)) {
 		delete d->m_data; d->m_data=0;
@@ -142,7 +148,20 @@ void SSTimeSeriesView::setChannelLabels(const QStringList &labels)
 
 void SSTimeSeriesView::setUniformVerticalChannelSpacing(bool val)
 {
-	d->m_plot->setUniformVerticalChannelSpacing(val);
+    d->m_plot->setUniformVerticalChannelSpacing(val);
+}
+
+void SSTimeSeriesView::setTimesLabels(const QList<float> &times, const QList<float> &labels)
+{
+    Mda TL0;
+    TL0.allocate(2,times.count());
+    for (int i=0; i<times.count(); i++) {
+        TL0.setValue(times.value(i),0,i);
+        TL0.setValue(labels.value(i),1,i);
+    }
+    DiskReadMda *TL=new DiskReadMda;
+    (*TL)=TL0;
+    this->setLabels(TL,true);
 }
 
 SSLabelsModel *SSTimeSeriesView::getLabels()

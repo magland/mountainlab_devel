@@ -426,7 +426,7 @@ bool do_minmax_downsample(QString path1,QString path2,int factor,QProgressDialog
 
 void DiskArrayModel::createFileHierarchyIfNeeded() {
 	if (d->m_set_from_mda) return;
-	if (fileHierarchyExists()) return;
+    if (fileHierarchyExists()) return;
 
 	QProgressDialog dlg("Creating file hierarchy","Cancel",0,100);
 	dlg.show();
@@ -436,17 +436,17 @@ void DiskArrayModel::createFileHierarchyIfNeeded() {
 	int scale0=MULTISCALE_FACTOR;
 	while (d->m_num_timepoints/scale0>1) {
 		dlg.setLabelText(QString("Creating file hierarchy %1").arg(d->m_num_timepoints/scale0));
-		qApp->processEvents();
-		QString new_path=d->get_multiscale_file_name(scale0);
-		if (!QDir(QFileInfo(new_path).path()).exists()) {
-			//the following line is crazy!!
-			QDir(QFileInfo(QFileInfo(new_path).path()).path()).mkdir(QFileInfo(QFileInfo(new_path).path()).fileName());
-		}
-		if (!do_minmax_downsample(last_path,new_path,MULTISCALE_FACTOR,&dlg,(scale0==MULTISCALE_FACTOR))) {
-			exit(-1);
-			return;
-		}
-		last_path=new_path;
+        qApp->processEvents();
+        QString new_path=d->get_multiscale_file_name(scale0);
+        if (!QDir(QFileInfo(new_path).path()).exists()) {
+            //the following line is crazy!!
+            QDir(QFileInfo(QFileInfo(new_path).path()).path()).mkdir(QFileInfo(QFileInfo(new_path).path()).fileName());
+        }
+        if (!do_minmax_downsample(last_path,new_path,MULTISCALE_FACTOR,&dlg,(scale0==MULTISCALE_FACTOR))) {
+            exit(-1);
+            return;
+        }
+        last_path=new_path;
 		scale0*=MULTISCALE_FACTOR;
 	}
 

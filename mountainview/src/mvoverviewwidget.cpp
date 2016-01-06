@@ -183,6 +183,7 @@ void MVOverviewWidget::setPrimaryChannels(const Mda &X)
 void MVOverviewWidget::setRaw(DiskArrayModel *X,bool own_it)
 {
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
+    for (int i=0; i<100; i++) qApp->processEvents(); //this is a disturbing hack, but if I don't use it, then sometimes the raw data appears as all zeros (after the first run where the file hierarchy is created). Yikes!!
 	d->m_raw=X;
 	d->m_own_raw=own_it;
 	d->m_statistics_widget->setRaw(X);

@@ -408,8 +408,8 @@ bool do_minmax_downsample(QString path1,QString path2,int factor,QProgressDialog
 }
 
 void DiskArrayModel::createFileHierarchyIfNeeded() {
-	if (d->m_set_from_mda) return;
-	if (fileHierarchyExists()) return;
+        if (d->m_set_from_mda) return;
+        if (fileHierarchyExists()) return;
 
 	QProgressDialog dlg("Creating file hierarchy","Cancel",0,100);
 	dlg.show();

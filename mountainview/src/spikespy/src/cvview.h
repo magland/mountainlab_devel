@@ -20,6 +20,7 @@ public:
 	QList<int> selectedDataPointIndices();
 	void setSelectedDataPointIndices(const QList<int> &L);
 	void setNumDataPointsToSelect(int num);
+    void setLabelStrings(const QStringList &strings);
 
 protected:
 	void paintEvent(QPaintEvent *evt);

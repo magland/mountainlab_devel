@@ -23,6 +23,7 @@ public:
 	void setSelectedDataPointIndices(const QList<int> &L);
 	QList<int> selectedDataPointIndices();
 	void setNumDataPointsToSelect(int num);
+    void setLabelStrings(const QStringList &strings);
 
 signals:
 	void selectedDataPointsChanged();

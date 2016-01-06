@@ -25,6 +25,7 @@ class CVViewPrivate {
 public:
 	CVView *q;
 	QList<CVDataPoint> m_data_points;
+    int m_max_label;
 	MemoryMda m_grid;
 
 	AffineTransformation m_view_transformation;
@@ -46,6 +47,7 @@ public:
 	QList<int> m_selected_point_indices;
 	int m_num_datapoints_to_select;
 	bool m_is_moving;
+    QStringList m_label_strings;
 
 	long m_update_view_code;
 	void start_update_view();
@@ -53,6 +55,7 @@ public:
 	CVPoint coord_to_pixel(CVPoint p);
 	CVPoint pixel_to_coord(CVPoint pp);
 	void draw_overlay(QPainter *painter);
+    void draw_legend(QPainter *painter);
 	void zoom(float factor);
 	void set_selected_line(CVLine L);
 	QList<int> retrieve_data_point_indices_closest_to_selected_line(int num_to_retrieve);
@@ -62,6 +65,7 @@ CVView::CVView(QWidget *parent) : QWidget(parent)
 {
 	d=new CVViewPrivate;
 	d->q=this;
+    d->m_max_label=1;
 
 	d->m_view_transformation.scale(0.6,0.6,0.6);
 	d->m_inverse_view_transformation=d->m_view_transformation.inverse();
@@ -89,6 +93,11 @@ CVView::~CVView()
 
 void CVView::addDataPoints(const QList<CVDataPoint> &points)
 {
+    for (int i=0; i<points.count(); i++) {
+        if (points[i].label>d->m_max_label) {
+            d->m_max_label=points[i].label;
+        }
+    }
 	d->m_data_points.append(points);
 	d->m_shuffling.clear();
 	d->start_update_view();
@@ -121,7 +130,13 @@ void CVView::setSelectedDataPointIndices(const QList<int> &L)
 
 void CVView::setNumDataPointsToSelect(int num)
 {
-	d->m_num_datapoints_to_select=num;
+    d->m_num_datapoints_to_select=num;
+}
+
+void CVView::setLabelStrings(const QStringList &strings)
+{
+    d->m_label_strings=strings;
+    update();
 }
 
 float compute_distance_from_point_to_line(const CVPoint &P,const CVLine &L) {
@@ -240,6 +255,7 @@ void CVView::paintEvent(QPaintEvent *evt)
 	painter.drawImage(0,0,d->m_image);
 
 	d->draw_overlay(&painter);
+    d->draw_legend(&painter);
 }
 
 void CVView::mouseMoveEvent(QMouseEvent *evt)
@@ -472,7 +488,43 @@ void CVViewPrivate::draw_overlay(QPainter *painter)
 		CVPoint p2=coord_to_pixel(m_selected_line.p2);
 		painter->setPen(QPen(QBrush(QColor(50,70,50)),2));
 		painter->drawLine(p1.x,p1.y,p2.x,p2.y);
-	}
+    }
+}
+
+QColor brighten(QColor col,float factor) {
+    QColor ret;
+    int r=(int)(col.red()*factor); if (r>255) r=255;
+    int g=(int)(col.green()*factor); if (g>255) g=255;
+    int b=(int)(col.blue()*factor); if (b>255) b=255;
+    return QColor(r,g,b);
+}
+
+void CVViewPrivate::draw_legend(QPainter *painter)
+{
+    if (m_label_strings.isEmpty()) return;
+    int W0=q->width();
+    //int H0=q->height();
+    if (m_label_colors.count()==0) return;
+    int x0=W0-60;
+    int x1=W0-30;
+    int vspacing=15;
+    int y0=vspacing;
+    for (int jj=1; jj<=m_max_label; jj++) {
+        QColor col=m_label_colors[(jj-1)%m_label_colors.count()];
+        col=brighten(col,1.5);
+        QPen pen=painter->pen();
+        pen.setWidth(5);
+        pen.setColor(col);
+        painter->setPen(pen);
+        QPointF pt1(x0,y0);
+        QPointF pt2(x1,y0);
+        painter->drawLine(pt1,pt2);
+        QRect RR(x1+9,y0-10,W0-x1-9,20);
+        pen.setColor(QColor(200,200,200));
+        painter->setPen(pen);
+        painter->drawText(RR,QString("%1").arg(m_label_strings.value(jj-1)),Qt::AlignVCenter|Qt::AlignLeft);
+        y0+=vspacing;
+    }
 }
 
 void CVViewPrivate::zoom(float factor)
