@@ -72,7 +72,7 @@ bool compute_template(int M,int T,float *ret,DiskReadMda &X,DiskReadMda &CC,int 
     for (int ii=0; ii<NT; ii++) {
         int k0=(int)CC.value(2,ii);
         if (k0==k) {
-            int time0=(int)CC.value(1,ii);
+            int time0=(int)CC.value(1,ii)-1;
             if ((time0-T/2>=0)&&(time0-T/2+T<=X.N2())) {
                 int jj=0;
                 for (int t=time0-T/2; t<time0-T/2+T; t++) {

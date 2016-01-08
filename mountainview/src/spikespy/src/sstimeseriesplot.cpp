@@ -16,6 +16,8 @@ public:
 	SSARRAY *m_data;
 	SSLabelsModel1 *m_labels;
 	bool m_labels_is_owner;
+    SSLabelsModel1 *m_compare_labels;
+    bool m_compare_labels_is_owner;
 	int m_max_timepoint;
 	int m_num_channels;
 	int m_dim3;
@@ -59,6 +61,8 @@ SSTimeSeriesPlot::SSTimeSeriesPlot(QWidget *parent) : SSAbstractPlot(parent) {
 	d->m_data=0;
 	d->m_labels=0;
 	d->m_labels_is_owner=0;
+    d->m_compare_labels=0;
+    d->m_compare_labels_is_owner=0;
 
 	d->m_max_timepoint=0;
 	d->m_num_channels=1;
@@ -135,6 +139,10 @@ SSTimeSeriesPlot::~SSTimeSeriesPlot() {
 		if (d->m_labels_is_owner)
 			delete d->m_labels;
 	}
+    if (d->m_compare_labels) {
+        if (d->m_compare_labels_is_owner)
+            delete d->m_compare_labels;
+    }
 	delete d;
 }
 
@@ -225,6 +233,14 @@ void SSTimeSeriesPlot::setLabels(SSLabelsModel1 *L,bool is_owner) {
 	d->m_image_needs_update=true;
 	update();
 
+}
+
+void SSTimeSeriesPlot::setCompareLabels(SSLabelsModel1 *L, bool is_owner)
+{
+    d->m_compare_labels=L;
+    d->m_compare_labels_is_owner=is_owner;
+    d->m_image_needs_update=true;
+    update();
 }
 
 void SSTimeSeriesPlot::initialize()
@@ -511,6 +527,13 @@ void SSTimeSeriesPlotPrivate::setup_plot_area() {
 			m_plot_area.addMarker(TL.value(0,i)-1,TL.value(1,i));
 		}
 	}
+    if ((m_compare_labels)&&(pp>0)) {
+        MemoryMda TL=m_compare_labels->getTimepointsLabels(x1,x2);
+        int K=TL.size(1);
+        for (int i=0; i<K; i++) {
+            m_plot_area.addCompareMarker(TL.value(0,i)-1,TL.value(1,i));
+        }
+    }
 
 	//split the clips
 	if ((x2-x1+1<=max_range_for_showing_labels/100)&&(q->timepointMapping().totalSize()>1)) {

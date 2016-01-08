@@ -77,7 +77,7 @@ int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *n
                 X[ii]=F.value(f+2,i);
                 ii++;
             }
-            times[ie]=(int)F.value(1,i);
+            times[ie]=(int)F.value(1,i)-1; //convert to zero-based indexing
             ie++;
         }
     }
@@ -87,7 +87,7 @@ int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *n
     for (int ie=0; ie<num_events; ie++) {
         float buf[3];
         buf[0]=ch;
-        buf[1]=times[ie];
+        buf[1]=times[ie]+1; //convert back to one-based indexing
         buf[2]=labels[ie]+label_offset;
         mda_write_float32(buf,H_out,3,output_file);
     }

@@ -58,7 +58,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="detect";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.12";
+        P.version="0.13";
 		PT.registerProcessor(P);
 	}
     {
@@ -68,7 +68,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "detect";
         P.input_file_pnames << "adjacency";
         P.output_file_pnames << "output";
-		P.version="0.15";
+        P.version="0.17";
         PT.registerProcessor(P);
     }
     {
@@ -76,7 +76,7 @@ void register_processors(ProcessTracker &PT) {
         P.command="cluster";
         P.input_file_pnames << "input";
         P.output_file_pnames << "output";
-		P.version="0.14";
+        P.version="0.16";
         PT.registerProcessor(P);
     }
 	{
@@ -85,7 +85,7 @@ void register_processors(ProcessTracker &PT) {
 		P.input_file_pnames << "input";
 		P.input_file_pnames << "cluster";
 		P.output_file_pnames << "output";
-		P.version="0.11";
+        P.version="0.12";
 		PT.registerProcessor(P);
 	}
     {
@@ -94,7 +94,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "input";
         P.input_file_pnames << "cluster";
         P.output_file_pnames << "output";
-		P.version="0.13";
+        P.version="0.15";
         PT.registerProcessor(P);
     }
     {
@@ -115,7 +115,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "cluster";
         P.output_file_pnames << "templates";
         P.output_file_pnames << "cluster_out";
-		P.version="0.12";
+        P.version="0.13";
         PT.registerProcessor(P);
     }
 	{
@@ -125,7 +125,7 @@ void register_processors(ProcessTracker &PT) {
 		P.input_file_pnames << "cluster";
 		P.output_file_pnames << "output";
 		P.output_file_pnames << "index_out";
-		P.version="0.1";
+        P.version="0.11";
 		PT.registerProcessor(P);
 	}
 }

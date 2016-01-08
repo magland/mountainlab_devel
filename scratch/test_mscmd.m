@@ -2,7 +2,7 @@ function test_mscmd
 
 addpath('mountainview/src/spikespy/matlab');
 addpath('processing');
-addpath('util');
+addpath('msutils');
 
 path0='example1_data';
 

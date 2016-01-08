@@ -2,7 +2,7 @@ function example_mscmd
 
 addpath('mountainview/src/spikespy/matlab');
 addpath('processing');
-addpath('util');
+addpath('msutils');
 
 path0='example_data';
 
@@ -39,7 +39,7 @@ o_split_clusters.clip_size=o_features.clip_size;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_templates.clip_size=o_features.clip_size;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-o_consolidate.compare_threshold=0.3;
+o_consolidate.compare_threshold=0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_cross_correlograms.max_dt=1500;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

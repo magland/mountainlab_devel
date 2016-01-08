@@ -84,7 +84,7 @@ Mda features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,int num_feature
     int num_events=0;
     for (int i=0; i<NT; i++) {
         if (D.value(0,i)==ch) {
-            int time0=(int)D.value(1,i);
+            int time0=(int)D.value(1,i)-1; //convert to zero-based indexing
             if ((time0-clip_size/2>=0)&&(time0-clip_size/2+clip_size<=N)) {
                 num_events++;
             }
@@ -96,12 +96,12 @@ Mda features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,int num_feature
     int ie=0;
 	for (int i=0; i<NT; i++) {
 		if (D.value(0,i)==ch) {
-			int time0=(int)D.value(1,i);
+            int time0=(int)D.value(1,i)-1; //convert to zero-based indexing
 			if ((time0-clip_size/2>=0)&&(time0-clip_size/2+clip_size<=N)) {
 				int aa=M0*clip_size*ie;
 				for (int t=0; t<clip_size; t++) {
 					for (int im=0; im<M0; im++) {
-						Y[aa]=X.value(channels[im],t+time0-clip_size/2);
+                        Y[aa]=X.value(channels[im],t+time0-clip_size/2);
 						aa++;
 					}
 				}
@@ -119,7 +119,7 @@ Mda features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,int num_feature
     for (int ie=0; ie<num_events; ie++) {
 		int time0=times[ie];
 		ret.setValue(ch,0,ie);
-		ret.setValue(time0,1,ie);
+        ret.setValue(time0+1,1,ie); //convert back to 1-based indexing for the output
 		for (int ff=0; ff<num_features; ff++) {
 			ret.setValue(all_features[num_features*ie+ff],ff+2,ie);
 		}

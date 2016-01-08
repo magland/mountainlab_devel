@@ -1,5 +1,5 @@
-#ifndef MVCOMPARISONWIDGET_H
-#define MVCOMPARISONWIDGET_H
+#ifndef MVNEURONCOMPARISONWIDGET_H
+#define MVNEURONCOMPARISONWIDGET_H
 
 #include <QWidget>
 #include <QThread>
@@ -7,19 +7,17 @@
 #include "diskarraymodel.h"
 #include "mda.h"
 
-class MVComparisonWidgetPrivate;
+class MVNeuronComparisonWidgetPrivate;
 
-class MVComparisonWidget : public QWidget
+class MVNeuronComparisonWidget : public QWidget
 {
 	Q_OBJECT
 public:
-	friend class MVComparisonWidgetPrivate;
-	explicit MVComparisonWidget(QWidget *parent = 0);
-	~MVComparisonWidget();
+    friend class MVNeuronComparisonWidgetPrivate;
+    explicit MVNeuronComparisonWidget(QWidget *parent = 0);
+    ~MVNeuronComparisonWidget();
 
 	void setElectrodeLocations(const Mda &L);
-	void setTemplates(const Mda &X);
-	void setPrimaryChannels(const Mda &X);
 	void setRaw(DiskArrayModel *X,bool own_it);
 	void setTimesLabels(const Mda &times,const Mda &labels);
 	void setCrossCorrelogramsPath(const QString &path);
@@ -42,7 +40,7 @@ private slots:
 
 
 private:
-	MVComparisonWidgetPrivate *d;
+    MVNeuronComparisonWidgetPrivate *d;
 
 signals:
 
@@ -51,4 +49,4 @@ public slots:
 
 
 
-#endif // MVCOMPARISONWIDGET_H
+#endif // MVNEURONCOMPARISONWIDGET_H

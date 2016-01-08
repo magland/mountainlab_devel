@@ -1,4 +1,4 @@
-#include "mvcomparisonwidget.h"
+#include "mvneuroncomparisonwidget.h"
 #include <QDebug>
 #include <QDir>
 #include <QHBoxLayout>
@@ -23,12 +23,10 @@
 #include "get_principal_components.h"
 #include "mvutils.h"
 
-class MVComparisonWidgetPrivate {
+class MVNeuronComparisonWidgetPrivate {
 public:
-	MVComparisonWidget *q;
+    MVNeuronComparisonWidget *q;
 
-	Mda m_primary_channels;
-	Mda m_templates;
 	Mda m_locations;
 	DiskArrayModel *m_raw;
 	bool m_own_raw;
@@ -59,9 +57,9 @@ public:
 };
 
 
-MVComparisonWidget::MVComparisonWidget(QWidget *parent) : QWidget(parent)
+MVNeuronComparisonWidget::MVNeuronComparisonWidget(QWidget *parent) : QWidget(parent)
 {
-	d=new MVComparisonWidgetPrivate;
+    d=new MVNeuronComparisonWidgetPrivate;
 	d->q=this;
 
 	d->m_raw=0;
@@ -128,22 +126,12 @@ MVComparisonWidget::MVComparisonWidget(QWidget *parent) : QWidget(parent)
 	//this->setWindowFlags(this->windowFlags() ^ Qt::WindowCloseButtonHint);
 }
 
-void MVComparisonWidget::setElectrodeLocations(const Mda &L)
+void MVNeuronComparisonWidget::setElectrodeLocations(const Mda &L)
 {
 	d->m_locations=L;
 }
 
-void MVComparisonWidget::setTemplates(const Mda &X)
-{
-	d->m_templates=X;
-}
-
-void MVComparisonWidget::setPrimaryChannels(const Mda &X)
-{
-	d->m_primary_channels=X;
-}
-
-void MVComparisonWidget::setRaw(DiskArrayModel *X,bool own_it)
+void MVNeuronComparisonWidget::setRaw(DiskArrayModel *X,bool own_it)
 {
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
 	d->m_raw=X;
@@ -152,7 +140,7 @@ void MVComparisonWidget::setRaw(DiskArrayModel *X,bool own_it)
 	d->m_labeled_raw_view->setData(X,false);
 }
 
-void MVComparisonWidget::setTimesLabels(const Mda &times, const Mda &labels)
+void MVNeuronComparisonWidget::setTimesLabels(const Mda &times, const Mda &labels)
 {
 	QSet<int> the_set=d->m_unit_numbers.toSet();
 
@@ -178,7 +166,7 @@ void MVComparisonWidget::setTimesLabels(const Mda &times, const Mda &labels)
 	int jj=0;
 	for (int ii=0; ii<NN; ii++) {
 		if (the_set.contains(d->m_labels.value1(ii))) {
-			TL.setValue(d->m_times.value1(ii),0,jj);
+            TL.setValue(d->m_times.value1(ii),0,jj);
 			TL.setValue(d->m_labels.value1(ii),1,jj);
 			jj++;
 		}
@@ -188,13 +176,13 @@ void MVComparisonWidget::setTimesLabels(const Mda &times, const Mda &labels)
 	d->m_labeled_raw_view->setLabels(new DiskReadMda(TL),true);
 }
 
-void MVComparisonWidget::setCrossCorrelogramsPath(const QString &path)
+void MVNeuronComparisonWidget::setCrossCorrelogramsPath(const QString &path)
 {
 	d->m_cross_correlograms_path=path;
 	d->m_cross_correlograms_widget->setCrossCorrelogramsPath(path);
 }
 
-void MVComparisonWidget::setClips(const QList<DiskArrayModel *> &C, bool own_it)
+void MVNeuronComparisonWidget::setClips(const QList<DiskArrayModel *> &C, bool own_it)
 {
 	if (d->m_own_clips) qDeleteAll(d->m_clips);
 	d->m_clips=C;
@@ -233,26 +221,26 @@ void MVComparisonWidget::setClips(const QList<DiskArrayModel *> &C, bool own_it)
 
 }
 
-void MVComparisonWidget::setUnitNumbers(const QList<int> &numbers)
+void MVNeuronComparisonWidget::setUnitNumbers(const QList<int> &numbers)
 {
 	d->m_unit_numbers=numbers;
 	d->m_cross_correlograms_widget->setUnitNumbers(numbers);
 }
 
-void MVComparisonWidget::updateWidgets()
+void MVNeuronComparisonWidget::updateWidgets()
 {
 	d->m_cross_correlograms_widget->updateWidget();
 	QTimer::singleShot(100,this,SLOT(slot_compute_templates()));
 }
 
-void MVComparisonWidget::resizeEvent(QResizeEvent *evt)
+void MVNeuronComparisonWidget::resizeEvent(QResizeEvent *evt)
 {
 	Q_UNUSED(evt);
 
 	d->update_sizes();
 }
 
-void MVComparisonWidget::slot_compute_templates()
+void MVNeuronComparisonWidget::slot_compute_templates()
 {
 	if (d->m_clips.isEmpty()) return;
 
@@ -306,7 +294,7 @@ void MVComparisonWidget::slot_compute_templates()
     }
 }
 
-void MVComparisonWidget::slot_clips_view_current_x_changed()
+void MVNeuronComparisonWidget::slot_clips_view_current_x_changed()
 {
 	/*
 	if (!d->m_clips->dim3()) return;
@@ -323,7 +311,7 @@ void MVComparisonWidget::slot_clips_view_current_x_changed()
 	*/
 }
 
-void MVComparisonWidget::slot_selected_data_points_changed()
+void MVNeuronComparisonWidget::slot_selected_data_points_changed()
 {
 	QList<int> L=d->m_cluster_widget->selectedDataPointIndices();
 	if (L.count()!=1) return;
@@ -332,7 +320,7 @@ void MVComparisonWidget::slot_selected_data_points_changed()
 
 
 
-void MVComparisonWidgetPrivate::update_sizes()
+void MVNeuronComparisonWidgetPrivate::update_sizes()
 {
 	float W0=q->width();
 	float H0=q->height();
@@ -363,13 +351,14 @@ void MVComparisonWidgetPrivate::update_sizes()
 
 }
 
-void MVComparisonWidgetPrivate::set_status_text(const QString &txt)
+void MVNeuronComparisonWidgetPrivate::set_status_text(const QString &txt)
 {
 	m_status_label->setText(txt);
 }
 
-void MVComparisonWidgetPrivate::set_current_clip_number(int num)
+void MVNeuronComparisonWidgetPrivate::set_current_clip_number(int num)
 {
+    Q_UNUSED(num)
 	/*
 	if (m_current_clip_number==num) return;
 
@@ -395,7 +384,7 @@ void MVComparisonWidgetPrivate::set_current_clip_number(int num)
 	*/
 }
 
-MVComparisonWidget::~MVComparisonWidget()
+MVNeuronComparisonWidget::~MVNeuronComparisonWidget()
 {
 	if ((d->m_raw)&&(d->m_own_raw)) delete d->m_raw;
 	if (d->m_own_clips) qDeleteAll(d->m_clips);

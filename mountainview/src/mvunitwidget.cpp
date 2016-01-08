@@ -178,7 +178,7 @@ void MVUnitWidget::setTimesLabels(const Mda &times, const Mda &labels)
 	int jj=0;
 	for (int ii=0; ii<NN; ii++) {
 		if (d->m_labels.value1(ii)==d->m_unit_number) {
-			TL.setValue(d->m_times.value1(ii),0,jj);
+            TL.setValue(d->m_times.value1(ii),0,jj);
 			TL.setValue(d->m_labels.value1(ii),1,jj);
 			jj++;
 		}

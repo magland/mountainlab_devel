@@ -69,7 +69,7 @@ QList<int> get_times(DiskReadMda &C,int k) {
 	QList<int> times;
 	for (int i=0; i<C.N2(); i++) {
 		if (C.value(2,i)==k) {
-			times << (int)C.value(1,i);
+            times << (int)C.value(1,i)-1; //convert to zero-based indexing
 		}
 	}
 	return times;

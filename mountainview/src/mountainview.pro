@@ -17,7 +17,8 @@ HEADERS += \
     mvstatisticswidget.h \
     mvcrosscorrelogramswidget.h \
     mvunitwidget.h \
-    mvcomparisonwidget.h \
+    mvneuroncomparisonwidget.h \
+    mvlabelcomparewidget.h \
     diskarraymodelclipssubset.h \
     mvcdfview.h \
     static_neuron_colors.h \
@@ -28,7 +29,8 @@ SOURCES += mountainviewmain.cpp \
     mvstatisticswidget.cpp \
     mvcrosscorrelogramswidget.cpp \
     mvunitwidget.cpp \
-    mvcomparisonwidget.cpp \
+    mvneuroncomparisonwidget.cpp \
+    mvlabelcomparewidget.cpp \
     diskarraymodelclipssubset.cpp \
     mvcdfview.cpp \
     static_neuron_colors.cpp \

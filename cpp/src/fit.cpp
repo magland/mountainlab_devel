@@ -29,7 +29,7 @@ bool fit(const char *input_path,const char *templates_path,const char *cluster_i
     int labels[num_events];
     for (int i=0; i<num_events; i++) {
         to_include[i]=0;
-        times[i]=cluster.value(1,i);
+        times[i]=cluster.value(1,i)-1; //convert to zero-based indexing
         labels[i]=cluster.value(2,i);
     }
 

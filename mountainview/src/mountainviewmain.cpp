@@ -17,6 +17,7 @@
 #include "diskarraymodel.h"
 #include "histogramview.h"
 #include "mvoverviewwidget.h"
+#include "mvlabelcomparewidget.h"
 
 /*
  * TO DO:
@@ -65,6 +66,8 @@ int main(int argc, char *argv[]) {
     QStringList optional;
     CLParams CLP=get_command_line_params(argc,argv,required);
 
+    printf("testing\n");
+
 	QStringList args;
 	for (int i=1; i<argc; i++) {
 		args << QString(argv[i]);
@@ -75,6 +78,7 @@ int main(int argc, char *argv[]) {
 	QString working_path=CLP.named_parameters.value("working_path");
 	QString output_path=CLP.named_parameters.value("output_path");
 
+    QString mode=CLP.named_parameters.value("mode","overview");
     QString templates_path=CLP.named_parameters.value("templates");
     QString locations_path=CLP.named_parameters.value("locations");
     QString raw_path=CLP.named_parameters.value("raw");
@@ -86,67 +90,115 @@ int main(int argc, char *argv[]) {
 	QString clips_path=CLP.named_parameters.value("clips");
 	QString clips_index_path=CLP.named_parameters.value("clips-index");
 
-	//MountainViewWidget W;
-	MVOverviewWidget W;
-	W.setWindowTitle(CLP.named_parameters.value("window_title","MountainView"));
-    W.show();
-	W.move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
-	W.resize(1800,1200);
-    if (!templates_path.isEmpty()) {
-        Mda X; X.read(templates_path);
-        W.setTemplates(X);
-    }
-    if (!locations_path.isEmpty()) {
-        Mda X; X.read(locations_path);
-		W.setElectrodeLocations(X);
-    }
-    if (!raw_path.isEmpty()) {
-        DiskArrayModel *X=new DiskArrayModel;
-        X->setPath(raw_path);
-		W.setRaw(X,true);
-    }
-	if (!clips_path.isEmpty()) {
-		DiskArrayModel *X=new DiskArrayModel;
-		X->setPath(clips_path);
-		W.setClips(X,true);
-	}
-	if (!clips_index_path.isEmpty()) {
-		Mda X; X.read(clips_index_path);
-		W.setClipsIndex(X);
-	}
-    if (!times_path.isEmpty()) {
-        Mda T; T.read(times_path);
-        Mda L;
-        if (!labels_path.isEmpty()) {
-            L.read(labels_path);
-        }
-        else {
-            L.allocate(T.N1(),T.N2());
-            for (int ii=0; ii<L.totalSize(); ii++) L.setValue1(1,ii);
-        }
-        W.setTimesLabels(T,L);
-    }
-    if (!cluster_path.isEmpty()) {
-        Mda CC; CC.read(cluster_path);
-        int num_events=CC.N2();
-        Mda T,L;
-        T.allocate(1,num_events);
-        L.allocate(1,num_events);
-        for (int i=0; i<num_events; i++) {
-            T.setValue(CC.value(1,i),0,i);
-            L.setValue(CC.value(2,i),0,i);
-        }
-        W.setTimesLabels(T,L);
-    }
-	{
-		Mda PC; PC.read(primary_channels_path);
-		W.setPrimaryChannels(PC);
-	}
-    {
-        W.setCrossCorrelogramsPath(cross_correlograms_path);
-    }
-	W.updateWidgets();
+    QString cluster2_path=CLP.named_parameters.value("cluster2"); //for mode=compare_labels
 
+    if (mode=="overview") {
+        MVOverviewWidget *W=new MVOverviewWidget;
+        W->setWindowTitle(CLP.named_parameters.value("window_title","MountainView"));
+        W->show();
+        W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
+        W->resize(1800,1200);
+        if (!templates_path.isEmpty()) {
+            Mda X; X.read(templates_path);
+            W->setTemplates(X);
+        }
+        if (!locations_path.isEmpty()) {
+            Mda X; X.read(locations_path);
+            W->setElectrodeLocations(X);
+        }
+        if (!raw_path.isEmpty()) {
+            DiskArrayModel *X=new DiskArrayModel;
+            X->setPath(raw_path);
+            W->setRaw(X,true);
+        }
+        if (!clips_path.isEmpty()) {
+            DiskArrayModel *X=new DiskArrayModel;
+            X->setPath(clips_path);
+            W->setClips(X,true);
+        }
+        if (!clips_index_path.isEmpty()) {
+            Mda X; X.read(clips_index_path);
+            W->setClipsIndex(X);
+        }
+        if (!times_path.isEmpty()) {
+            Mda T; T.read(times_path);
+            Mda L;
+            if (!labels_path.isEmpty()) {
+                L.read(labels_path);
+            }
+            else {
+                L.allocate(T.N1(),T.N2());
+                for (int ii=0; ii<L.totalSize(); ii++) L.setValue1(1,ii);
+            }
+            W->setTimesLabels(T,L);
+        }
+        if (!cluster_path.isEmpty()) {
+            Mda CC; CC.read(cluster_path);
+            int num_events=CC.N2();
+            Mda T,L;
+            T.allocate(1,num_events);
+            L.allocate(1,num_events);
+            for (int i=0; i<num_events; i++) {
+                T.setValue(CC.value(1,i),0,i);
+                L.setValue(CC.value(2,i),0,i);
+            }
+            W->setTimesLabels(T,L);
+        }
+        {
+            Mda PC; PC.read(primary_channels_path);
+            W->setPrimaryChannels(PC);
+        }
+        {
+            W->setCrossCorrelogramsPath(cross_correlograms_path);
+        }
+        W->updateWidgets();
+    }
+    else if (mode=="compare_labels") {
+        printf("compare_labels...\n");
+        MVLabelCompareWidget *W=new MVLabelCompareWidget;
+        W->setWindowTitle(CLP.named_parameters.value("window_title","MountainView - Compare Labels"));
+        W->show();
+        W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
+        W->resize(1800,1200);
+        if (!locations_path.isEmpty()) {
+            Mda X; X.read(locations_path);
+            W->setElectrodeLocations(X);
+        }
+        if (!raw_path.isEmpty()) {
+            DiskArrayModel *X=new DiskArrayModel;
+            X->setPath(raw_path);
+            W->setRaw(X,true);
+        }
+        if ((!cluster_path.isEmpty())&&(!cluster2_path.isEmpty())) {
+            Mda T1,L1,T2,L2;
+            {
+                Mda CC; CC.read(cluster_path);
+                int num_events=CC.N2();
+                Mda T,L;
+                T.allocate(1,num_events);
+                L.allocate(1,num_events);
+                for (int i=0; i<num_events; i++) {
+                    T.setValue(CC.value(1,i),0,i);
+                    L.setValue(CC.value(2,i),0,i);
+                }
+                T1=T; L1=L;
+            }
+            {
+                Mda CC; CC.read(cluster2_path);
+                int num_events=CC.N2();
+                Mda T,L;
+                T.allocate(1,num_events);
+                L.allocate(1,num_events);
+                for (int i=0; i<num_events; i++) {
+                    T.setValue(CC.value(1,i),0,i);
+                    L.setValue(CC.value(2,i),0,i);
+                }
+                T2=T; L2=L;
+            }
+            W->setTimesLabels(T1,L1,T2,L2);
+        }
+        W->updateWidgets();
+    }
 
 	int ret=a.exec();
 

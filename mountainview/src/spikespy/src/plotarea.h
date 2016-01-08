@@ -30,6 +30,7 @@ public:
 	Vec2 yRange() const;
 	void addSeries(const PlotSeries &SS);
 	void addMarker(int t,int l);
+    void addCompareMarker(int t,int l);
 	void clearMarkers();
 	void refresh(QPainter *P);
 	Vec2 coordToPix(Vec2 coord);

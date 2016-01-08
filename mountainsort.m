@@ -5,7 +5,7 @@ total_timer=tic;
 basepath=fileparts(mfilename('fullpath'));
 addpath([basepath,'/processing']);
 addpath([basepath,'/isosplit']);
-addpath([basepath,'/util']);
+addpath([basepath,'/msutils']);
 
 locations=opts.locations;
 adjacency_matrix=ms_adjacency_matrix(locations,opts.adjacency_radius);

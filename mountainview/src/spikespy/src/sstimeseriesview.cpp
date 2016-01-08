@@ -16,6 +16,7 @@ public:
 	SSARRAY *m_data;
 	bool m_data_is_owner;
 	SSLabelsModel *m_labels;
+    SSLabelsModel *m_compare_labels;
 	SSTimeSeriesPlot *m_plot;
 
 	bool m_clip_mode;
@@ -30,6 +31,7 @@ SSTimeSeriesView::SSTimeSeriesView(QWidget *parent) : SSAbstractView(parent) {
 
 	d->m_data=0;
 	d->m_labels=0;
+    d->m_compare_labels=0;
 	d->m_data_is_owner=false;
 
 	d->m_clip_mode=false;
@@ -123,7 +125,15 @@ void SSTimeSeriesView::setLabels(DiskReadMda *TL,bool is_owner)
 	SSLabelsModel1 *L=new SSLabelsModel1;
 	L->setTimepointsLabels(TL,is_owner);
 	d->m_labels=L;
-	d->m_plot->setLabels(L,true);
+    d->m_plot->setLabels(L,true);
+}
+
+void SSTimeSeriesView::setCompareLabels(DiskReadMda *TL, bool is_owner)
+{
+    SSLabelsModel1 *L=new SSLabelsModel1;
+    L->setTimepointsLabels(TL,is_owner);
+    d->m_compare_labels=L;
+    d->m_plot->setCompareLabels(L,true);
 }
 
 /*void SSTimeSeriesView::setConnectZeros(bool val)

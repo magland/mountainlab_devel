@@ -20,6 +20,7 @@ public:
 	Q_INVOKABLE DiskArrayModel *data();
 	//Q_INVOKABLE void setLabels(Mda *T,Mda *L);
 	Q_INVOKABLE void setLabels(DiskReadMda *TL,bool is_owner);
+    Q_INVOKABLE void setCompareLabels(DiskReadMda *TL,bool is_owner);
 	//Q_INVOKABLE void setConnectZeros(bool val);
 	Q_INVOKABLE void setClipMode(bool val);
 	bool clipMode();

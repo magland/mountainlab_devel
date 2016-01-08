@@ -19,7 +19,7 @@
 #include "mvcrosscorrelogramswidget.h"
 #include <QSplitter>
 #include "mvunitwidget.h"
-#include "mvcomparisonwidget.h"
+#include "mvneuroncomparisonwidget.h"
 #include "diskarraymodelclipssubset.h"
 #include "ftelectrodearrayview.h"
 #include "mvcdfview.h"
@@ -197,7 +197,7 @@ void MVOverviewWidget::setTimesLabels(const Mda &times, const Mda &labels)
 	int NN=d->m_times.totalSize();
 	Mda TL; TL.allocate(2,NN);
 	for (int ii=0; ii<NN; ii++) {
-		TL.setValue(d->m_times.value1(ii),0,ii);
+        TL.setValue(d->m_times.value1(ii),0,ii);
 		TL.setValue(d->m_labels.value1(ii),1,ii);
 	}
 
@@ -452,7 +452,7 @@ void MVOverviewWidgetPrivate::set_current_unit(int num)
 
 void MVOverviewWidgetPrivate::do_compare_units(const QList<int> &unit_numbers)
 {
-	MVComparisonWidget *W=new MVComparisonWidget;
+    MVNeuronComparisonWidget *W=new MVNeuronComparisonWidget;
 	QString tmp;
 	foreach (int num,unit_numbers) {
 		if (!tmp.isEmpty()) tmp+=", ";
@@ -464,7 +464,6 @@ void MVOverviewWidgetPrivate::do_compare_units(const QList<int> &unit_numbers)
 	W->setElectrodeLocations(m_locations);
 	W->setTimesLabels(m_times,m_labels);
 	W->setRaw(m_raw,false);
-	W->setTemplates(m_templates);
 
 	QList<DiskArrayModel *> clips;
 	for (int i=0; i<unit_numbers.count(); i++) {

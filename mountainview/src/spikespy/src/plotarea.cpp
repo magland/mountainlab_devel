@@ -5,6 +5,7 @@
 struct PAMarker {
 	int t;
 	int l;
+    int vpos;
 };
 
 class PlotAreaPrivate {
@@ -74,13 +75,19 @@ void PlotArea::addSeries(const PlotSeries &SS) {
 
 void PlotArea::addMarker(int t, int l)
 {
-	PAMarker X; X.t=t; X.l=l;
+    PAMarker X; X.t=t; X.l=l; X.vpos=0;
 	d->m_markers << X;
+}
+
+void PlotArea::addCompareMarker(int t, int l)
+{
+    PAMarker X; X.t=t; X.l=l; X.vpos=1;
+    d->m_markers << X;
 }
 
 void PlotArea::clearMarkers()
 {
-	d->m_markers.clear();
+    d->m_markers.clear();
 }
 
 void PlotArea::refresh(QPainter *P) {
@@ -138,6 +145,7 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
         for (int i=0; i<m_markers.count(); i++) {
             int t0=m_markers[i].t;
             int l0=m_markers[i].l;
+            int vpos0=m_markers[i].vpos;
             Vec2 pix=q->coordToPix(vec2(t0,0));
             QColor col=QColor(0,0,0);
             if (l0==0) {
@@ -159,18 +167,21 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
                 if (l0<m_marker_labels.count()) {
                     int x0=pix.x;
                     int offset=0;
+                    //don't do the offsets for now, because it disrupts the comparison markers
+                    /*
                     for (int dx=-6; dx<=0; dx++) {
                         if (marker_x_positions.contains(x0+dx)) offset=dx+6;
                     }
                     if (offset>0) {
                         x0+=offset;
                     }
+                    */
                     QRect RR;
                     if (pass==1) {
-                        RR=QRect(x0-50,m_plot_rect.bottom(),100,15);
+                        RR=QRect(x0-50,m_plot_rect.bottom()+15*vpos0,100,15);
                     }
                     else if (pass==2) {
-                        RR=QRect(x0-50,m_plot_rect.top()-15,100,15);
+                        RR=QRect(x0-50,m_plot_rect.top()-15*vpos0-15,100,15);
                     }
                     marker_x_positions.insert(x0);
                     //float tmp=qMin(200.0F,(pixels_per_marker-1)*1.0F/6*255);

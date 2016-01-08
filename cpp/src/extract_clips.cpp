@@ -47,7 +47,7 @@ bool extract_clips(const char *input_path,const char *cluster_path,const char *o
 		index_out.setValue(jj,0,k-1);
 		for (int i=0; i<num_clips; i++) {
 			int ii=0;
-			int time0=(int)C.value(1,i);
+            int time0=(int)C.value(1,i)-1; //convert to zero-based indexing
 			int k0=(int)C.value(2,i);
 			if (k0==k) {
 				for (int t=0; t<T; t++) {

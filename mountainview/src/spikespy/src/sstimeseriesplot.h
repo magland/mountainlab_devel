@@ -35,6 +35,7 @@ public:
 
 	void setData(SSARRAY *data);
 	void setLabels(SSLabelsModel1 *L,bool is_owner=false);
+    void setCompareLabels(SSLabelsModel1 *L,bool is_owner=false);
 	int pixToChannel(Vec2 pix);
 	void setMargins(int left,int right,int top,int bottom);
 	void setConnectZeros(bool val);
