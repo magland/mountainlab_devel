@@ -8,6 +8,9 @@ CC=cell(K,K);
 
 i1=1;
 for i2=1:length(times)
+    if (mod(i2,10000)==0)
+        fprintf('%d%% ',floor(100*i2/length(times)));
+    end;
     while (times(i1)<times(i2)-max_dt) i1=i1+1; end;
     k2=labels(i2);
     t2=times(i2);
@@ -18,6 +21,7 @@ for i2=1:length(times)
         CC{k2,k1}=[CC{k2,k1},t1-t2];
     end;
 end;
+fprintf('\n');
 
 CCmda=cross_correlograms_to_mda(CC);
 

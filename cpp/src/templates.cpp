@@ -12,11 +12,13 @@ bool templates(const char *input_path,const char *cluster_path,const char *outpu
     DiskReadMda CC; CC.setPath(cluster_path);
     int NT=CC.N2();
 
-    int K=0,M=0;
+	DiskReadMda XX; XX.setPath(input_path);
+	int M=XX.N1();
+
+	int K=0;
     for (int ii=0; ii<NT; ii++) {
         int ch=(int)CC.value(0,ii);
         int k=(int)CC.value(2,ii);
-        if (ch>M) M=ch;
         if (k>K) K=k;
     }
 
