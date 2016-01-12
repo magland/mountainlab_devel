@@ -114,12 +114,13 @@ end
 
 function test_confusion_matrix
 
-T1=[10,20,   30,40,50,60,80];
-L1=[1, 1,    1, 2, 2, 3, 4 ];
-T2=[11,22,21,32,   52 60];
-L2=[2, 2, 1, 2     1, 3 ];
+T1=[10,20,   30,40,50,60,80   ];
+L1=[1, 1,    1, 2, 2, 3, 4    ];
+T2=[11,22,21,30,32,52,60      ];
+L2=[2, 2, 1, 4, 2  1, 3       ];
 opts=struct;
 %opts.map12=[1,2,0];
-[M,map12,map21]=confusion_matrix(T1,L1,T2,L2,opts)
+[M,map12,map21]=confusion_matrix(T1,L1,T2,L2,opts);
+M
 
 end

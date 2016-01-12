@@ -20,32 +20,34 @@ do_sorting(raw_path,output_ms_path,opts);
 CC_ms=readmda(sprintf('%s/clusters.mda',output_ms_path));
 K_ms=max(CC_ms(3,:));
 
-% Read the KlustaKwik data
-fprintf('Read KlustaKwik...\n');
-times=double(hdf5read(kwik_path,'/channel_groups/2/spikes/time_samples'));
-labels=double(hdf5read(kwik_path,'/channel_groups/2/spikes/clusters/main'));
-inds=find(times<opts.o_extract.t2); %truncate
-times=times(inds);
-labels=labels(inds);
-[~,sort_inds]=sort(times);
-times=times(sort_inds); labels=labels(sort_inds);
-CC_kk=zeros(3,length(times));
-CC_kk(2,:)=times;
-CC_kk(3,:)=labels;
-writemda(CC_kk,sprintf('%s/clusters.mda',output_kk_path));
+% Read the KlustaKwik data, if not already done
+if ~exist(sprintf('%s/clusters.mda',output_kk_path),'file')
+    fprintf('Read KlustaKwik...\n');
+    times=double(hdf5read(kwik_path,'/channel_groups/2/spikes/time_samples'));
+    labels=double(hdf5read(kwik_path,'/channel_groups/2/spikes/clusters/main'));
+    inds=find(times<opts.o_extract.t2); %truncate
+    times=times(inds);
+    labels=labels(inds);
+    [~,sort_inds]=sort(times);
+    times=times(sort_inds); labels=labels(sort_inds);
+    CC_kk=zeros(3,length(times));
+    CC_kk(2,:)=times;
+    CC_kk(3,:)=labels;
+    writemda(CC_kk,sprintf('%s/clusters.mda',output_kk_path));
+end;
+CC_kk=readmda(sprintf('%s/clusters.mda',output_kk_path));
 
 % Find the mapping from kk to ms
-if 1
-    fprintf('Compute cluster mapping from kk to ms...\n');
-    [mapping_kk,CM]=compute_cluster_mapping(CC_kk(2,:),CC_kk(3,:),CC_ms(2,:),CC_ms(3,:));
-    writemda(mapping_kk,sprintf('%s/mapping_kk.mda',output_kk_path));
-    writemda(CM,sprintf('%s/CM.mda',output_kk_path));
-    CC_kk(3,:)=mapping_kk(CC_kk(3,:));
-    inds=find(CC_kk(3,:)<=K_ms);
-    CC_kk=CC_kk(:,inds);
-    writemda(CC_kk,sprintf('%s/clusters_mapped.mda',output_kk_path));
-    figure; imagesc(CM');
-end;
+fprintf('Compute cluster mapping from kk to ms...\n');
+[mapping_kk,CM]=compute_cluster_mapping(sprintf('%s/clusters.mda',output_kk_path),sprintf('%s/clusters.mda',output_ms_path),sprintf('%s/confusion_matrix.mda',output_kk_path));
+writemda(mapping_kk,sprintf('%s/mapping_kk.mda',output_kk_path));
+writemda(CM,sprintf('%s/CM.mda',output_kk_path));
+CC_kk(3,:)=mapping_kk(CC_kk(3,:));
+inds=find(CC_kk(3,:)<=K_ms);
+CC_kk=CC_kk(:,inds);
+writemda(CC_kk,sprintf('%s/clusters_mapped.mda',output_kk_path));
+
+figure; imagesc(CM');
 selected_clusters=[8, 25, 128, 19, 56, 100, 83, 98, 99, 65, 103, 94, 107, 82, 93, 95, 80, 104];
 mapping_kk=readmda(sprintf('%s/mapping_kk.mda',output_kk_path));
 disp('mapping kk->ms:');
@@ -84,6 +86,9 @@ mscmd_templates(preprocessed_path,sprintf('%s/clusters_mapped.mda',output_kk_pat
 fprintf('Computing cross-correlograms...\n');
 mscmd_cross_correlograms([output_kk_path,'/clusters.mda'],[output_kk_path,'/cross-correlograms.mda'],opts.o_cross_correlograms.max_dt);
 
+fprintf('Computing cross-correlograms-mapped...\n');
+mscmd_cross_correlograms([output_kk_path,'/clusters_mapped.mda'],[output_kk_path,'/cross-correlograms-mapped.mda'],opts.o_cross_correlograms.max_dt);
+
 view_ms(output_ms_path,output_kk_path);
 view_kk(output_ms_path,output_kk_path);
 view_compare_labels(output_ms_path,output_kk_path);
@@ -121,7 +126,7 @@ cmd=[cmd,sprintf('--templates=%s/templates_mapped.mda ',output_kk_path)];
 
 cmd=[cmd,sprintf('--cluster=%s/clusters_mapped.mda ',output_kk_path)];
 cmd=[cmd,sprintf('--locations=%s/locations.mda ',output_kk_path)];
-%cmd=[cmd,sprintf('--cross-correlograms=%s/cross-correlograms.mda ',output_kk_path)];
+cmd=[cmd,sprintf('--cross-correlograms=%s/cross-correlograms-mapped.mda ',output_kk_path)];
 
 system(sprintf('%s &',cmd));
 
@@ -144,9 +149,10 @@ system(sprintf('%s &',cmd));
 
 end
 
-function [mapping_kk,CM2]=compute_cluster_mapping(times_kk,labels_kk,times_ms,labels_ms)
+function [mapping_kk,CM2]=compute_cluster_mapping(clusters_kk_path,clusters_ms_path,confusion_matrix_path)
 
-[CM,map12,map21]=confusion_matrix(times_kk,labels_kk,times_ms,labels_ms);
+mscmd_confusion_matrix(clusters_kk_path,clusters_ms_path,confusion_matrix_path,3);
+CM=readmda(confusion_matrix_path);
 CM=CM(1:end-1,1:end-1);
 [K1,K2]=size(CM);
 
@@ -204,7 +210,7 @@ opts.o_filter2.freq_min=600;
 opts.o_filter2.freq_max=10000;
 opts.o_filter2.outlier_threshold=0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-opts.o_detect.inner_window_width=40;
+opts.o_detect.inner_window_width=15;
 opts.o_detect.outer_window_width=100000;
 opts.o_detect.threshold=5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

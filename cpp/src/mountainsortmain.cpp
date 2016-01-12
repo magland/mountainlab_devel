@@ -19,6 +19,7 @@
 #include "get_principal_components.h"
 #include "fit.h"
 #include "cross_correlograms.h"
+#include "confusion_matrix.h"
 #include <QTime>
 
 void register_processors(ProcessTracker &PT) {
@@ -137,6 +138,14 @@ void register_processors(ProcessTracker &PT) {
 		P.version="0.10";
 		PT.registerProcessor(P);
 	}
+	{
+		PTProcessor P;
+		P.command="confusion_matrix";
+		P.input_file_pnames << "clusters1" << "clusters2";
+		P.output_file_pnames << "output";
+		P.version="0.11";
+		PT.registerProcessor(P);
+	}
 }
 
 void extract_usage() {
@@ -189,6 +198,10 @@ void extract_clips_usage() {
 
 void cross_correlograms_usage() {
 	printf("mountainsort cross_correlograms --clusters=clusters.mda --output=cross_correlograms.mda --max_dt=1500\n");
+}
+
+void confusion_matrix_usage() {
+	printf("mountainsort confusion_matrix --clusters1=clusters1.mda --clusters2=clusters2.mda --output=confusion_matrix.mda --max_matching_offset=3\n");
 }
 
 /*
@@ -543,6 +556,20 @@ int main(int argc,char *argv[]) {
 
 		if (!cross_correlograms(clusters_path.toLatin1(),output_path.toLatin1(),max_dt)) {
 			printf("Error in cross_correlograms.\n");
+			return -1;
+		}
+	}
+	else if (command=="confusion_matrix") {
+		QString clusters1_path=CLP.named_parameters["clusters1"];
+		QString clusters2_path=CLP.named_parameters["clusters2"];
+		QString output_path=CLP.named_parameters["output"];
+		int max_matching_offset=CLP.named_parameters["max_matching_offset"].toInt();
+
+		if ((clusters1_path.isEmpty())||(clusters2_path.isEmpty())||(output_path.isEmpty())) {confusion_matrix_usage(); return -1;}
+		if (max_matching_offset==0) {confusion_matrix_usage(); return -1;}
+
+		if (!confusion_matrix(clusters1_path.toLatin1(),clusters2_path.toLatin1(),output_path.toLatin1(),max_matching_offset)) {
+			printf("Error in confusion_matrix.\n");
 			return -1;
 		}
 	}

@@ -4,6 +4,7 @@
 #include "diskarraymodel.h"
 
 Mda compute_mean_waveform(DiskArrayModel *C);
+Mda compute_mean_stdev_waveform(DiskArrayModel *C);
 Mda compute_features(DiskArrayModel *C);
 Mda compute_features(const QList<DiskArrayModel *> &C);
 
