@@ -1,6 +1,10 @@
 function compare_ms_kk
 
 mfile_path=fileparts(mfilename('fullpath'));
+
+addpath([mfile_path,'/../processing']);
+addpath([mfile_path,'/../msutils']);
+
 raw_path=sprintf('%s/../example_data/ms11d45.dat',mfile_path);
 kwik_path=sprintf('%s/../example_data/ms11d45.kwik',mfile_path);
 output_ms_path=sprintf('%s/output_ms',mfile_path);
@@ -31,7 +35,7 @@ CC_kk(3,:)=labels;
 writemda(CC_kk,sprintf('%s/clusters.mda',output_kk_path));
 
 % Find the mapping from kk to ms
-if 0
+if 1
     fprintf('Compute cluster mapping from kk to ms...\n');
     [mapping_kk,CM]=compute_cluster_mapping(CC_kk(2,:),CC_kk(3,:),CC_ms(2,:),CC_ms(3,:));
     writemda(mapping_kk,sprintf('%s/mapping_kk.mda',output_kk_path));
