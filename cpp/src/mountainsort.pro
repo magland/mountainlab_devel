@@ -30,7 +30,8 @@ HEADERS += \
     consolidate.h \
     split_clusters.h \
     extract_clips.h \
-    fit.h
+    fit.h \
+    cross_correlograms.h
 SOURCES += \
 mountainsortmain.cpp \
     bandpass_filter.cpp \
@@ -50,7 +51,8 @@ mountainsortmain.cpp \
     consolidate.cpp \
     split_clusters.cpp \
     extract_clips.cpp \
-    fit.cpp
+    fit.cpp \
+    cross_correlograms.cpp
 
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit

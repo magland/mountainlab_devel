@@ -18,6 +18,7 @@
 #include "extract_clips.h"
 #include "get_principal_components.h"
 #include "fit.h"
+#include "cross_correlograms.h"
 #include <QTime>
 
 void register_processors(ProcessTracker &PT) {
@@ -128,6 +129,14 @@ void register_processors(ProcessTracker &PT) {
         P.version="0.11";
 		PT.registerProcessor(P);
 	}
+	{
+		PTProcessor P;
+		P.command="cross_correlograms";
+		P.input_file_pnames << "clusters";
+		P.output_file_pnames << "output";
+		P.version="0.10";
+		PT.registerProcessor(P);
+	}
 }
 
 void extract_usage() {
@@ -176,6 +185,10 @@ void fit_usage() {
 
 void extract_clips_usage() {
 	printf("mountainsort extract_clips --input=raw.mda --cluster=cluster.mda --output=clips.mda --index_out=clips_index.mda --clip_size=100\n");
+}
+
+void cross_correlograms_usage() {
+	printf("mountainsort cross_correlograms --clusters=clusters.mda --output=cross_correlograms.mda --max_dt=1500\n");
 }
 
 /*
@@ -310,6 +323,7 @@ int main(int argc,char *argv[]) {
 
 	if (CLP.unnamed_parameters.count()>1) {
 		printf("Only one command parameter may be specified.\n");
+		qDebug()  << CLP.unnamed_parameters;
 		return -1;
 	}
 
@@ -516,6 +530,19 @@ int main(int argc,char *argv[]) {
 
 		if (!extract_clips(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),index_out_path.toLatin1().data(),clip_size)) {
 			printf("Error in extract_clips.\n");
+			return -1;
+		}
+	}
+	else if (command=="cross_correlograms") {
+		QString clusters_path=CLP.named_parameters["clusters"];
+		QString output_path=CLP.named_parameters["output"];
+		int max_dt=CLP.named_parameters["max_dt"].toInt();
+
+		if ((clusters_path.isEmpty())||(output_path.isEmpty())) {cross_correlograms_usage(); return -1;}
+		if (max_dt==0) {cross_correlograms_usage(); return -1;}
+
+		if (!cross_correlograms(clusters_path.toLatin1(),output_path.toLatin1(),max_dt)) {
+			printf("Error in cross_correlograms.\n");
 			return -1;
 		}
 	}

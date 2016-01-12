@@ -77,9 +77,8 @@ writemda(CC_kk,sprintf('%s/clusters_kk_subset.mda',output_kk_path));
 
 mscmd_templates(preprocessed_path,sprintf('%s/clusters_mapped.mda',output_kk_path),sprintf('%s/templates_mapped.mda',output_kk_path),opts.o_templates);
 
-%fprintf('Computing cross-correlograms...\n');
-%[cc_kk,CCmda_kk]=ms_cross_correlograms(CC_kk(2,:),CC_kk(3,:),opts.o_cross_correlograms.max_dt);
-%writemda(CCmda,sprintf('%s/cross-correlograms.mda',output_kk_path));
+fprintf('Computing cross-correlograms...\n');
+mscmd_cross_correlograms([output_kk_path,'/clusters.mda'],[output_kk_path,'/cross-correlograms.mda'],opts.o_cross_correlograms.max_dt);
 
 view_ms(output_ms_path,output_kk_path);
 view_kk(output_ms_path,output_kk_path);
@@ -261,9 +260,7 @@ end;
 mscmd_extract_clips([path0,'/filt2_white.mda'],[path0,'/clusters.mda'],[path0,'/clips_filt2_white.mda'],[path0,'/clips_filt2_white_index.mda'],opts.o_extract_clips);
 
 fprintf('Computing cross-correlograms...\n');
-clusters=readmda([path0,'/clusters.mda']);
-[CC,CCmda]=ms_cross_correlograms(clusters(2,:),clusters(3,:),opts.o_cross_correlograms.max_dt);
-writemda(CCmda,[path0,'/cross-correlograms.mda']);
+mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross-correlograms.mda'],opts.o_cross_correlograms.max_dt);
 
 fprintf('Elapsed time: %g sec\n',toc(timerA));
 
