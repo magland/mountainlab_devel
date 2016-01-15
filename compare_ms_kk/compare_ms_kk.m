@@ -89,8 +89,8 @@ mscmd_cross_correlograms([output_kk_path,'/clusters.mda'],[output_kk_path,'/cros
 fprintf('Computing cross-correlograms-mapped...\n');
 mscmd_cross_correlograms([output_kk_path,'/clusters_mapped.mda'],[output_kk_path,'/cross-correlograms-mapped.mda'],opts.o_cross_correlograms.max_dt);
 
-view_ms(output_ms_path,output_kk_path);
-view_kk(output_ms_path,output_kk_path);
+%view_ms(output_ms_path,output_kk_path);
+%view_kk(output_ms_path,output_kk_path);
 view_compare_labels(output_ms_path,output_kk_path);
 
 end
@@ -105,6 +105,7 @@ cmd=[cmd,sprintf('%s ',exe_fname)];
 cmd=[cmd,sprintf('--raw=%s/filt2_white.mda ',output_ms_path)];
 cmd=[cmd,sprintf('--templates=%s/templates0_filt2_white.mda ',output_ms_path)];
 cmd=[cmd,sprintf('--clips=%s/clips_filt2_white.mda ',output_ms_path)];
+cmd=[cmd,sprintf('--primary-channels=%s/load_channels0.mda ',output_ms_path)];
 
 cmd=[cmd,sprintf('--cluster=%s/clusters.mda ',output_ms_path)];
 cmd=[cmd,sprintf('--locations=%s/locations.mda ',output_ms_path)];
@@ -252,6 +253,7 @@ mscmd_bandpass_filter([path0,'/filt_white.mda'],[path0,'/filt2_white.mda'],opts.
 
 mscmd_detect([path0,'/filt2_white.mda'],[path0,'/detect.mda'],opts.o_detect);
 mscmd_features([path0,'/filt2_white.mda'],[path0,'/detect.mda'],[path0,'/adjacency.mda'],[path0,'/features.mda'],opts.o_features);
+%remove_zero_cluster([path0,'/features.mda'],[path0,'/features2.mda']);
 mscmd_cluster([path0,'/features.mda'],[path0,'/cluster.mda'],opts.o_cluster);
 
 mscmd_split_clusters([path0,'/filt2_white.mda'],[path0,'/cluster.mda'],[path0,'/cluster2.mda'],opts.o_split_clusters);
@@ -275,6 +277,118 @@ mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross-correlograms.mda
 fprintf('Elapsed time: %g sec\n',toc(timerA));
 
 end
+
+function remove_zero_cluster(features_in_path,features_out_path)
+
+fprintf('*** REMOVE ZERO CLUSTER ***\n');
+tmp_in=readmda(features_in_path);
+channels=tmp_in(1,:);
+times=tmp_in(2,:);
+features=tmp_in(3:end,:);
+Nf=size(features,1);
+
+M=max(channels);
+channels_out=[];
+times_out=[];
+features_out=zeros(Nf,0);
+for ch=1:M
+    fprintf('Channel %d\n');
+    inds0=find(channels==ch);
+    times0=times(inds0);
+    features0=features(:,inds0);
+    okay_inds=find_nonzero_vectors(features0,25,1);
+    fprintf('Using %d/%d events\n',length(okay_inds),length(inds0));
+    channels_out=[channels_out,ones(1,length(okay_inds))*ch];
+    times_out=[times_out,times0(okay_inds)];
+    features_out=cat(2,features_out,features0(:,okay_inds));
+end;
+
+fprintf('Using a total of %d/%d events\n',length(times_out),length(times));
+
+tmp_out=zeros(2+Nf,length(times_out));
+tmp_out(1,:)=channels_out;
+tmp_out(2,:)=times_out;
+tmp_out(3:end,:)=features_out;
+writemda(tmp_out,features_out_path);
+
+end
+
+function inds=find_nonzero_vectors(V,num_neighbor_pts,verbose)
+
+cutoff=3;
+
+[M,N]=size(V);
+sigma_guess=sqrt(var(V(:)));
+norms=sqrt(sum(V.^2,1));
+
+fprintf('knnsearch...\n');
+[ids,ds]=knnsearch(V',V','K',num_neighbor_pts);
+
+% Volume of sphere is (pi)^[M/2] / gamma((M+2)/2) * R^M
+% where R=ds(:,end)
+log_est_densities=log(num_neighbor_pts)-(M/2)*log(pi)+gammaln((M+2)/2)-M*log(ds(:,end)');
+
+fprintf('estimate_sigma...\n');
+[est_sigma,est_log_density_at_zero]=estimate_sigma(M,norms,log_est_densities,sigma_guess);
+
+% PDF of gaussian: (2*pi)^(-M/2)*sigma^M*exp(-norm^2/(2*sigma^2))
+%log_expected_densities=log(N)-M/2*log(2*pi)-M*log(est_sigma)-1/2*norms.^2/est_sigma^2;
+log_expected_densities=est_log_density_at_zero-1/2*(norms).^2/est_sigma^2;
+
+if (verbose)
+figure; plot(log_expected_densities,log_est_densities,'b.');
+xlabel('Log expected densities');
+ylabel('Log estimated densities');
+hold on;
+plot(xlim,xlim,'r');
+end;
+
+scores=log_est_densities-log_expected_densities;
+
+if (verbose)
+figure;
+plot(norms,scores,'b.');
+hold on;
+plot(norms(scores>cutoff),scores(scores>cutoff),'r.');
+xlabel('Norm');
+ylabel('Score');
+end;
+
+if (verbose)
+figure; set(gcf,'position',[100,1200,1000,500]);
+subplot(1,2,1);
+bins=linspace(min(scores),max(scores),1000);
+hist(scores,bins); hold on;
+hist(scores(scores>cutoff),bins); hold on;
+xlabel('Scores');
+
+subplot(1,2,2);
+bins=linspace(min(norms),max(norms),1000);
+hist(norms,bins); hold on;
+hist(norms(scores>cutoff),bins); hold on;
+xlabel('Norms');
+end;
+
+inds=find(scores>cutoff);
+
+end
+
+function [est_sigma,est_log_density_at_zero]=estimate_sigma(M,norms,log_est_densities,sigma_guess)
+%figure; plot(norms.^2,log_est_densities,'b.');
+%xlabel('norms^2');
+%ylabel('log_est_densities');
+inds=find(norms<=sigma_guess*sqrt(M));
+[slope,intercept]=estimate_slope_intercept(norms(inds).^2,log_est_densities(inds));
+est_sigma=sqrt(-1/(2*slope));
+est_log_density_at_zero=intercept;
+end
+
+function [slope,intercept]=estimate_slope_intercept(X,Y)
+coeffs=polyfit(X,Y,1);
+slope=coeffs(1);
+intercept=coeffs(2);
+end
+
 
 function L=get_frank_lab_locations
 

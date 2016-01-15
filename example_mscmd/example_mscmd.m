@@ -25,12 +25,12 @@ o_filter2.freq_min=600;
 o_filter2.freq_max=10000;
 o_filter2.outlier_threshold=0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-o_detect.inner_window_width=40;
-o_detect.outer_window_width=100000;
+o_detect.inner_window_width=10;
+o_detect.outer_window_width=200;
 o_detect.threshold=5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_features.num_features=6;
-o_features.clip_size=200;
+o_features.clip_size=100;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 o_cluster=struct;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,9 +80,7 @@ mscmd_extract_clips([path0,'/filt.mda'],[path0,'/cluster0b.mda'],[path0,'/clips_
 mscmd_extract_clips([path0,'/filt2_white.mda'],[path0,'/cluster0b.mda'],[path0,'/clips_filt2_white.mda'],[path0,'/clips_filt2_white_index.mda'],o_extract_clips);
 
 fprintf('Computing cross-correlograms...\n');
-cluster0b=readmda([path0,'/cluster0b.mda']);
-[CC,CCmda]=ms_cross_correlograms(cluster0b(2,:),cluster0b(3,:),o_cross_correlograms.max_dt);
-writemda(CCmda,[path0,'/cross-correlograms.mda']);
+mscmd_cross_correlograms([path0,'/cluster0b.mda'],[path0,'/cross-correlograms.mda'],o_cross_correlograms.max_dt);
 
 fprintf('Elapsed time: %g sec\n',toc(timerA));
 

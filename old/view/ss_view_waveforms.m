@@ -84,9 +84,9 @@ K = w.Ns; % Alex's annotations:
 if K>1   % number the clips
   for k=1:K, text(w.tptr(k) + w.Ts(k)/2, vertical_spread*(NC+0.6), sprintf('%d',k), 'rotation',90,'color',.7*[1 1 1]); end
 end
-if (length(w.tptr)>1) %condition added by jfm (2/19/15)
-	h=vline(w.tptr(2:end), '-'); set(h,'color',.85*[1 1 1]);   % faint dividers
-end;
+%if (length(w.tptr)>1) %condition added by jfm (2/19/15)
+%	h=vline(w.tptr(2:end), '-'); set(h,'color',.85*[1 1 1]);   % faint dividers
+%end;
 if ~isempty(t)                  % show alignment times
   for k=1:K, p = t(k);          % get param struct or scalar
     if ~isstruct(p), p.t = p; end  % fake a param struct

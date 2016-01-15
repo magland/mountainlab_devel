@@ -56,7 +56,9 @@ attempted_redistributions=zeros(0,1);
 
 if (opts.return_iterations) info.iterations={}; end;
 
-fig_verbose=figure; title('debug isosplit');
+if opts.verbose2
+    fig_verbose=figure; title('debug isosplit');
+end;
 
 info.num_iterations=0;
 num_iterations_with_same_number_of_clusters=0;
@@ -124,9 +126,11 @@ while true
 		[labels,centroids,distances]=normalize_labels(labels,centroids,distances); % we may have eliminated a label, so let's shift the labelings down
         if (opts.return_iterations) info.iterations{end+1}=labels; end;
         
-        figure(fig_verbose);
-        ss_view_clusters(X,labels,struct('create_figure',0));
-        pause(0.25);
+        if opts.verbose2
+            figure(fig_verbose);
+            ss_view_clusters(X,labels,struct('create_figure',0));
+            pause(0.25);
+        end;
         
 	else
 		distances(label1,label2)=inf;
