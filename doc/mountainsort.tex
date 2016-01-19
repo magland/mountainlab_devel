@@ -119,9 +119,9 @@ As mentioned above, the same neuron will usually be identified on more than one 
 $$\|W_k(m_k,\cdot)\|_2<\mu \|W_k(m^\prime,\cdot)\|_2$$
 for some other channel $m^\prime$, then we know that $k$ is a redundant cluster and can therefore be eliminated. Here, $\mu<1$ is a tolerance constant (e.g., $\mu=0.9$). In other words, we eliminate all clusters that whose primary load channel is not the channel used to identify the cluster.
 
-The above heuristic handles most redundancies. However, sometimes a neuron fires with around the same energy on two nearby electrodes. We therefore use a second criterion (in a second pass) to eliminate these situations. We decide that two clusters $k_1$ and $k_2$ on different channels are the same if 
-$$\|W_{k_1}-W_{k_2}\|_2\leq \eta W_{k_i}$$
-for both $i=1$ and $i=2$, where $0<\eta<1$ is a constant (e.g., $\eta=0.5$). Note that all time shifts of $W_{k_1}$ must be considered since the peak amplitude on channel $m_{k_1}$ will often occur at a slightly different time than on channel $m_{k_2}$. In the case of a duplicate, we remove the cluster corresponding to the smaller (in $L_2$ norm) template.
+The above heuristic handles most redundancies. However, sometimes a neuron fires with around the same energy on two nearby electrodes. We therefore use a second criterion (in a second pass) to handle these situations. Let $n_{k_1}$ be the number of events classified as type $k_1$ and let $n_{k_1,k_2}$ be the number of these events which are near (within $20$ time points) an event classified as $k_2$. Let $0<\tau_c\leq 1$ be a \emph{coincidence} threshold (e.g., $\tau_c=0.5$). If $n_{k_1,k_2}>\tau_c n_{k_1}$ or $n_{k_1,k_2}>\tau_c n_{k_2}$, then we consider $k_1$ and $k_2$ to represent the same neuron and therefore we eliminate either $k_1$ or $k_2$, whichever occurs with less frequency.
+
+Note that \emph{consolidation} is different from \emph{merging}. Merging denotes taking a union of two sets of events, whereas our consolidation simply involves deleting a cluster. This makes sense because we are handling the situation where two clusters (occurring on different channels) actually represent the same neuron, and one can therefore be deleted.
 
 \subsection {Fitting}
 

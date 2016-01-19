@@ -87,7 +87,7 @@ void register_processors(ProcessTracker &PT) {
 		P.input_file_pnames << "input";
 		P.input_file_pnames << "cluster";
 		P.output_file_pnames << "output";
-		P.version="0.13";
+		P.version="0.14";
 		PT.registerProcessor(P);
 	}
     {
@@ -107,7 +107,7 @@ void register_processors(ProcessTracker &PT) {
         P.output_file_pnames << "cluster_out";
         P.output_file_pnames << "templates_out";
         P.output_file_pnames << "load_channels_out";
-		P.version="0.39";
+		P.version="0.46";
         PT.registerProcessor(P);
     }
     {
@@ -185,7 +185,7 @@ void templates_usage() {
 }
 
 void consolidate_usage() {
-	printf("mountainsort consolidate --cluster=cluster.mda --templates=templates.mda --cluster_out=cluster_out.mda --templates_out=templates_out.mda --load_channels_out=load_channels.mda\n");
+	printf("mountainsort consolidate --cluster=cluster.mda --templates=templates.mda --cluster_out=cluster_out.mda --templates_out=templates_out.mda --load_channels_out=load_channels.mda --coincidence_threshold=0.5\n");
 }
 
 void fit_usage() {
@@ -505,12 +505,14 @@ int main(int argc,char *argv[]) {
         QString cluster_out_path=CLP.named_parameters["cluster_out"];
         QString templates_out_path=CLP.named_parameters["templates_out"];
         QString load_channels_out_path=CLP.named_parameters["load_channels_out"];
+		float coincidence_threshold=CLP.named_parameters["coincidence_threshold"].toFloat();
 
         if ((cluster_path.isEmpty())||(templates_path.isEmpty())) {consolidate_usage(); return -1;}
         if ((cluster_out_path.isEmpty())||(templates_out_path.isEmpty())) {consolidate_usage(); return -1;}
         if (load_channels_out_path.isEmpty()) {consolidate_usage(); return -1;}
+		if (coincidence_threshold==0) {consolidate_usage(); return -1;}
 
-		if (!consolidate(cluster_path.toLatin1().data(),templates_path.toLatin1().data(),cluster_out_path.toLatin1().data(),templates_out_path.toLatin1().data(),load_channels_out_path.toLatin1().data())) {
+		if (!consolidate(cluster_path.toLatin1().data(),templates_path.toLatin1().data(),cluster_out_path.toLatin1().data(),templates_out_path.toLatin1().data(),load_channels_out_path.toLatin1().data(),coincidence_threshold)) {
             printf("Error in consolidate.\n");
             return -1;
         }

@@ -61,7 +61,7 @@ float compute_overlap(const QSet<int> &S1,const QSet<int> &S2) {
 	else return ret2;
 }
 
-bool consolidate(const char *cluster_path,const char *templates_path,const char *cluster_out_path,const char *templates_out_path,const char *load_channels_out_path) {
+bool consolidate(const char *cluster_path,const char *templates_path,const char *cluster_out_path,const char *templates_out_path,const char *load_channels_out_path,float coincidence_threshold) {
 	DiskReadMda cluster; cluster.setPath(cluster_path);
 	Mda templates; templates.read(templates_path);
 
@@ -95,31 +95,36 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
 		to_use[k]=okay;
 	}
 
-	QList<IntSet> times_bin_20;
-	IntSet empty;
-	for (int k=0; k<=K; k++) {
-		times_bin_20 << empty;
-	}
-	for (int i=0; i<cluster.N2(); i++) {
-		int k0=(int)cluster.value(2,i);
-		int t0=(int)cluster.value(1,i);
-		if (k0<times_bin_20.count()) {
-			times_bin_20[k0].insert(t0/20);
+	{
+		QList<IntSet> times_bin_20;
+		IntSet empty;
+		for (int k=0; k<=K; k++) {
+			times_bin_20 << empty;
 		}
-	}
-	for (int k1=1; k1<=K; k1++) {
-		for (int k2=1; k2<=K; k2++) {
-			if (k1!=k2) {
-				if ((to_use[k1])&&(to_use[k2])) {
-					float overlap_frac=compute_overlap(times_bin_20[k1],times_bin_20[k2]);
-					if (overlap_frac>0.75) {
-						if (times_bin_20[k1].count()<times_bin_20[k2].count()) {
-							printf("SUFFICIENT OVERLAP (%d%%) BETWEEN CLUSTERS %d and %d, removing %d.\n",(int)(overlap_frac*100),k1,k2,k1);
-							to_use[k1]=false;
+		for (int i=0; i<cluster.N2(); i++) {
+			int k0=(int)cluster.value(2,i);
+			int t0=(int)cluster.value(1,i);
+			if (k0<times_bin_20.count()) {
+				times_bin_20[k0].insert(t0/20);
+			}
+		}
+		for (int k1=1; k1<=K; k1++) {
+			for (int k2=1; k2<=K; k2++) {
+				if (k1!=k2) {
+					if ((to_use[k1])&&(to_use[k2])) {
+						float overlap_frac=compute_overlap(times_bin_20[k1],times_bin_20[k2]);
+						if (overlap_frac>0.25) {
+							printf("OVERLAP (%d%%) BETWEEN CLUSTERS %d and %d.\n",(int)(overlap_frac*100),k1,k2);
 						}
-						else if (times_bin_20[k1].count()>times_bin_20[k2].count()) {
-							printf("SUFFICIENT OVERLAP (%d%%) BETWEEN CLUSTERS %d and %d, removing %d.\n",(int)(overlap_frac*100),k1,k2,k2);
-							to_use[k2]=false;
+						if (overlap_frac>coincidence_threshold) {
+							if (times_bin_20[k1].count()<times_bin_20[k2].count()) {
+								printf("SUFFICIENT OVERLAP (%d%%) BETWEEN CLUSTERS %d and %d, removing %d.\n",(int)(overlap_frac*100),k1,k2,k1);
+								to_use[k1]=false;
+							}
+							else {
+								printf("SUFFICIENT OVERLAP (%d%%) BETWEEN CLUSTERS %d and %d, removing %d.\n",(int)(overlap_frac*100),k1,k2,k2);
+								to_use[k2]=false;
+							}
 						}
 					}
 				}
@@ -172,6 +177,11 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
 			if (cluster_mapping1[a]==k2) {
 				cluster_mapping2[a]=k;
 			}
+		}
+	}
+	for (int k=1; k<=K; k++) {
+		if (cluster_mapping2[k]) {
+			printf("MAPPING %d->%d\n",k,cluster_mapping2[k]);
 		}
 	}
 
