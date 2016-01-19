@@ -87,7 +87,7 @@ void register_processors(ProcessTracker &PT) {
 		P.input_file_pnames << "input";
 		P.input_file_pnames << "cluster";
 		P.output_file_pnames << "output";
-        P.version="0.12";
+		P.version="0.13";
 		PT.registerProcessor(P);
 	}
     {

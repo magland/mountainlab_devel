@@ -73,7 +73,6 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
 
 
 	bool to_use[K+1];
-	int num_to_use=0;
 	for (int k=1; k<=K; k++) { //loop through each spike type
 		float energies[M+1]; //compute the per-channel energies
 		for (int m=1; m<=M; m++) {
@@ -94,7 +93,6 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
 			}
 		}
 		to_use[k]=okay;
-		if (okay) num_to_use++;
 	}
 
 	QList<IntSet> times_bin_20;
@@ -118,17 +116,20 @@ bool consolidate(const char *cluster_path,const char *templates_path,const char 
 						if (times_bin_20[k1].count()<times_bin_20[k2].count()) {
 							printf("SUFFICIENT OVERLAP (%d%%) BETWEEN CLUSTERS %d and %d, removing %d.\n",(int)(overlap_frac*100),k1,k2,k1);
 							to_use[k1]=false;
-							num_to_use--;
 						}
 						else if (times_bin_20[k1].count()>times_bin_20[k2].count()) {
 							printf("SUFFICIENT OVERLAP (%d%%) BETWEEN CLUSTERS %d and %d, removing %d.\n",(int)(overlap_frac*100),k1,k2,k2);
 							to_use[k2]=false;
-							num_to_use--;
 						}
 					}
 				}
 			}
 		}
+	}
+
+	int num_to_use=0;
+	for (int i=1; i<=K; i++) {
+		if (to_use[i]) num_to_use++;
 	}
 
 	int K2=num_to_use;

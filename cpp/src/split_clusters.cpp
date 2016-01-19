@@ -24,7 +24,7 @@ bool split_clusters(const char *input_path,const char *cluster_path,const char *
     int K=get_K(C);
 
     int kk=1;
-	#pragma omp parallel for
+	//#pragma omp parallel for (is this a good idea?)
     for (int k=1; k<=K; k++) {
 		DiskReadMda X; X.setPath(input_path);  //needed here for thread safety?
 		DiskReadMda C; C.setPath(cluster_path);

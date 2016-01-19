@@ -89,22 +89,29 @@ mscmd_cross_correlograms([output_kk_path,'/clusters.mda'],[output_kk_path,'/cros
 fprintf('Computing cross-correlograms-mapped...\n');
 mscmd_cross_correlograms([output_kk_path,'/clusters_mapped.mda'],[output_kk_path,'/cross-correlograms-mapped.mda'],opts.o_cross_correlograms.max_dt);
 
-view_ms(output_ms_path,output_kk_path);
+view_ms(output_ms_path,output_kk_path,1);
 %view_kk(output_ms_path,output_kk_path);
 %view_compare_labels(output_ms_path,output_kk_path);
 
 end
 
-function view_ms(output_ms_path,output_kk_path)
+function view_ms(output_ms_path,output_kk_path,whitened)
 
 mfile_path=fileparts(mfilename('fullpath'));
 exe_fname=sprintf('%s/../mountainview/bin/mountainview',mfile_path);
 
 cmd='';
 cmd=[cmd,sprintf('%s ',exe_fname)];
-cmd=[cmd,sprintf('--raw=%s/filt2_white.mda ',output_ms_path)];
-cmd=[cmd,sprintf('--templates=%s/templates0_filt2_white.mda ',output_ms_path)];
-cmd=[cmd,sprintf('--clips=%s/clips_filt2_white.mda ',output_ms_path)];
+if (whitened)
+    cmd=[cmd,sprintf('--raw=%s/filt2_white.mda ',output_ms_path)];
+    cmd=[cmd,sprintf('--templates=%s/templates0_filt2_white.mda ',output_ms_path)];
+    cmd=[cmd,sprintf('--clips=%s/clips_filt2_white.mda ',output_ms_path)];
+else
+    cmd=[cmd,sprintf('--raw=%s/filt.mda ',output_ms_path)];
+    cmd=[cmd,sprintf('--templates=%s/templates0_raw.mda ',output_ms_path)];
+    cmd=[cmd,sprintf('--clips=%s/clips_filt.mda ',output_ms_path)];
+end;
+
 cmd=[cmd,sprintf('--primary-channels=%s/load_channels0.mda ',output_ms_path)];
 
 cmd=[cmd,sprintf('--cluster=%s/clusters.mda ',output_ms_path)];
@@ -205,7 +212,7 @@ opts.o_extract.t1=0; opts.o_extract.t2=19e6;
 %opts.o_extract.t1=0; o_extract.t2=5e7;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 opts.o_filter.samplefreq=30000;
-opts.o_filter.freq_min=300;
+opts.o_filter.freq_min=600;
 opts.o_filter.freq_max=4000;
 opts.o_filter.outlier_threshold=400;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -213,7 +220,7 @@ opts.o_whiten.ncomp=8;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 opts.o_filter2.samplefreq=30000;
 opts.o_filter2.freq_min=600;
-opts.o_filter2.freq_max=10000;
+opts.o_filter2.freq_max=4000;
 opts.o_filter2.outlier_threshold=0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 opts.o_detect.inner_window_width=15;
