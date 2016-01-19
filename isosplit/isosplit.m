@@ -1,5 +1,5 @@
 function [labels,info]=isosplit(X,opts)
-% isosplit - perform clustering based on isotonic regression (jfm, may 2105)
+% isosplit - perform clustering based on isotonic regression (jfm, may 2015)
 %
 % labels = isosplit(X,opts) 
 %   X is M x N, M=#dimensions, N=#samples
@@ -25,7 +25,7 @@ timer_total=tic;
 info.T_find_best_pair=0;
 info.T_find_centroids=0;
 info.T_attempt_redistribution=0;
-info.T_isosplit1d=0;
+info.T_isocut=0;
 info.T_projection=0;
 info.T_sort=0;
 
@@ -38,6 +38,7 @@ if (~isfield(opts,'verbose')) opts.verbose=0; end;
 if (~isfield(opts,'verbose2')) opts.verbose2=0; end;
 if (~isfield(opts,'max_iterations_per_number_clusters')) opts.max_iterations_per_number_clusters=5000; end;
 if (~isfield(opts,'return_iterations')) opts.return_iterations=0; end;
+if (~isfield(opts,'isocut_threshold')) opts.isocut_threshold=1.2; end;
 
 [M,N]=size(X);
 opts.K=min(opts.K,N); %Added by jfm on 11/12/15
@@ -89,7 +90,7 @@ while true
 	timer_attempt_redistribution=tic;
 	[ii1,ii2,redistributed,inf0]=attempt_to_redistribute_two_clusters(X,inds1,inds2,centroid1,centroid2,opts.split_threshold,opts);
 	info.T_projection=info.T_projection+inf0.T_projection;
-	info.T_isosplit1d=info.T_isosplit1d+inf0.T_isosplit1d;
+	info.T_isocut=info.T_isocut+inf0.T_isocut;
 	info.T_sort=info.T_sort+inf0.T_sort;
 	info.T_attempt_redistribution=info.T_attempt_redistribution+toc(timer_attempt_redistribution);
 	if (length(ii2)>0)
@@ -129,7 +130,7 @@ while true
         if opts.verbose2
             figure(fig_verbose);
             ss_view_clusters(X,labels,struct('create_figure',0));
-            pause(0.25);
+            pause(0.1);
         end;
         
 	else
@@ -181,13 +182,13 @@ end;
 if (isnan(XX(1)))
 	warning('isosplit: isnan');
 end;
-timer_isosplit1d=tic;
-[labels2,score0]=isosplit1d(XX,opts2); %This is the core procedure -- split based on isotonic regression
-info0.T_isosplit1d=toc(timer_isosplit1d);
-if (score0>split_threshold)
+timer_isocut=tic;
+cutpoint=isocut(XX,opts.isocut_threshold); %This is the core procedure -- split based on isotonic regression
+info0.T_isocut=toc(timer_isocut);
+if (cutpoint~=0)
 	%It was a statistically significant split -- so let's redistribute!
-	ii1=inds12(find(labels2==1));
-	ii2=inds12(find(labels2==2));
+	ii1=inds12(find(XX<=cutpoint));
+	ii2=inds12(find(XX>=cutpoint));
 else
 	ii1=inds12;
 	ii2=zeros(0,1);
@@ -418,7 +419,7 @@ for ii=1:length(info.iterations)
     % seems to be a problem
     %mov(:,:,1,ii) = rgb2ind(f0.cdata, map, 'nodither');
     
-    pause(0.8);
+    pause(0.1);
 end;
 
 %imwrite(mov, map, 'isosplit_demo.gif', 'DelayTime',0.8, 'LoopCount',0);

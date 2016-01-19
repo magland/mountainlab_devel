@@ -4,7 +4,7 @@ close all;
 
 mfile_path=fileparts(mfilename('fullpath'));
 
-ch0=1;
+ch0=7;
 AM=readmda(sprintf('%s/../example_data/adjacency.mda',mfile_path));
 ch=find(AM(ch0,:));
 disp(ch);
@@ -15,8 +15,8 @@ X=X(ch,:);
 [M,N]=size(X);
 
 opts.detect_interval=200;
-opts.detect_threshold=5;
-opts.clip_size=50;
+opts.detect_threshold=3;
+opts.clip_size=30;
 
 X0=X;
 
@@ -30,7 +30,7 @@ ss_view_waveforms(clips(:,:,1:40));
 drawnow;
 
 fprintf('Finding non-zero events...\n');
-npca=10;
+npca=20;
 num_neighbor_pts=25;
 iii=find_nonzero_events(clips,npca,num_neighbor_pts);
 clips=clips(:,:,iii);
@@ -97,7 +97,7 @@ end
 
 function inds=find_nonzero_vectors(V,num_neighbor_pts)
 
-cutoff=3;
+cutoff=5;
 
 [M,N]=size(V);
 sigma_guess=sqrt(var(V(:)));

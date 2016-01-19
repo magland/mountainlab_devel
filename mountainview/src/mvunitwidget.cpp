@@ -234,7 +234,7 @@ void MVUnitWidget::slot_compute_template()
 {
 	d->set_status_text("Computing Template...");
 	//Mda template0=compute_mean_waveform(d->m_clips);
-	Mda template0=compute_mean_stdev_waveform(d->m_clips);
+	Mda template0=compute_mean_waveform(d->m_clips);
 	d->set_status_text("Ready.");
 	DiskArrayModel *template_data=new DiskArrayModel;
 	template_data->setFromMda(template0);

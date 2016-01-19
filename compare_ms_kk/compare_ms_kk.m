@@ -89,9 +89,9 @@ mscmd_cross_correlograms([output_kk_path,'/clusters.mda'],[output_kk_path,'/cros
 fprintf('Computing cross-correlograms-mapped...\n');
 mscmd_cross_correlograms([output_kk_path,'/clusters_mapped.mda'],[output_kk_path,'/cross-correlograms-mapped.mda'],opts.o_cross_correlograms.max_dt);
 
-%view_ms(output_ms_path,output_kk_path);
+view_ms(output_ms_path,output_kk_path);
 %view_kk(output_ms_path,output_kk_path);
-view_compare_labels(output_ms_path,output_kk_path);
+%view_compare_labels(output_ms_path,output_kk_path);
 
 end
 
@@ -111,6 +111,9 @@ cmd=[cmd,sprintf('--cluster=%s/clusters.mda ',output_ms_path)];
 cmd=[cmd,sprintf('--locations=%s/locations.mda ',output_ms_path)];
 cmd=[cmd,sprintf('--cross-correlograms=%s/cross-correlograms.mda ',output_ms_path)];
 
+cmd=[cmd,sprintf('--clips-index=%s/clips_filt_index.mda',output_ms_path)];
+
+fprintf('%s\n',cmd);
 system(sprintf('%s &',cmd));
 
 end
@@ -160,7 +163,9 @@ CM=CM(1:end-1,1:end-1);
 CM2=CM;
 for j1=1:K1
     for j2=1:K2
-        CM2(j1,j2)=2*CM(j1,j2)/(sum(CM(:,j2))+sum(CM(j1,:)));
+        if ((sum(CM(:,j2))+sum(CM(j1,:)))~=0)
+            CM2(j1,j2)=2*CM(j1,j2)/(sum(CM(:,j2))+sum(CM(j1,:)));
+        end;
     end;
 end;
 
@@ -185,7 +190,7 @@ out=zeros(1,size(CM,1));
 out(inds1)=inds2;
 inds_unused=find(out==0);
 if (length(inds_unused)>0)
-    out(inds_unused)=size(CM,2)+1:size(CM,1);
+    out(inds_unused)=(size(CM,2)+1):(size(CM,2)+length(inds_unused));
 end;
 
 end
@@ -216,7 +221,7 @@ opts.o_detect.outer_window_width=100000;
 opts.o_detect.threshold=5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 opts.o_features.num_features=6;
-opts.o_features.clip_size=200;
+opts.o_features.clip_size=60;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 opts.o_cluster=struct;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

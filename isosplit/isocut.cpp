@@ -89,9 +89,9 @@ void sort(int N,double *out,double *in) {
 //	for (int j=0; j<N; j++) out[j]=in0[j];
 }
 
-bool isocut(int N,double *cutpoint,double *samples_in) {
-    return isocut(N,cutpoint,samples_in,1.4,4);
-}
+//bool isocut(int N,double *cutpoint,double *samples_in) {
+//    return isocut(N,cutpoint,samples_in,1.4,4);
+//}
 
 bool isocut(int N,double *cutpoint,double *samples_in,double threshold) {
     return isocut(N,cutpoint,samples_in,threshold,4);

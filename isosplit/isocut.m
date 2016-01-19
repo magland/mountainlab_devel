@@ -1,8 +1,9 @@
 %ISOCUT - 
 %
-% Syntax:  [cutpoint] = isocut(X)
+% Syntax:  [cutpoint] = isocut(X, threshold)
 %
 % Inputs:
+%    threshold - double
 %    X - double (1,N)
 %
 % Outputs:
