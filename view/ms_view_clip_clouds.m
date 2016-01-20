@@ -1,4 +1,4 @@
-function ms_view_clip_clouds(clips,clips_index,opts)
+function ms_view_clip_clouds(clips,clips_index_or_labels,opts)
 
 if nargin<1, test_ms_view_clip_clouds; return; end;
 
@@ -15,9 +15,21 @@ if (opts.clip_size>0)
     clips=clips(:,T/2-opts.clip_size/2:T/2+opts.clip_size/2-1,:);
     [M,T,NC]=size(clips);
 end;
-K=length(clips_index);
 
-clips_index=[clips_index,NC];
+if (length(clips_index_or_labels)==NC)
+    labels=clips_index_or_labels;
+else
+    clips_index=clips_index_or_labels;
+    K=length(clips_index);
+    clips_index=[clips_index,NC];
+    labels=[];
+    for k=1:K
+        ii0=(clips_index(k)+1):clips_index(k+1);
+        labels=[labels,ones(1,length(ii0))*k];
+    end;
+end;
+
+K=max(labels);
 
 nbins=600;
 tmp=max(clips,[],2);
@@ -28,7 +40,7 @@ XX=zeros(T+Tpad,K,length(ybins),M);
 
 for k=1:K
     fprintf('%d ',k); if (mod(k,10)==0) fprintf('\n'); end;
-    ii0=(clips_index(k)+1):clips_index(k+1);
+    ii0=find(labels==k);
     clips0=clips(:,:,ii0);
     for tt=1:T
         for mm=1:M

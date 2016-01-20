@@ -1,5 +1,9 @@
 function example_validation
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 addpath('mountainview/src/spikespy/matlab');
 addpath('processing');
 addpath('msutils');
@@ -26,8 +30,18 @@ if ((~exist([path0,'/adjacency.mda'],'file'))||(~exist([path0,'/locations.mda'],
     writemda(AM,[path0,'/adjacency.mda']);
     writemda(locations,[path0,'/locations.mda']);
 end;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+opts_highpass_filter.samplefreq=30000;
+opts_highpass_filter.freq_min=100;
+opts_highpass_filter.freq_max=20000;
+opts_highpass_filter.outlier_threshold=400;
 
 mscmd_extract([path_raw,'/ms11d45.dat'],[path0,'/raw.mda'],opts.o_extract);
+mscmd_bandpass_filter([path0,'/raw.mda'],[path0,'/highpass.mda'],opts_highpass_filter);
 mscmd_bandpass_filter([path0,'/raw.mda'],[path0,'/filt.mda'],opts.o_filter);
 mscmd_whiten([path0,'/filt.mda'],[path0,'/filt_white.mda'],opts.o_whiten);
 mscmd_bandpass_filter([path0,'/filt_white.mda'],[path0,'/filt2_white.mda'],opts.o_filter2);

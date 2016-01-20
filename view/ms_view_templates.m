@@ -26,11 +26,11 @@ if isfield(opts,'stdev')
             tmp=reshape(tmp,1,(T+Tpad)*K);
             hh=plot(tmp+y_offset); hold on;
             set(hh,'Color',[0.7,0.7,0.7]);
+            set(hh,'LineStyle','--');
             y_offset=y_offset-vspread;
         end;
     end;
 end;
-
 
 y_offset=0;
 for m=1:M
@@ -54,7 +54,7 @@ for k=1:K
     hh=text((T+Tpad)*(k-1)+T/2,vspread/2,sprintf('%d',k));
     set(hh,'HorizontalAlignment','center');
     set(hh,'VerticalAlignment','bottom');
-    set(hh,'FontSize',8);
+    set(hh,'FontSize',10);
     set(hh,'Color',label_color);
 end;
 
@@ -62,7 +62,7 @@ for k=1:K
     hh=text((T+Tpad)*(k-1)+T/2,-vspread*(M-1)-vspread/2,sprintf('%d',k));
     set(hh,'HorizontalAlignment','center');
     set(hh,'VerticalAlignment','top');
-    set(hh,'FontSize',8);
+    set(hh,'FontSize',10);
     set(hh,'Color',label_color);
 end;
 
