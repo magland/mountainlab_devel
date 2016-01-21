@@ -11,9 +11,15 @@ if (~isfield(opts,'adjacency'))
 end;
 writemda_if_not_equal(opts.adjacency,[path0,'/adjacency.mda']);
 
-mscmd_bandpass_filter(rawfile_path,[path0,'/pre1.mda'],opts.o_filter);
-mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],opts.o_whiten);
-mscmd_bandpass_filter([path0,'/pre2.mda'],[path0,'/pre3.mda'],opts.o_filter2);
+if isfield(opts,'o_filter')
+    mscmd_bandpass_filter(rawfile_path,[path0,'/pre1.mda'],opts.o_filter);
+end;
+if isfield(opts,'o_whiten')
+    mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],opts.o_whiten);
+end;
+if isfield(opts,'o_filter2')
+    mscmd_bandpass_filter([path0,'/pre2.mda'],[path0,'/pre3.mda'],opts.o_filter2);
+end;
 
 mscmd_detect([path0,'/pre3.mda'],[path0,'/detect.mda'],opts.o_detect);
 mscmd_features([path0,'/pre3.mda'],[path0,'/detect.mda'],[path0,'/adjacency.mda'],[path0,'/features.mda'],opts.o_features);
@@ -25,7 +31,9 @@ mscmd_consolidate([path0,'/clusters2.mda'],[path0,'/templates1.mda'],[path0,'/cl
 
 mscmd_fit([path0,'/pre3.mda'],[path0,'/clusters3.mda'],[path0,'/templates2.mda'],[path0,'/clusters.mda'],opts.o_fit);
 
-mscmd_templates(rawfile_path,[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],opts.o_templates);
+if (~isempty(rawfile_path))
+    mscmd_templates(rawfile_path,[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],opts.o_templates);
+end;
 mscmd_templates([path0,'/pre3.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],opts.o_templates);
 
 mscmd_extract_clips([path0,'/pre3.mda'],[path0,'/clusters.mda'],[path0,'/clips.mda'],[path0,'/clips_index.mda'],opts.o_extract_clips);
