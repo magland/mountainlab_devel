@@ -1,4 +1,4 @@
-function mscmd_fit(input_path,cluster_path,templates_path,cluster_out_path,load_channels_path,opts)
+function mscmd_fit(input_path,cluster_path,templates_path,cluster_out_path,opts)
 
 if (nargin<6) opts=struct; end;
 
