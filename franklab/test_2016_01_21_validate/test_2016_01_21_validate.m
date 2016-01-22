@@ -44,8 +44,9 @@ locations=get_frank_lab_locations;
 opts.adjacency=ms_adjacency_matrix(locations,2);
 writemda(locations,[outputdir_path,'/locations.mda']);
 
-if 0
-    reverse_noise(sprintf('%s/pre3.mda',path0),sprintf('%s/clusters.mda',path0),sprintf('%s/templates.mda',path0),sprintf('%s/pre3.mda',outputdir_path));
+out_path=sprintf('%s/pre3.mda',outputdir_path);
+if ~exist(out_path,'file')
+    reverse_noise(sprintf('%s/pre3.mda',path0),sprintf('%s/clusters.mda',path0),sprintf('%s/templates.mda',path0),out_path);
 end;
 
 mountainsort_v1('',outputdir_path,opts);
