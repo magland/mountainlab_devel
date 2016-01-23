@@ -35,8 +35,10 @@ if (~isempty(rawfile_path))
     mscmd_templates(rawfile_path,[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],opts.o_templates);
 end;
 mscmd_templates([path0,'/pre3.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],opts.o_templates);
+mscmd_templates([path0,'/pre1.mda'],[path0,'/clusters.mda'],[path0,'/templates_pre1.mda'],opts.o_templates);
 
 mscmd_extract_clips([path0,'/pre3.mda'],[path0,'/clusters.mda'],[path0,'/clips.mda'],[path0,'/clips_index.mda'],opts.o_extract_clips);
+mscmd_extract_clips([path0,'/pre1.mda'],[path0,'/clusters.mda'],[path0,'/clips_pre1.mda'],[path0,'/clips_index.mda'],opts.o_extract_clips);
 
 mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],opts.o_cross_correlograms.max_dt);
 
