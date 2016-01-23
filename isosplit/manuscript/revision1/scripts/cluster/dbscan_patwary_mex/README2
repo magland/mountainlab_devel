@@ -1,0 +1,5 @@
+Interfaces to dbscan by Patwary, by Alex Barnett 4/17/15
+
+4/20/15: system call interface (writes to file, reads from file)
+
+Gave up on MEX interface since the file I/O routines in Patwary's dbscan.cpp are complicated and involve parsing tree structures. This seems like bad design, although the coding is ok elsewhere.

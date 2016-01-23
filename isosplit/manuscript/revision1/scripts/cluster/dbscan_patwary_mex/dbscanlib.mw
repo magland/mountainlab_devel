@@ -1,0 +1,24 @@
+% Mwrap file for generating MEX interface to Patwary DBSCAN C++ code
+% Barnett 4/20/15
+% UNFINISHED... Patwary's code too ugly to link against.
+
+@function L = dbscanpatwary(X,minpts,eps)
+% DBSCANPATWARY - MEX interface to Patwary's fast DBSCAN OpenMP C++ code
+%
+% [L K] = dbscanpatwary(X, minpts, eps)
+%
+% Inputs:
+%  X - d-by-N matrix of real-valued coordinates of N pts in R^d
+%  minpts - (int) DBSCAN parameter
+%  eps - (float) DBSCAN distance parameter
+% Outputs:
+%  L - 1-by-N integer list of cluster labels assigned to the points
+%       (0 if unassigned)
+%  K - (int) number of clusters
+%
+% To test: run algs_stageB/cluster.m without arguments
+
+[dims N] = size(X);
+K = 0; L = zeros(1,N);
+
+# dbscanwrapper(double[] X, int dims, int N, int minpts, double eps, inout int[] K, inout int[] L);
