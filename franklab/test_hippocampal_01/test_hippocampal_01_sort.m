@@ -57,8 +57,8 @@ function opts=get_sorting_options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Detection options
 opts.o_detect.inner_window_width=15;
-opts.o_detect.outer_window_width=100000;
-opts.o_detect.threshold=5;
+opts.o_detect.outer_window_width=1000;
+opts.o_detect.threshold=4;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Feature extraction options
 opts.o_features.num_features=6;

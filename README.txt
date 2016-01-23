@@ -19,6 +19,7 @@ Copy raw data ms11d45.dat to franklab/raw
 
 Open MATLAB
 > cd mountainsort
+> ms_setup_path
 > addpath franklab/experiment1
 > experiment1_sort
 
