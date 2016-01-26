@@ -45,7 +45,7 @@ bool whiten(const char *input_path,const char *output_path,int ncomp) {
 	float *components=(float *)malloc(sizeof(float)*M*ncomp);
 	printf("Computing principal components...\n");
 	//get_principal_components_2(M,NN,ncomp,components,data);
-	get_pca_components(M,NN,ncomp,components,data);
+	if (ncomp>0) get_pca_components(M,NN,ncomp,components,data);
 	fseek(input_file,H.header_size,SEEK_SET);
 	printf("Subtracting %d components...\n",ncomp);
 	QTime timer; timer.start();
@@ -59,7 +59,7 @@ bool whiten(const char *input_path,const char *output_path,int ncomp) {
 		}
 		int i2=i+chunk_size; if (i2>N) i2=N;
 		mda_read_float32(data0,&H,M*(i2-i),input_file);
-		subtract_components(M,i2-i,ncomp,data0,components);
+		if (ncomp>0) subtract_components(M,i2-i,ncomp,data0,components);
 		mda_write_float32(data0,&H_out,M*(i2-i),output_file);
 	}
 

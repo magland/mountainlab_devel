@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <QFile>
 
 #include "get_command_line_params.h"
 #include "processtracker.h"
@@ -21,6 +22,8 @@
 #include "cross_correlograms.h"
 #include "confusion_matrix.h"
 #include <QTime>
+//#include "Eigen/Core"
+//#include "Eigen/SVD"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -28,7 +31,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="extract";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.1";
+		P.version="0.11";
 		PT.registerProcessor(P);
 	}
 	{
@@ -36,7 +39,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="bandpass_filter";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.1";
+		P.version="0.11";
 		PT.registerProcessor(P);
 	}
 	{
@@ -44,7 +47,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="normalize_channels";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.1";
+		P.version="0.11";
 		PT.registerProcessor(P);
 	}
 	{
@@ -52,7 +55,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="whiten";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.1";
+		P.version="0.11";
 		PT.registerProcessor(P);
 	}
 	{
@@ -60,7 +63,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="detect";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-        P.version="0.13";
+		P.version="0.17";
 		PT.registerProcessor(P);
 	}
     {
@@ -70,7 +73,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "detect";
         P.input_file_pnames << "adjacency";
         P.output_file_pnames << "output";
-        P.version="0.17";
+		P.version="0.20";
         PT.registerProcessor(P);
     }
     {
@@ -78,7 +81,7 @@ void register_processors(ProcessTracker &PT) {
         P.command="cluster";
         P.input_file_pnames << "input";
         P.output_file_pnames << "output";
-        P.version="0.16";
+		P.version="0.17";
         PT.registerProcessor(P);
     }
 	{
@@ -87,7 +90,7 @@ void register_processors(ProcessTracker &PT) {
 		P.input_file_pnames << "input";
 		P.input_file_pnames << "cluster";
 		P.output_file_pnames << "output";
-		P.version="0.14";
+		P.version="0.15";
 		PT.registerProcessor(P);
 	}
     {
@@ -96,7 +99,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "input";
         P.input_file_pnames << "cluster";
         P.output_file_pnames << "output";
-		P.version="0.16";
+		P.version="0.17";
         PT.registerProcessor(P);
     }
     {
@@ -107,7 +110,7 @@ void register_processors(ProcessTracker &PT) {
         P.output_file_pnames << "cluster_out";
         P.output_file_pnames << "templates_out";
         P.output_file_pnames << "load_channels_out";
-		P.version="0.46";
+		P.version="0.47";
         PT.registerProcessor(P);
     }
     {
@@ -117,7 +120,7 @@ void register_processors(ProcessTracker &PT) {
         P.input_file_pnames << "cluster";
         P.output_file_pnames << "templates";
         P.output_file_pnames << "cluster_out";
-        P.version="0.13";
+		P.version="0.14";
         PT.registerProcessor(P);
     }
 	{
@@ -127,7 +130,7 @@ void register_processors(ProcessTracker &PT) {
 		P.input_file_pnames << "cluster";
 		P.output_file_pnames << "output";
 		P.output_file_pnames << "index_out";
-        P.version="0.11";
+		P.version="0.12";
 		PT.registerProcessor(P);
 	}
 	{
@@ -135,7 +138,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="cross_correlograms";
 		P.input_file_pnames << "clusters";
 		P.output_file_pnames << "output";
-		P.version="0.10";
+		P.version="0.11";
 		PT.registerProcessor(P);
 	}
 	{
@@ -143,7 +146,15 @@ void register_processors(ProcessTracker &PT) {
 		P.command="confusion_matrix";
 		P.input_file_pnames << "clusters1" << "clusters2";
 		P.output_file_pnames << "output";
-		P.version="0.11";
+		P.version="0.12";
+		PT.registerProcessor(P);
+	}
+	{
+		PTProcessor P;
+		P.command="copy";
+		P.input_file_pnames << "input";
+		P.output_file_pnames << "output";
+		P.version="0.1";
 		PT.registerProcessor(P);
 	}
 }
@@ -165,7 +176,7 @@ void whiten_usage() {
 }
 
 void detect_usage() {
-	printf("mountainsort detect --input=in.mda --output=out.mda --inner_window_width=40 --outer_window_width=1000 --threshold=5\n");
+	printf("mountainsort detect --input=in.mda --output=out.mda --inner_window_width=40 --outer_window_width=1000 --threshold=5 --individual_channels=1\n");
 }
 
 void features_usage() {
@@ -173,11 +184,11 @@ void features_usage() {
 }
 
 void cluster_usage() {
-    printf("mountainsort cluster --input=in.mda --output=out.mda\n");
+	printf("mountainsort cluster --input=in.mda --output=out.mda --ks_threshold=1.4 --K_init=25 \n");
 }
 
 void split_clusters_usage() {
-	printf("mountainsort split_clusters --input=in.mda --cluster=cluster.mda --output=out.mda --num_features=3 --clip_size=100\n");
+	printf("mountainsort split_clusters --input=in.mda --cluster=cluster.mda --output=out.mda --num_features=3 --clip_size=100 --ks_threshold=1.4 --K_init \n");
 }
 
 void templates_usage() {
@@ -202,6 +213,10 @@ void cross_correlograms_usage() {
 
 void confusion_matrix_usage() {
 	printf("mountainsort confusion_matrix --clusters1=clusters1.mda --clusters2=clusters2.mda --output=confusion_matrix.mda --max_matching_offset=3\n");
+}
+
+void copy_usage() {
+	printf("mountainsort copy --input=in.mda --output=out.mda \n");
 }
 
 /*
@@ -319,9 +334,32 @@ void test_pca_2() {
 }
 */
 
+/*
+void test_svd() {
+	using namespace Eigen;
+	MatrixXf m = MatrixXf::Random(6,12);
+	//cout << "Here is the matrix m:" << endl << m << endl;
+	JacobiSVD<MatrixXf> svd(m, ComputeThinU | ComputeThinV);
+	MatrixXf sv=svd.singularValues();
+	printf("The singular values are %ld x %ld --- %g,%g\n",sv.rows(),sv.cols(),sv.data()[0],sv.data()[1]);
+	MatrixXf U=svd.matrixU();
+	printf("The matrix U is %ld x %ld\n",U.rows(),U.cols());
+	MatrixXf V=svd.matrixV();
+	printf("The matrix V is %ld x %ld\n",V.rows(),V.cols());
+	//cout << "Its singular values are:" << endl << svd.singularValues() << endl;
+	//cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
+	//cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
+	//Vector3f rhs(1, 0, 0);
+	//cout << "Now consider this rhs vector:" << endl << rhs << endl;
+	//cout << "A least-squares solution of m*x = rhs is:" << endl << svd.solve(rhs) << endl;
+}
+*/
+
 int main(int argc,char *argv[]) {
 
 	QCoreApplication app(argc,argv); //important for qApp->applicationDirPath() in processtracker
+
+	//test_svd();
 
 //	test_armadillo();
 //	test_pca_2();
@@ -417,7 +455,7 @@ int main(int argc,char *argv[]) {
 		int ncomp=CLP.named_parameters["ncomp"].toInt();
 
 		if ((input_path.isEmpty())||(output_path.isEmpty())) {whiten_usage(); return -1;}
-		if (ncomp==0) {whiten_usage(); return -1;}
+		//if (ncomp==0) {whiten_usage(); return -1;}
 
 		if (!whiten(input_path.toLatin1().data(),output_path.toLatin1().data(),ncomp)) {
 			printf("Error in whiten.\n");
@@ -430,13 +468,16 @@ int main(int argc,char *argv[]) {
 		int inner_window_width=CLP.named_parameters["inner_window_width"].toInt();
 		int outer_window_width=CLP.named_parameters["outer_window_width"].toInt();
 		float threshold=CLP.named_parameters["threshold"].toFloat();
+		int individual_channels=1;
+		if (CLP.named_parameters.contains("individual_channels"))
+			individual_channels=CLP.named_parameters["individual_channels"].toInt();
 
 		if ((input_path.isEmpty())||(output_path.isEmpty())) {detect_usage(); return -1;}
 		if (inner_window_width==0) {detect_usage(); return -1;}
 		if (outer_window_width==0) {detect_usage(); return -1;}
 		if (threshold==0) {detect_usage(); return -1;}
 
-		if (!detect(input_path.toLatin1().data(),output_path.toLatin1().data(),inner_window_width,outer_window_width,threshold)) {
+		if (!detect(input_path.toLatin1().data(),output_path.toLatin1().data(),inner_window_width,outer_window_width,threshold,(individual_channels!=0))) {
 			printf("Error in detect.\n");
 			return -1;
 		}
@@ -463,8 +504,12 @@ int main(int argc,char *argv[]) {
         QString output_path=CLP.named_parameters["output"];
 
         if ((input_path.isEmpty())||(output_path.isEmpty())) {cluster_usage(); return -1;}
+		float ks_threshold=CLP.named_parameters["ks_threshold"].toFloat();
+		int K_init=CLP.named_parameters["K_init"].toInt();
+		if (ks_threshold==0) ks_threshold=1.4;
+		if (K_init==0) K_init=25;
 
-        if (!cluster(input_path.toLatin1().data(),output_path.toLatin1().data())) {
+		if (!cluster(input_path.toLatin1().data(),output_path.toLatin1().data(),ks_threshold,K_init)) {
             printf("Error in cluster.\n");
             return -1;
         }
@@ -475,12 +520,16 @@ int main(int argc,char *argv[]) {
 		QString output_path=CLP.named_parameters["output"];
 		int num_features=CLP.named_parameters["num_features"].toInt();
 		int clip_size=CLP.named_parameters["clip_size"].toInt();
+		float ks_threshold=CLP.named_parameters["ks_threshold"].toFloat();
+		int K_init=CLP.named_parameters["K_init"].toInt();
 
 		if ((input_path.isEmpty())||(cluster_path.isEmpty())||(output_path.isEmpty())) {cluster_usage(); return -1;}
 		if (num_features==0) {cluster_usage(); return -1;}
 		if (clip_size==0) {cluster_usage(); return -1;}
+		if (ks_threshold==0) ks_threshold=1.4;
+		if (K_init==0) K_init=25;
 
-		if (!split_clusters(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size)) {
+		if (!split_clusters(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size,ks_threshold,K_init)) {
 			printf("Error in cluster.\n");
 			return -1;
 		}
@@ -570,6 +619,21 @@ int main(int argc,char *argv[]) {
 
 		if (!confusion_matrix(clusters1_path.toLatin1(),clusters2_path.toLatin1(),output_path.toLatin1(),max_matching_offset)) {
 			printf("Error in confusion_matrix.\n");
+			return -1;
+		}
+	}
+	else if (command=="copy") {
+		QString input_path=CLP.named_parameters["input"];
+		QString output_path=CLP.named_parameters["output"];
+
+		if ((input_path.isEmpty())||(output_path.isEmpty())) {copy_usage(); return -1;}
+		if (!QFile::exists(input_path)) {
+			printf("Error in copy... input file does not exist.\n");
+			return -1;
+		}
+		if (QFile::exists(output_path)) QFile::remove(output_path);
+		if (!QFile::copy(input_path,output_path)) {
+			printf("Error in copy... unable to copy file.\n");
 			return -1;
 		}
 	}

@@ -2,7 +2,7 @@
 #define mda_H
 
 #define MDA_MAX_DIMS 50
-#define MDA_MAX_SIZE 512 * 512 * 512
+#define MDA_MAX_SIZE 512 * 512 * 512 * 10
 #define MDA_TYPE_COMPLEX -1
 #define MDA_TYPE_BYTE -2
 #define MDA_TYPE_REAL -3

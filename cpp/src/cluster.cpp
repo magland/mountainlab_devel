@@ -4,10 +4,10 @@
 #include "diskreadmda.h"
 
 int get_num_channels(const char *path);
-int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters,int label_offset);
-int do_cluster(int M,int N,float *X,int *labels);
+int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters,int label_offset,float ks_threshold,int K_init);
+int do_cluster(int M,int N,float *X,int *labels,float ks_threshold,int K_init);
 
-bool cluster(const char *input_path,const char *output_path) {
+bool cluster(const char *input_path,const char *output_path,float ks_threshold,int K_init) {
     printf("cluster %s %s...\n",input_path,output_path);
     FILE *output_file=fopen(output_path,"wb");
     if (!output_file) {
@@ -32,7 +32,7 @@ bool cluster(const char *input_path,const char *output_path) {
     for (int ch=1; ch<=M; ch++) {
         printf("ch=%d... ",ch);
         int num_clusters;
-        int num_events=cluster_2(ch,F,&H_out,output_file,&num_clusters,label_offset);
+		int num_events=cluster_2(ch,F,&H_out,output_file,&num_clusters,label_offset,ks_threshold,K_init);
         label_offset+=num_clusters;
         printf("%d events, %d clusters...\n",num_events,num_clusters);
         if (num_events<0) {
@@ -51,7 +51,7 @@ bool cluster(const char *input_path,const char *output_path) {
     return true;
 }
 
-int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters,int label_offset) {
+int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters,int label_offset,float ks_threshold,int K_init) {
     int num_features=F.N1()-2;
     int NT=F.N2();
 
@@ -83,7 +83,7 @@ int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *n
     }
 
     int *labels=(int *)malloc(sizeof(int)*num_events);
-    *num_clusters=do_cluster(num_features,num_events,X,labels);
+	*num_clusters=do_cluster(num_features,num_events,X,labels,ks_threshold,K_init);
     for (int ie=0; ie<num_events; ie++) {
         float buf[3];
         buf[0]=ch;
@@ -132,7 +132,7 @@ int get_num_channels(const char *path) {
     return ret;
 }
 
-int do_cluster(int M,int N,float *X,int *labels) {
+int do_cluster(int M,int N,float *X,int *labels,float ks_threshold,int K_init) {
     Mda A; A.allocate(M,N);
     int ii=0;
     for (int n=0; n<N; n++) {
@@ -141,7 +141,7 @@ int do_cluster(int M,int N,float *X,int *labels) {
             ii++;
         }
     }
-    QVector<int> labels0=isosplit(A);
+	QVector<int> labels0=isosplit(A,ks_threshold,K_init);
     int ret=0;
     for (int n=0; n<N; n++) {
         labels[n]=labels0.value(n);

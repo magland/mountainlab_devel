@@ -31,7 +31,6 @@ info.T_sort=0;
 
 %default options
 if (nargin<2) opts=struct(); end;
-if (~isfield(opts,'split_threshold')) opts.split_threshold=0.9; end;
 if (~isfield(opts,'K')) opts.K=25; end;
 if (~isfield(opts,'minsize')) opts.minsize=3; end;
 if (~isfield(opts,'verbose')) opts.verbose=0; end;
@@ -88,7 +87,7 @@ while true
 	%Here is the core procedure -- look at two clusters, and redistribute
 	%the points using the isotonic regression.
 	timer_attempt_redistribution=tic;
-	[ii1,ii2,redistributed,inf0]=attempt_to_redistribute_two_clusters(X,inds1,inds2,centroid1,centroid2,opts.split_threshold,opts);
+	[ii1,ii2,redistributed,inf0]=attempt_to_redistribute_two_clusters(X,inds1,inds2,centroid1,centroid2,opts);
 	info.T_projection=info.T_projection+inf0.T_projection;
 	info.T_isocut=info.T_isocut+inf0.T_isocut;
 	info.T_sort=info.T_sort+inf0.T_sort;
@@ -148,7 +147,7 @@ end;
 
 end
 
-function [ii1,ii2,redistributed,info0]=attempt_to_redistribute_two_clusters(X,inds1,inds2,centroid1,centroid2,split_threshold,opts)
+function [ii1,ii2,redistributed,info0]=attempt_to_redistribute_two_clusters(X,inds1,inds2,centroid1,centroid2,opts)
 
 %make sure we have row vectors
 timer_projection=tic;
@@ -361,7 +360,6 @@ rng(seed0);
 centers={[0,0],[5,3.8],[-4.5,3]};
 pops={1000,800,400};
 shapes={[1,1,0],[2,1,0],[1,2,0]};
-opts.split_threshold=0.3;
 opts.K=25;
 opts.return_iterations=1;
 
@@ -436,7 +434,6 @@ rng(seed0);
 centers={[0,0],[3,3],[-3,5],[9,-6],[0,-6]};
 pops={2800,2500,400,90,300};
 shapes={[1,1,0],[1,1,0],[1,1,0],[1.3,1.7,0.3],[1.5,1,0]};
-opts.split_threshold=0.3;
 opts.K=15;
 
 fprintf('seed = %d\n',seed0);

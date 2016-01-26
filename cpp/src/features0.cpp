@@ -34,6 +34,7 @@ bool features(const char *input_path,const char *detect_path,const char *adjacen
 			printf("ch=%d... ",ch);
 			Mda features=features_2(ch,X,D,A,num_features,clip_size);
 			int num_events=features.N2();
+			if (num_events==1) num_events=0; //handle the terrible case because mda can't be of size zero -- :(
 			printf("%d events...\n",num_events);
 			all_features[ch-1]=features;
 		}
@@ -41,6 +42,8 @@ bool features(const char *input_path,const char *detect_path,const char *adjacen
 
 	int total_num_events=0;
 	for (int ch=0; ch<M; ch++) {
+		int num0=all_features[ch].N2();
+		if (num0==1) num0=0; //handle the terrible case because mda can't be of size zero -- :(
 		total_num_events+=all_features[ch].N2();
 	}
 
@@ -48,11 +51,13 @@ bool features(const char *input_path,const char *detect_path,const char *adjacen
 	int ie=0;
 	for (int ch=0; ch<M; ch++) {
 		Mda X=all_features[ch];
-		for (int ii=0; ii<X.N2(); ii++) {
-			for (int jj=0; jj<X.N1(); jj++) {
-				output.setValue(X.value(jj,ii),jj,ie);
+		if (X.totalSize()>1) { //handle the terrible case because mda can't be of size zero -- :(
+			for (int ii=0; ii<X.N2(); ii++) {
+				for (int jj=0; jj<X.N1(); jj++) {
+					output.setValue(X.value(jj,ii),jj,ie);
+				}
+				ie++;
 			}
-			ie++;
 		}
 	}
 
@@ -65,6 +70,8 @@ Mda features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,int num_feature
     int M=X.N1();
     int N=X.N2();
     int NT=D.N2();
+
+	Mda empty_mda; empty_mda.allocate(1,1); //problem, we are not allowed to have an mda of size 0 -- :(
 
     int M0=0;
     for (int m=0; m<M; m++) {
@@ -90,7 +97,7 @@ Mda features_2(int ch,DiskReadMda &X,DiskReadMda &D,const Mda &A,int num_feature
             }
         }
     }
-	if (num_events==0) return Mda();
+	if (num_events==0) return empty_mda;
     float *Y=(float *)malloc(sizeof(float)*M0*clip_size*num_events);
     int *times=(int *)malloc(sizeof(int)*num_events);
     int ie=0;

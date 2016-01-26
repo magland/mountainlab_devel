@@ -11,7 +11,7 @@ void extract_clips(Mda &clips,DiskReadMda &X,QList<int> &times,int clip_size);
 void compute_features(Mda &features,Mda &clips,int num_features);
 int get_max_k(const QVector<int> &labels);
 
-bool split_clusters(const char *input_path,const char *cluster_path,const char *output_path,int num_features,int clip_size) {
+bool split_clusters(const char *input_path,const char *cluster_path,const char *output_path,int num_features,int clip_size,float ks_threshold,int k_init) {
 
 	DiskReadMda C; C.setPath(cluster_path);
     Mda C2;
@@ -37,7 +37,7 @@ bool split_clusters(const char *input_path,const char *cluster_path,const char *
 		printf("compute features... ");
 		compute_features(features,clips,num_features);
 		printf("isosplit... ");
-        QVector<int> labels0=isosplit(features);
+		QVector<int> labels0=isosplit(features,ks_threshold,k_init);
 		printf("setting...\n");
         int K0=get_max_k(labels0);
 		if (K0>1) printf("::: split into %d clusters\n",K0);

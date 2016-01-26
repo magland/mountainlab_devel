@@ -34,6 +34,7 @@ HEADERS += \
     fit.h \
     cross_correlograms.h \
     confusion_matrix.h
+
 SOURCES += \
 mountainsortmain.cpp \
     bandpass_filter.cpp \

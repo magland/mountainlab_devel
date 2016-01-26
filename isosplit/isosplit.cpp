@@ -293,9 +293,9 @@ double compute_centroid_distance(Mda &centroids,int k1,int k2) {
 	return sqrt(ret);
 }
 
-QVector<int> isosplit(Mda &X) {
-    int K_initial=25;
-	double isocut_threshold=1.4;
+QVector<int> isosplit(Mda &X,float ks_threshold,int k_init) {
+	int K_initial=k_init;
+	double isocut_threshold=ks_threshold;
 
 	int M=X.N1();
     int N=X.N2();

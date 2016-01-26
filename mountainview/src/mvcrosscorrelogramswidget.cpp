@@ -185,7 +185,11 @@ void MVCrossCorrelogramsWidget::updateWidget()
 	float sample_freq=30000; //FIX: this is hard-coded!!!
 	float bin_max=compute_max(data0);
 	float bin_min=-bin_max;
-	int num_bins=100;
+	//int num_bins=100;
+	int bin_size=20;
+	int num_bins=(bin_max-bin_min)/bin_size;
+	if (num_bins<100) num_bins=100;
+	if (num_bins>2000) num_bins=2000;
 	float time_width=(bin_max-bin_min)/sample_freq*1000;
 
 	for (int k1=1; k1<=K; k1++) {
