@@ -22,8 +22,8 @@
 #include "cross_correlograms.h"
 #include "confusion_matrix.h"
 #include <QTime>
-//#include "Eigen/Core"
-//#include "Eigen/SVD"
+#include "Eigen/Core"
+#include "Eigen/SVD"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -55,7 +55,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="whiten";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.11";
+		P.version="0.15";
 		PT.registerProcessor(P);
 	}
 	{
@@ -172,7 +172,8 @@ void normalize_channels_usage() {
 }
 
 void whiten_usage() {
-	printf("mountainsort whiten --input=in.mda --output=out.mda --ncomp=4\n");
+	//printf("mountainsort whiten --input=in.mda --output=out.mda --ncomp=4\n");
+	printf("mountainsort whiten --input=in.mda --output=out.mda\n");
 }
 
 void detect_usage() {
@@ -219,151 +220,71 @@ void copy_usage() {
 	printf("mountainsort copy --input=in.mda --output=out.mda \n");
 }
 
-/*
-
-#include "armadillo"
-void test_armadillo() {
-    std::complex<double> x=0.1;
-    std::complex<double> y=arma::arma_acos(x);
-    printf("test armadillo: %g + %gi\n",y.real(),y.imag());
-}
-
-#include "pca.h"
-void test_pca() {
-
-    //float feps=std::numeric_limits<float>::epsilon();
-
-    const int nvar = 4;
-    stats::pca pca(nvar);
-
-    const std::vector<double> record1 = {1, 2.5, 42, 7};
-    const std::vector<double> record2 = {3, 4.2, 90, 7};
-    const std::vector<double> record3 = {456, 444, 0, 7};
-    pca.add_record(record1);
-    pca.add_record(record2);
-    pca.add_record(record3);
-
-    pca.solve();
-
-    //const float factor = 10;
-    const std::vector<double> prinvec1 = pca.get_principal(0);
-    const std::vector<double> exp_prinvec1 = {-2.10846198e+02, -2.13231575e+02, 4.24077773e+02};
-    //assert_approx_equal_containers(exp_prinvec1, prinvec1, feps*factor, SPOT);
-
-    const std::vector<double> prinvec2 = pca.get_principal(1);
-    const std::vector<double> exp_prinvec2 = {-2.40512596e+01, 2.39612385e+01, 9.00211615e-02};
-    //assert_approx_equal_containers(exp_prinvec2, prinvec2, feps*factor, SPOT);
-
-    const std::vector<double> prinvec3 = pca.get_principal(2);
-    const std::vector<double> exp_prinvec3 = {0, 0, 0};
-    //assert_approx_equal_containers(exp_prinvec3, prinvec3, feps*factor, SPOT);
-
-    const std::vector<double> prinvec4 = pca.get_principal(3);
-    const std::vector<double> exp_prinvec4 = {0, 0, 0};
-    //assert_approx_equal_containers(exp_prinvec4, prinvec4, feps*factor, SPOT);
-
-    qDebug() << prinvec1[0] << prinvec1[1] << prinvec1[2];
-    qDebug() << exp_prinvec1[0] << exp_prinvec1[1] << exp_prinvec1[2];
-}
-void test_pca_2() {
-
-    //float feps=std::numeric_limits<float>::epsilon();
-
-    const int nvar = 4;
-    stats::pca pca(nvar);
-
-    const std::vector<double> record1 = {1, 2,3,4.0};
-    const std::vector<double> record2 = {2,4,6,8.8};
-    const std::vector<double> record3 = {3,6,9,12.4};
-    const std::vector<double> record4 = {1, 2,3,4.0};
-    const std::vector<double> record5 = {2,4,6,8.8};
-    const std::vector<double> record6 = {3,6,9,12.4};
-    pca.add_record(record1);
-    pca.add_record(record2);
-    pca.add_record(record3);
-    pca.add_record(record4);
-    pca.add_record(record5);
-    pca.add_record(record6);
-
-    pca.solve();
-
-    const std::vector<double> prinvec1 = pca.get_principal(0);
-    const std::vector<double> prinvec2 = pca.get_principal(1);
-    const std::vector<double> prinvec3 = pca.get_principal(2);
-    const std::vector<double> prinvec4 = pca.get_principal(3);
-
-    qDebug() << prinvec1[0] << prinvec1[1] << prinvec1[2] << prinvec1[3] << prinvec1[4] << prinvec1[5];
-    qDebug() << prinvec2[0] << prinvec2[1] << prinvec2[2] << prinvec2[3] << prinvec2[4] << prinvec2[5];
-    qDebug() << prinvec3[0] << prinvec3[1] << prinvec3[2] << prinvec3[3] << prinvec3[4] << prinvec3[5];
-    qDebug() << prinvec4[0] << prinvec4[1] << prinvec4[2] << prinvec4[3] << prinvec4[4] << prinvec4[5];
-
-
-	int ncomp=4;
-	double *features=(double *)malloc(sizeof(double)*ncomp*6);
-	double *data=(double *)malloc(sizeof(double)*nvar*6);
-	int ii=0;
-	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record1[jj];
-	ii+=nvar;
-	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record2[jj];
-	ii+=nvar;
-	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record3[jj];
-	ii+=nvar;
-	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record4[jj];
-	ii+=nvar;
-	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record5[jj];
-	ii+=nvar;
-	for (int jj=0; jj<nvar; jj++) data[ii+jj]=record6[jj];
-	ii+=nvar;
-	get_pca_features(nvar,6,ncomp,features,data);
-	printf("@@@@@@@@@@@@@@@@@@@@@@\n");
-	for (int n=0; n<6; n++) {
-		for (int m=0; m<nvar; m++) {
-			printf("%g, ",data[m+nvar*n]);
-		}
-		printf("\n");
-	}
-	printf("@@@@@@@@@@@@@@@@@@@@@@\n");
-	for (int k=0; k<ncomp; k++) {
-		for (int n=0; n<6; n++) {
-			printf("%g, ",features[k+ncomp*n]);
-		}
-		printf("\n");
-	}
-	free(features);
-	free(data);
-}
-*/
-
-/*
 void test_svd() {
+	/*
+	 Compare with this MATLAB script:
+		m=zeros(3,5);
+		for r=1:size(m,1)
+			for c=1:size(m,2)
+				if (r==c) m(r,c)=5;
+				else m(r,c)=r+c;
+				end;
+			end;
+		end;
+
+		[U,D,V]=svd(m,'econ');
+		diag(D)
+		U
+		V
+	*/
+
+
 	using namespace Eigen;
-	MatrixXf m = MatrixXf::Random(6,12);
+	MatrixXf m(3,5);
+	int ii=0;
+	for (int c=0; c<m.cols(); c++) {
+		for (int r=0; r<m.rows(); r++) {
+			if (r==c) {
+				m.data()[ii]=5;
+			}
+			else {
+				m.data()[ii]=(r+1)+(c+1);
+			}
+			ii++;
+		}
+	}
 	//cout << "Here is the matrix m:" << endl << m << endl;
 	JacobiSVD<MatrixXf> svd(m, ComputeThinU | ComputeThinV);
 	MatrixXf sv=svd.singularValues();
-	printf("The singular values are %ld x %ld --- %g,%g\n",sv.rows(),sv.cols(),sv.data()[0],sv.data()[1]);
+	printf("The singular values are %ld x %ld --- %g,%g,%g\n",sv.rows(),sv.cols(),sv.data()[0],sv.data()[1],sv.data()[2]);
 	MatrixXf U=svd.matrixU();
 	printf("The matrix U is %ld x %ld\n",U.rows(),U.cols());
 	MatrixXf V=svd.matrixV();
 	printf("The matrix V is %ld x %ld\n",V.rows(),V.cols());
-	//cout << "Its singular values are:" << endl << svd.singularValues() << endl;
-	//cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
-	//cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
-	//Vector3f rhs(1, 0, 0);
-	//cout << "Now consider this rhs vector:" << endl << rhs << endl;
-	//cout << "A least-squares solution of m*x = rhs is:" << endl << svd.solve(rhs) << endl;
+
+
+	printf("\n\nU:\n");
+	for (int r=0; r<U.rows(); r++) {
+		for (int c=0; c<U.cols(); c++) {
+			printf("%g  ",U.data()[r+U.rows()*c]);
+		}
+		printf("\n");
+	}
+
+	printf("\n\nV:\n");
+	for (int r=0; r<V.rows(); r++) {
+		for (int c=0; c<V.cols(); c++) {
+			printf("%g  ",V.data()[r+V.rows()*c]);
+		}
+		printf("\n");
+	}
 }
-*/
 
 int main(int argc,char *argv[]) {
 
 	QCoreApplication app(argc,argv); //important for qApp->applicationDirPath() in processtracker
 
 	//test_svd();
-
-//	test_armadillo();
-//	test_pca_2();
-//	return 0;
 
 	CLParams CLP;
 	QStringList required;
@@ -452,12 +373,13 @@ int main(int argc,char *argv[]) {
 	else if (command=="whiten") {
 		QString input_path=CLP.named_parameters["input"];
 		QString output_path=CLP.named_parameters["output"];
-		int ncomp=CLP.named_parameters["ncomp"].toInt();
+		//int ncomp=CLP.named_parameters["ncomp"].toInt();
 
 		if ((input_path.isEmpty())||(output_path.isEmpty())) {whiten_usage(); return -1;}
 		//if (ncomp==0) {whiten_usage(); return -1;}
 
-		if (!whiten(input_path.toLatin1().data(),output_path.toLatin1().data(),ncomp)) {
+		//if (!whiten(input_path.toLatin1().data(),output_path.toLatin1().data(),ncomp)) {
+		if (!whiten(input_path.toLatin1().data(),output_path.toLatin1().data())) {
 			printf("Error in whiten.\n");
 			return -1;
 		}

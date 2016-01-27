@@ -3,9 +3,10 @@ function mscmd_whiten(input_path,output_path,opts)
 if (nargin<1) test_mscmd_whiten; return; end;
 
 if (nargin<3) opts=struct; end;
-if (~isfield(opts,'ncomp')) opts.ncomp=4; end;
+%if (~isfield(opts,'ncomp')) opts.ncomp=4; end;
 
-cmd=sprintf('%s whiten --input=%s --output=%s --ncomp=%d',mscmd_exe,input_path,output_path,opts.ncomp);
+%cmd=sprintf('%s whiten --input=%s --output=%s --ncomp=%d',mscmd_exe,input_path,output_path,opts.ncomp);
+cmd=sprintf('%s whiten --input=%s --output=%s ',mscmd_exe,input_path,output_path);
 
 fprintf('\n*** WHITEN ***\n');
 fprintf('%s\n',cmd);

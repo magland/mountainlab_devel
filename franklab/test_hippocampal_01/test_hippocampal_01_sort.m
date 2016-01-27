@@ -14,15 +14,15 @@ raw_mat_fname=sprintf('%s/dl12_20151208_NNF_r1_tet16_17.mat',path_raw);
 raw_mda_fname=sprintf('%s/dl12_20151208_NNF_r1_tet16_17.mda',path_raw);
 raw_subset_mda_fname=sprintf('%s/dl12_20151208_NNF_r1_tet16_17_subset.mda',path_raw);
 
-%if 1
-if (~exist(raw_mda_fname,'file'))
+if 1
+%if (~exist(raw_mda_fname,'file'))
     fprintf('Loading raw data...\n');
     L=load(raw_mat_fname);
     raw=L.dl12_20151208_NNF_r1_tet16_17.channelData';
     fprintf('Writing raw data...\n');
     writemda(raw,raw_mda_fname);
     %spikespy({raw});
-    raw=raw(3:6,(1e6+1):26e6);
+    raw=raw([1,3:6],(1e6+1):26e6);
     %raw=raw(7:10,(1e6+1):26e6);
     fprintf('Writing raw subset data...\n');
     writemda(raw,raw_subset_mda_fname);
@@ -31,13 +31,8 @@ end;
 writemda(get_geometry,sprintf('%s/locations.mda',path0));
 
 mscmd_bandpass_filter(raw_subset_mda_fname,[path0,'/pre1.mda'],opts_pre.o_filter);
-pre1=readmda([path0,'/pre1.mda']);
-pre2=ms_whiten(pre1);
-writemda(pre2,[path0,'/pre2.mda']);
-%mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],opts_pre.o_whiten);
+mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],opts_pre.o_whiten);
 mscmd_bandpass_filter([path0,'/pre2.mda'],[path0,'/pre3.mda'],opts_pre.o_filter2);
-
-opts_sort=get_sorting_options;
 
 mscmd_detect([path0,'/pre3.mda'],[path0,'/detect0.mda'],opts.o_detect);
 
@@ -161,7 +156,7 @@ opts_pre.o_filter.freq_max=4000;
 opts_pre.o_filter.outlier_threshold=500;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Whitening options
-opts_pre.o_whiten.ncomp=1; %Use 0 for second tetrode, 1 for first tetrode
+opts_pre.o_whiten=struct;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Post-whitening bandpass filter options
 opts_pre.o_filter2.samplefreq=30000;
