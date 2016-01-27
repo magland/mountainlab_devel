@@ -1,8 +1,8 @@
-function mscmd_extract_clips(input_path,cluster_path,output_path,index_out_path,opts)
+function mscmd_extract_clips(input_path,detect_path,output_clips_path,opts)
 
-if (nargin<5) opts=struct; end;
+if (nargin<4) opts=struct; end;
 
-cmd=sprintf('%s extract_clips --input=%s --cluster=%s --output=%s --index_out=%s --clip_size=%d ',mscmd_exe,input_path,cluster_path,output_path,index_out_path,opts.clip_size);
+cmd=sprintf('%s extract_clips --input=%s --detect=%s --output_clips=%s --clip_size=%d ',mscmd_exe,input_path,detect_path,output_clips_path,opts.clip_size);
 
 fprintf('\n*** EXTRACT CLIPS ***\n');
 fprintf('%s\n',cmd);

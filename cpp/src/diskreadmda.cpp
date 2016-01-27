@@ -118,6 +118,7 @@ int DiskReadMda::size(int dim) const {
 float DiskReadMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
 {
 	int ind=d->get_index(i1,i2,i3,i4,i5,i6);
+    if (ind<0) return 0;
 	float *X=d->load_chunk(ind/CHUNKSIZE);
 	if (!X) {
 		qWarning() << "chunk not loaded:" << ind << ind/CHUNKSIZE;
@@ -165,6 +166,7 @@ int DiskReadMdaPrivate::get_index(int i1, int i2, int i3, int i4, int i5, int i6
 	int factor=1;
 	int ret=0;
 	for (int j=0; j<6; j++) {
+        if (inds[j]>=m_size[j]) return -1;
 		ret+=factor*inds[j];
 		factor*=m_size[j];
 	}

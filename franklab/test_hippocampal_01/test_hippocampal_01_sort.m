@@ -14,7 +14,7 @@ raw_mat_fname=sprintf('%s/dl12_20151208_NNF_r1_tet16_17.mat',path_raw);
 raw_mda_fname=sprintf('%s/dl12_20151208_NNF_r1_tet16_17.mda',path_raw);
 raw_subset_mda_fname=sprintf('%s/dl12_20151208_NNF_r1_tet16_17_subset.mda',path_raw);
 
-if 1
+if 0
 %if (~exist(raw_mda_fname,'file'))
     fprintf('Loading raw data...\n');
     L=load(raw_mat_fname);
@@ -23,6 +23,7 @@ if 1
     writemda(raw,raw_mda_fname);
     %spikespy({raw});
     raw=raw([1,3:6],(1e6+1):26e6);
+    raw=raw(2:end,:)-repmat(raw(1,:),size(raw,1)-1,1);
     %raw=raw(7:10,(1e6+1):26e6);
     fprintf('Writing raw subset data...\n');
     writemda(raw,raw_subset_mda_fname);
@@ -32,19 +33,24 @@ writemda(get_geometry,sprintf('%s/locations.mda',path0));
 
 mscmd_bandpass_filter(raw_subset_mda_fname,[path0,'/pre1.mda'],opts_pre.o_filter);
 mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],opts_pre.o_whiten);
-mscmd_bandpass_filter([path0,'/pre2.mda'],[path0,'/pre3.mda'],opts_pre.o_filter2);
 
-mscmd_detect([path0,'/pre3.mda'],[path0,'/detect0.mda'],opts.o_detect);
+mscmd_detect([path0,'/pre2.mda'],[path0,'/detect0.mda'],opts.o_detect);
 
-fprintf('Reading pre3...\n');
-pre3=readmda([path0,'/pre3.mda']);
+mscmd_extract_clips([path0,'/pre2.mda'],[path0,'/detect0.mda'],[path0,'/clips0.mda'],opts.o_extract_clips);
+
+mscmd_isobranch([path0,'/clips0.mda'],[path0,'/labels0.mda']);
+
+return;
+
+fprintf('Reading pre2...\n');
+pre2=readmda([path0,'/pre2.mda']);
 
 fprintf('Reading detect...\n');
 detect0=readmda([path0,'/detect0.mda']);
 times0=detect0(2,:);
 
 fprintf('Extracting clips...\n');
-clips0=ms_extract_clips(pre3,times0,opts.o_features.clip_size);
+clips0=ms_extract_clips(pre2,times0,opts.o_features.clip_size);
 [M,T,NC]=size(clips0);
 
 clusters=do_sorting(clips0,opts);
@@ -92,8 +98,6 @@ mscmd_extract_clips([path0,'/pre1.mda'],[path0,'/clusters.mda'],[path0,'/clips_p
 mscmd_templates([path0,'/pre1.mda'],[path0,'/clusters.mda'],[path0,'/templates_pre1.mda'],opts.o_templates);
 
 mscmd_templates(raw_subset_mda_fname,[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],opts.o_templates);
-
-
 
 end
 
@@ -151,8 +155,8 @@ function opts_pre=get_preprocessing_options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Initial bandpass filter options
 opts_pre.o_filter.samplefreq=30000;
-opts_pre.o_filter.freq_min=600;
-opts_pre.o_filter.freq_max=4000;
+opts_pre.o_filter.freq_min=300;
+opts_pre.o_filter.freq_max=10000;
 opts_pre.o_filter.outlier_threshold=500;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Whitening options
@@ -177,7 +181,7 @@ opts.o_detect.individual_channels=0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Feature extraction options
 opts.o_features.num_features=4;
-opts.o_features.clip_size=100;
+opts.o_features.clip_size=300;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Clustering options
 opts.o_cluster.ks_threshold=1.2;

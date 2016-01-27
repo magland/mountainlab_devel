@@ -33,7 +33,9 @@ HEADERS += \
     extract_clips.h \
     fit.h \
     cross_correlograms.h \
-    confusion_matrix.h
+    confusion_matrix.h \
+    isobranch.h \
+    create_clips_file.h
 
 SOURCES += \
 mountainsortmain.cpp \
@@ -56,7 +58,9 @@ mountainsortmain.cpp \
     extract_clips.cpp \
     fit.cpp \
     cross_correlograms.cpp \
-    confusion_matrix.cpp
+    confusion_matrix.cpp \
+    isobranch.cpp \
+    create_clips_file.cpp
 
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit

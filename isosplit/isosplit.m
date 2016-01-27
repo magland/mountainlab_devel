@@ -21,6 +21,8 @@ if (nargin<1)
 	return;
 end;
 
+compile_isocut_if_needed;
+
 timer_total=tic;
 info.T_find_best_pair=0;
 info.T_find_centroids=0;
@@ -518,4 +520,12 @@ AA=cat(2,X,Y);
 W=AA(:,SS.sv_indices)*SS.sv_coef;
 W=W/sqrt(sum(W.^2));
 
+end
+
+function compile_isocut_if_needed
+try
+    isocut(1:10,1.2);
+catch
+    compile_mex_isocut;
+end;
 end
