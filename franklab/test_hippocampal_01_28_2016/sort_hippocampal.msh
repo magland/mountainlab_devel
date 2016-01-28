@@ -1,0 +1,112 @@
+if [ "$#" -ne 2 ]; then
+    echo "You must provide two arguments."
+    echo "The first is the raw file name, e.g., tetrode1_raw.mda"
+    echo "The second is the output directory, e.g., tetrode1_output"
+    exit -1
+fi
+
+mkdir $2
+
+samplefreq=30000
+freq_min=300
+freq_max=10000
+detect_threshold=3.5
+clip_size=200
+branch_thresholds=3.5,4,5,6
+isocut_threshold=1.5
+K_init=30
+num_features=6
+
+echo "*** COPY ***"
+mscmd copy
+	--input=$1
+	--output=$2/pre0.mda
+
+echo "*** BANDPASS FILTER ***"
+mscmd bandpass_filter
+	--input=$2/pre0.mda
+	--output=$2/pre1.mda
+	--samplefreq=$samplefreq
+	--freq_min=$freq_min
+	--freq_max=$freq_max
+
+echo "*** WHITEN ***"
+mscmd whiten
+	--input=$2/pre1.mda
+	--output=$2/pre2.mda
+
+echo "*** DETECT ***"
+mscmd detect
+	--input=$2/pre2.mda
+	--output=$2/detect0.mda
+	--threshold=$detect_threshold
+	--individual_channels=0 --normalize=0
+	--inner_window_width=15 --outer_window_width=1000
+
+echo "*** EXTRACT CLIPS ***"
+mscmd extract_clips
+	--input=$2/pre2.mda
+	--detect=$2/detect0.mda
+	--output_clips=$2/clips0.mda
+	--clip_size=$clip_size
+
+echo "*** ISOBRANCH ***"
+mscmd isobranch
+	--input_clips=$2/clips0.mda
+	--output_labels=$2/labels0.mda
+	--branch_thresholds=$branch_thresholds
+	--isocut_threshold=$isocut_threshold
+	--K_init=$K_init
+	--num_features=$num_features
+
+echo "*** ASSEMBLE CLUSTERS FILE ***"
+mscmd assemble_clusters_file
+	--input_detect=$2/detect0.mda
+	--input_labels=$2/labels0.mda
+	--output_clusters=$2/clusters.mda
+
+echo "*** TEMPLATES ***"
+mscmd templates
+	--input=$2/pre2.mda
+	--clusters=$2/clusters.mda
+	--output=$2/templates.mda
+	--clip_size=$clip_size
+
+echo "*** TEMPLATES RAW ***"
+mscmd templates
+	--input=$2/pre0.mda
+	--clusters=$2/clusters.mda
+	--output=$2/templates_raw.mda
+	--clip_size=$clip_size
+
+echo "*** TEMPLATES PRE1 ***"
+mscmd templates
+	--input=$2/pre1.mda
+	--clusters=$2/clusters.mda
+	--output=$2/templates_pre1.mda
+	--clip_size=$clip_size
+
+echo "*** CROSS CORRELOGRAMS ***"
+mscmd cross_correlograms
+	--clusters=$2/clusters.mda
+	--output=$2/cross_correlograms.mda
+	--max_dt=10000
+
+echo "*** CREATE CLIPS FILE ***"
+mscmd create_clips_file
+	--input=$2/pre2.mda
+	--clusters=$2/clusters.mda
+	--output=$2/clips.mda
+	--index_out=clips_index.mda
+	--clip_size=$clip_size
+
+echo "*** CREATE CLIPS FILE PRE1 ***"
+mscmd create_clips_file
+	--input=$2/pre1.mda
+	--clusters=$2/clusters.mda
+	--output=$2/clips_pre1.mda
+	--index_out=$2/clips_pre1_index.mda
+	--clip_size=$clip_size
+
+
+
