@@ -26,21 +26,23 @@ public:
 		m_size=(int *)jmalloc(sizeof(int)*MDA_MAX_DIMS);
 		for (int i=0; i<MDA_MAX_DIMS; i++) m_size[i]=1;
 		
-		m_data_real=(double *)jmalloc(sizeof(float)*1);
+        m_data_real=(double *)jmalloc(sizeof(double)*1);
 		m_data_real[0]=0;
 	
-		m_data_type=MDA_TYPE_REAL;
+        m_data_type=MDA_TYPE_FLOAT32;
 	}
 	
 	bool do_read(FILE *inf);
 	int read_int(FILE *inf);
 	float read_float(FILE *inf);
+    double read_double(FILE *inf);
 	short read_short(FILE *inf);	
 	unsigned short read_unsigned_short(FILE *inf);
 	unsigned char read_unsigned_char(FILE *inf);
 	bool do_write(FILE *outf);
 	void write_int(FILE *outf,int val);
 	void write_float(FILE *outf,float val);
+    void write_double(FILE *outf,double val);
 	void write_short(FILE *outf,short val);	
 	void write_unsigned_short(FILE *outf,unsigned short val);
 	void write_unsigned_char(FILE *outf,unsigned char val);
@@ -220,19 +222,19 @@ void Mda::setValues(double *vals) {
 void Mda::setValues(int *vals) {
 	int ts=totalSize();
 	for (int i=0; i<ts; i++) {
-		d->m_data_real[i]=(float)vals[i];
+        d->m_data_real[i]=(double)vals[i];
 	}
 }
 void Mda::setValues(short *vals) {
 	int ts=totalSize();
 	for (int i=0; i<ts; i++) {
-		d->m_data_real[i]=(float)vals[i];
+        d->m_data_real[i]=(double)vals[i];
 	}
 }
 void Mda::setValues(unsigned char *vals) {
 	int ts=totalSize();
 	for (int i=0; i<ts; i++) {
-		d->m_data_real[i]=(float)vals[i];
+        d->m_data_real[i]=(double)vals[i];
 	}
 }
 
@@ -369,7 +371,7 @@ bool MdaPrivate::do_read(FILE *inf) {
 				UNUSED(im0);
 				m_data_real[ii] = re0;
 			}
-		} else if (data_type == MDA_TYPE_REAL) {
+        } else if (data_type == MDA_TYPE_FLOAT32) {
 			for (int ii = 0; ii < N; ii++) {
 				float re0 = read_float(inf);
 				m_data_real[ii] = re0;
@@ -394,6 +396,11 @@ bool MdaPrivate::do_read(FILE *inf) {
 				unsigned char re0 = read_unsigned_char(inf);
 				m_data_real[ii] = re0;
 			}
+        } else if (data_type == MDA_TYPE_FLOAT64) {
+            for (int ii = 0; ii < N; ii++) {
+                double re0 = read_double(inf);
+                m_data_real[ii] = re0;
+            }
 		} else {
 			printf ("Unrecognized data type %d\n", data_type);
 			return false;
@@ -413,6 +420,12 @@ float MdaPrivate::read_float(FILE *inf) {
 	int b0=jfread(&ret,4,1,inf);
 	UNUSED(b0)
 	return ret;
+}
+double MdaPrivate::read_double(FILE *inf) {
+    double ret=0;
+    int b0=jfread(&ret,8,1,inf);
+    UNUSED(b0)
+    return ret;
 }
 short MdaPrivate::read_short(FILE *inf) {
 	short ret=0;
@@ -495,7 +508,7 @@ bool MdaPrivate::do_write(FILE *outf) {
 			write_float(outf, re0);
 			write_float(outf, 0);
 		}
-	} else if (m_data_type == MDA_TYPE_REAL) {
+    } else if (m_data_type == MDA_TYPE_FLOAT32) {
 		for (int i = 0; i < N; i++) {
 			float re0 = (float) m_data_real[i];
 			write_float(outf, re0);
@@ -521,6 +534,12 @@ bool MdaPrivate::do_write(FILE *outf) {
 			write_int(outf, re0);
 		}
 	}
+    else if (m_data_type == MDA_TYPE_FLOAT64) {
+        for (int i = 0; i < N; i++) {
+            double re0 = m_data_real[i];
+            write_double(outf, re0);
+        }
+    }
 	else {
 		printf ("Problem in do_write... unexpected data type: %d\n",m_data_type);
 		return false;
@@ -532,6 +551,9 @@ void MdaPrivate::write_int(FILE *outf,int val) {
 }
 void MdaPrivate::write_float(FILE *outf,float val) {
 	fwrite(&val,4,1,outf);
+}
+void MdaPrivate::write_double(FILE *outf,double val) {
+    fwrite(&val,8,1,outf);
 }
 void MdaPrivate::write_short(FILE *outf,short val) {
 	fwrite(&val,2,1,outf);

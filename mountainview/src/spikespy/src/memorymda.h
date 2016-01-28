@@ -26,8 +26,8 @@ public:
 
 	void write(const QString &path);
 
-	float value(int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
-	void setValue(float val,int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
+    double value(int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
+    void setValue(double val,int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
 
 private:
 	MemoryMdaPrivate *d;

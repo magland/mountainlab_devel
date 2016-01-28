@@ -29,7 +29,11 @@ elseif (code==-3)
 elseif (code==-4)
     A(:)=fread(F,N,'short');
 elseif (code==-5)
-    A(:)=fread(F,N,'int');
+    A(:)=fread(F,N,'int32');
+elseif (code==-6)
+    A(:)=fread(F,N,'uint16');
+elseif (code==-7)
+    A(:)=fread(F,N,'double');
 end;
 
 fclose(F);

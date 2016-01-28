@@ -17,7 +17,7 @@ public:
 	QString path();
 	bool fileHierarchyExists();
 	void createFileHierarchyIfNeeded();
-	float value(int ch,int t);
+    double value(int ch,int t);
 
 	virtual Mda loadData(int scale,int t1,int t2);
 	virtual int size(int dim);

@@ -6,20 +6,21 @@ if nargin<1, test_ms_whiten; return; end;
 
 mu = mean(X,2); 
 X = X-repmat(mu,1,size(X,2));
-[U,D,V] = svd(X);
+[U,D,V] = svd(X,'econ');
 D(D~=0)=1./D(D~=0);
-X=U*D(1:M,1:M)*(U'*X);
+X=sqrt(N-1)*U*D(1:M,1:M)*(U'*X);
 
 end
 
 function X=ms_whiten_XXt(X)
 %used to show that we get the same result
 
+[M,N]=size(X);
+
 mu = mean(X,2); 
 X = X-repmat(mu,1,size(X,2));
 [U,D,V] = svd(X*X');
-X=U*sqrt(inv(D))*(U'*X);
-
+X=sqrt(N-1)*U*sqrt(inv(D))*(U'*X);
 end
 
 function X=ms_whiten_mscmd(X)
@@ -29,16 +30,17 @@ X=readmda('X_tmp_white.mda');
 end
 
 function test_ms_whiten
+N=1e6;
+X=rand(4,N);
+tic; Y1=ms_whiten(X); toc
+Y1*Y1'/(N-1)
+tic; Y2=ms_whiten_XXt(X); toc
+Y2*Y2'/(N-1)
+tic; Y3=ms_whiten_mscmd(X); toc
+Y3*Y3'/(N-1)
 
-X=rand(4,1000);
-Y1=ms_whiten(X);
-Y1*Y1'
-Y2=ms_whiten_XXt(X);
-Y2*Y2'
-Y3=ms_whiten_mscmd(X);
-Y3*Y3'
+var(Y1,[],2)'
 
 max(abs(Y1(:)-Y2(:)))
 max(abs(Y1(:)-Y3(:)))
-
 end

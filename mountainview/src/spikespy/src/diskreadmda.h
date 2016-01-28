@@ -15,7 +15,7 @@ public:
 	friend class DiskReadMdaPrivate;
 	explicit DiskReadMda(const QString &path="");
 	DiskReadMda(const DiskReadMda &other);
-    DiskReadMda(Mda &X);
+    DiskReadMda(const Mda &X);
 	void operator=(const DiskReadMda &other);
 	~DiskReadMda();
 
@@ -29,8 +29,8 @@ public:
 	int N6() const;
 	int totalSize() const;
 	int size(int dim) const;
-	float value(int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
-	float value1(int ii);
+    double value(int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
+    double value1(int ii);
 	void reshape(int N1,int N2,int N3=1,int N4=1,int N5=1,int N6=1);
 	void write(const QString &path);
 

@@ -1,11 +1,12 @@
 #include "extract_clips.h"
 #include "diskreadmda.h"
 #include "mdaio.h"
+#include "mda.h"
 
 int compute_K(DiskReadMda &X);
 
 bool extract_clips(const char *input_path,const char *detect_path,const char *output_clips_path,int clip_size) {
-	DiskReadMda X(input_path);
+    DiskReadMda X(input_path);
     DiskReadMda D(detect_path);
 
 	if (X.totalSize()<=1) {

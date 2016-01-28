@@ -7,7 +7,7 @@ class MemoryMdaPrivate {
 public:
 	MemoryMda *q;
 	int m_size[MDAIO_MAX_DIMS];
-	float *m_data;
+    double *m_data;
 	int m_total_size;
 
 	int get_index(int i1,int i2,int i3,int i4,int i5,int i6);
@@ -19,7 +19,7 @@ MemoryMda::MemoryMda(QObject *parent) : QObject(parent)
 	d=new MemoryMdaPrivate;
 	d->q=this;
 	for (int i=0; i<MDAIO_MAX_DIMS; i++) d->m_size[i]=1;
-	d->m_data=(float *)jmalloc(sizeof(float)*1);
+    d->m_data=(double *)jmalloc(sizeof(double)*1);
 	d->m_total_size=1;
 }
 
@@ -29,7 +29,7 @@ MemoryMda::MemoryMda(const MemoryMda &other) : QObject()
 	d->q=this;
 
 	for (int i=0; i<MDAIO_MAX_DIMS; i++) d->m_size[i]=other.d->m_size[i];
-	d->m_data=(float *)jmalloc(sizeof(float)*other.d->m_total_size);
+    d->m_data=(double *)jmalloc(sizeof(double)*other.d->m_total_size);
 	d->m_total_size=other.d->m_total_size;
 
 	for (int i=0; i<d->m_total_size; i++) {
@@ -40,7 +40,7 @@ void MemoryMda::operator=(const MemoryMda &other) {
 	if (d->m_data) jfree(d->m_data);
 
 	for (int i=0; i<MDAIO_MAX_DIMS; i++) d->m_size[i]=other.d->m_size[i];
-	d->m_data=(float *)jmalloc(sizeof(float)*other.d->m_total_size);
+    d->m_data=(double *)jmalloc(sizeof(double)*other.d->m_total_size);
 	d->m_total_size=other.d->m_total_size;
 
 	for (int i=0; i<d->m_total_size; i++) {
@@ -62,6 +62,7 @@ int MemoryMda::N6() const {return d->m_size[5];}
 
 void MemoryMda::write(const QString &path)
 {
+    //Always write type float32!!!!!!!!!!!!!
 	FILE *outf=jfopen(path.toLatin1().data(),"wb");
 	if (!outf) {
 		qWarning() << "unable to open file for writing..." << path;
@@ -77,18 +78,18 @@ void MemoryMda::write(const QString &path)
 	}
 	HH.num_dims=num_dims;
 	mda_write_header(&HH,outf);
-	mda_write_float32(d->m_data,&HH,d->m_total_size,outf);
+    mda_write_float64(d->m_data,&HH,d->m_total_size,outf);
 	jfclose(outf);
 }
 
-float MemoryMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
+double MemoryMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
 {
 	int ind=d->get_index(i1,i2,i3,i4,i5,i6);
 	if ((ind<0)||(ind>d->m_total_size)) return 0;
 	return d->m_data[ind];
 }
 
-void MemoryMda::setValue(float val, int i1, int i2, int i3, int i4, int i5, int i6)
+void MemoryMda::setValue(double val, int i1, int i2, int i3, int i4, int i5, int i6)
 {
 	int ind=d->get_index(i1,i2,i3,i4,i5,i6);
 	if ((ind<0)||(ind>d->m_total_size)) return;
@@ -125,7 +126,7 @@ void MemoryMda::allocate(int N1, int N2, int N3, int N4, int N5, int N6)
 		d->m_size[i]=dims[i];
 	}
 
-	d->m_data=(float *)jmalloc(sizeof(float)*d->m_total_size);
+    d->m_data=(double *)jmalloc(sizeof(double)*d->m_total_size);
 	for (int i=0; i<d->m_total_size; i++) {
 		d->m_data[i]=0;
 	}

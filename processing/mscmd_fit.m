@@ -2,7 +2,7 @@ function mscmd_fit(input_path,cluster_path,templates_path,cluster_out_path,opts)
 
 if (nargin<6) opts=struct; end;
 
-cmd=sprintf('%s fit --input=%s --cluster=%s --templates=%s --cluster_out=%s ',mscmd_exe,input_path,cluster_path,templates_path,cluster_out_path);
+cmd=sprintf('%s fit --input=%s --clusters=%s --templates=%s --cluster_out=%s ',mscmd_exe,input_path,cluster_path,templates_path,cluster_out_path);
 
 fprintf('\n*** FIT ***\n');
 fprintf('%s\n',cmd);

@@ -295,7 +295,6 @@ void MVOverviewWidget::slot_unit_activated(int num)
 	int i1=(int)d->m_clips_index.value1(num-1)*T;
 	int i2=(int)d->m_clips_index.value1(num)*T;
 	if (num>=d->m_clips_index.totalSize()) i2=d->m_clips->size(1);
-	qDebug() << "SETTING RANGE!!!!!!!!!!" << i1 << i2;
 	clips->setRange(i1,i2);
 
 	W->setClips(clips,true);
@@ -320,7 +319,6 @@ void MVOverviewWidget::slot_current_clip_number_changed()
 		if (label0==unit_num) {
 			if (jj==clip_num) {
 				int time0=(int)d->m_times.value1(i);
-				printf("Setting timepoint %d\n",time0);
 				d->m_labeled_raw_view->setCurrentTimepoint(time0);
 				break;
 			}

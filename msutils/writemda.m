@@ -5,9 +5,11 @@ if (size(X,4)~=1) num_dims=4; end;
 if (size(X,5)~=1) num_dims=5; end;
 if (size(X,6)~=1) num_dims=6; end;
 FF=fopen(fname,'w');
-complex=1;
-if (isreal(X)) complex=0; end;
-if (complex)
+
+is_complex=1;
+if (isreal(X)) is_complex=0; end;
+
+if (is_complex)
     fwrite(FF,-1,'int32');
     fwrite(FF,8,'int32');
     fwrite(FF,num_dims,'int32');
@@ -22,16 +24,39 @@ if (complex)
     Y(2:2:dimprod*2)=imag(XS);
     fwrite(FF,Y,'float32');
 else
-    fwrite(FF,-3,'int32');
-    fwrite(FF,4,'int32');
-    fwrite(FF,num_dims,'int32');
-    dimprod=1;
-    for dd=1:num_dims
-        fwrite(FF,size(X,dd),'int32');
-        dimprod=dimprod*size(X,dd);
+    
+    is_integer=check_if_integer(X);
+    
+    if (~is_integer)
+        fwrite(FF,-3,'int32');
+        fwrite(FF,4,'int32');
+        fwrite(FF,num_dims,'int32');
+        dimprod=1;
+        for dd=1:num_dims
+            fwrite(FF,size(X,dd),'int32');
+            dimprod=dimprod*size(X,dd);
+        end;
+        Y=reshape(X,dimprod,1);
+        fwrite(FF,Y,'float32');
+    else
+        fwrite(FF,-5,'int32');
+        fwrite(FF,4,'int32');
+        fwrite(FF,num_dims,'int32');
+        dimprod=1;
+        for dd=1:num_dims
+            fwrite(FF,size(X,dd),'int32');
+            dimprod=dimprod*size(X,dd);
+        end;
+        Y=reshape(X,dimprod,1);
+        fwrite(FF,Y,'int32');
     end;
-    Y=reshape(X,dimprod,1);
-    fwrite(FF,Y,'float32');
 end;
 fclose(FF);
+end
+
+function ret=check_if_integer(X)
+if (length(X)==0) ret=1; return; end;
+if (X(1)~=round(X(1))) ret=0; return; end;
+tmp=X(:)-round(X(:));
+if (max(abs(tmp))==0) ret=1; end;
 end

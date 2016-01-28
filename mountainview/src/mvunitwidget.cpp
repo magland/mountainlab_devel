@@ -242,6 +242,7 @@ void MVUnitWidget::slot_compute_template()
 
 	d->set_status_text("Computing Features...");
 	Mda features0=compute_features(d->m_clips);
+    printf("Computed features (%d x %d)\n",features0.N1(),features0.N2());
 	d->set_status_text("Ready.");
 	d->m_cluster_widget->setFeatures(features0);
 	d->m_cluster_widget->autoSetRange();

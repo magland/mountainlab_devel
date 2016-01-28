@@ -19,6 +19,7 @@
 #include "consolidate.h"
 #include "extract_clips.h"
 #include "create_clips_file.h"
+#include "assemble_clusters_file.h"
 #include "get_principal_components.h"
 #include "fit.h"
 #include "cross_correlograms.h"
@@ -26,6 +27,7 @@
 #include <QTime>
 #include "Eigen/Core"
 #include "Eigen/SVD"
+#include "process_msh.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -57,7 +59,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="whiten";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.15";
+        P.version="0.16";
 		PT.registerProcessor(P);
 	}
 	{
@@ -65,7 +67,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="detect";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.17";
+        P.version="0.18";
 		PT.registerProcessor(P);
 	}
     {
@@ -91,14 +93,14 @@ void register_processors(ProcessTracker &PT) {
         P.command="isobranch";
         P.input_file_pnames << "input_clips";
         P.output_file_pnames << "output_labels";
-        P.version="0.1";
+        P.version="0.12";
         PT.registerProcessor(P);
     }
 	{
 		PTProcessor P;
 		P.command="split_clusters";
 		P.input_file_pnames << "input";
-		P.input_file_pnames << "cluster";
+        P.input_file_pnames << "clusters";
 		P.output_file_pnames << "output";
 		P.version="0.15";
 		PT.registerProcessor(P);
@@ -107,7 +109,7 @@ void register_processors(ProcessTracker &PT) {
         PTProcessor P;
         P.command="templates";
         P.input_file_pnames << "input";
-        P.input_file_pnames << "cluster";
+        P.input_file_pnames << "clusters";
         P.output_file_pnames << "output";
 		P.version="0.17";
         PT.registerProcessor(P);
@@ -115,7 +117,7 @@ void register_processors(ProcessTracker &PT) {
     {
         PTProcessor P;
         P.command="consolidate";
-        P.input_file_pnames << "cluster";
+        P.input_file_pnames << "clusters";
         P.input_file_pnames << "templates";
         P.output_file_pnames << "cluster_out";
         P.output_file_pnames << "templates_out";
@@ -127,7 +129,7 @@ void register_processors(ProcessTracker &PT) {
         PTProcessor P;
         P.command="fit";
         P.input_file_pnames << "input";
-        P.input_file_pnames << "cluster";
+        P.input_file_pnames << "clusters";
         P.output_file_pnames << "templates";
         P.output_file_pnames << "cluster_out";
 		P.version="0.14";
@@ -139,17 +141,26 @@ void register_processors(ProcessTracker &PT) {
 		P.input_file_pnames << "input";
         P.input_file_pnames << "detect";
         P.output_file_pnames << "output_clips";
-        P.version="0.13";
+        P.version="0.15";
 		PT.registerProcessor(P);
 	}
     {
         PTProcessor P;
         P.command="create_clips_file";
         P.input_file_pnames << "input";
-        P.input_file_pnames << "cluster";
+        P.input_file_pnames << "clusters";
         P.output_file_pnames << "output";
         P.output_file_pnames << "index_out";
         P.version="0.1";
+        PT.registerProcessor(P);
+    }
+    {
+        PTProcessor P;
+        P.command="assemble_clusters_file";
+        P.input_file_pnames << "input_detect";
+        P.input_file_pnames << "input_labels";
+        P.output_file_pnames << "output_clusters";
+        P.version="0.11";
         PT.registerProcessor(P);
     }
 	{
@@ -196,7 +207,7 @@ void whiten_usage() {
 }
 
 void detect_usage() {
-	printf("mountainsort detect --input=in.mda --output=out.mda --inner_window_width=40 --outer_window_width=1000 --threshold=5 --individual_channels=1\n");
+    printf("mountainsort detect --input=in.mda --output=out.mda --inner_window_width=40 --outer_window_width=1000 --threshold=3 --normalize=0 --individual_channels=1\n");
 }
 
 void features_usage() {
@@ -208,7 +219,7 @@ void cluster_usage() {
 }
 
 void isobranch_usage() {
-    printf("mountainsort isobranch --input_clips=clips.mda --output_labels=labels.mda --isocut_threshold=1.2 --K_init=30 --min_cluster_size=500 --num_features=3 \n");
+    printf("mountainsort isobranch --input_clips=clips.mda --output_labels=labels.mda --branch_thresholds=2.5,3,3.5,4,5 --isocut_threshold=1.2 --K_init=30 --num_features=3 \n");
 }
 
 void split_clusters_usage() {
@@ -233,6 +244,10 @@ void extract_clips_usage() {
 
 void create_clips_file_usage() {
     printf("mountainsort create_clips_file --input=raw.mda --cluster=cluster.mda --output=clips.mda --index_out=clips_index.mda --clip_size=100\n");
+}
+
+void assemble_clusters_file_usage() {
+    printf("mountainsort assemble_clusters_file --input_detect=detect.mda --input_labels=labels.mda --output_clusters=clusters.mda\n");
 }
 
 void cross_correlograms_usage() {
@@ -311,6 +326,10 @@ int main(int argc,char *argv[]) {
 
 	QCoreApplication app(argc,argv); //important for qApp->applicationDirPath() in processtracker
 
+    //int test_max_int=1e9;
+    //printf("%ld,%ld\n",test_max_int+1,sizeof(test_max_int));
+    //return 0;
+
 	//test_svd();
 
 	CLParams CLP;
@@ -319,6 +338,10 @@ int main(int argc,char *argv[]) {
 
 	ProcessTracker PT;
 	register_processors(PT);
+
+    if (CLP.unnamed_parameters.value(0).endsWith(".msh")) {
+        return process_msh(CLP.unnamed_parameters.value(0),argc,argv);
+    }
 
 	if (CLP.unnamed_parameters.count()>1) {
 		printf("Only one command parameter may be specified.\n");
@@ -417,6 +440,7 @@ int main(int argc,char *argv[]) {
 		int inner_window_width=CLP.named_parameters["inner_window_width"].toInt();
 		int outer_window_width=CLP.named_parameters["outer_window_width"].toInt();
 		float threshold=CLP.named_parameters["threshold"].toFloat();
+        int normalize=CLP.named_parameters["normalize"].toInt();
 		int individual_channels=1;
 		if (CLP.named_parameters.contains("individual_channels"))
 			individual_channels=CLP.named_parameters["individual_channels"].toInt();
@@ -426,7 +450,7 @@ int main(int argc,char *argv[]) {
 		if (outer_window_width==0) {detect_usage(); return -1;}
 		if (threshold==0) {detect_usage(); return -1;}
 
-		if (!detect(input_path.toLatin1().data(),output_path.toLatin1().data(),inner_window_width,outer_window_width,threshold,(individual_channels!=0))) {
+        if (!detect(input_path.toLatin1().data(),output_path.toLatin1().data(),inner_window_width,outer_window_width,threshold,normalize,(individual_channels!=0))) {
 			printf("Error in detect.\n");
 			return -1;
 		}
@@ -471,19 +495,23 @@ int main(int argc,char *argv[]) {
         float isocut_threshold=CLP.named_parameters["isocut_threshold"].toFloat();
         int K_init=CLP.named_parameters["K_init"].toInt();
         int num_features=CLP.named_parameters["num_features"].toInt();
-        int min_cluster_size=CLP.named_parameters["min_cluster_size"].toInt();
-        if ((isocut_threshold==0)||(K_init==0)||(num_features==0)||(min_cluster_size==0)) {
+        QList<QString> branch_thresholds_str=CLP.named_parameters["branch_thresholds"].split(",");
+        QList<float> branch_thresholds;
+        for (int i=0; i<branch_thresholds_str.count(); i++) {
+            branch_thresholds << (branch_thresholds_str[i].trimmed()).toFloat();
+        }
+        if ((isocut_threshold==0)||(K_init==0)||(num_features==0)||(branch_thresholds.count()==0)) {
             isobranch_usage(); return -1;
         }
 
-        if (!isobranch(input_clips_path.toLatin1(),output_labels_path.toLatin1(),min_cluster_size,num_features,isocut_threshold,K_init)) {
+        if (!isobranch(input_clips_path.toLatin1(),output_labels_path.toLatin1(),branch_thresholds,num_features,isocut_threshold,K_init)) {
             printf("Error in isobranch.\n");
             return -1;
         }
     }
 	else if (command=="split_clusters") {
 		QString input_path=CLP.named_parameters["input"];
-		QString cluster_path=CLP.named_parameters["cluster"];
+        QString cluster_path=CLP.named_parameters["clusters"];
 		QString output_path=CLP.named_parameters["output"];
 		int num_features=CLP.named_parameters["num_features"].toInt();
 		int clip_size=CLP.named_parameters["clip_size"].toInt();
@@ -503,11 +531,11 @@ int main(int argc,char *argv[]) {
 	}
     else if (command=="templates") {
         QString input_path=CLP.named_parameters["input"];
-        QString cluster_path=CLP.named_parameters["cluster"];
+        QString cluster_path=CLP.named_parameters["clusters"];
         QString output_path=CLP.named_parameters["output"];
         int clip_size=CLP.named_parameters["clip_size"].toInt();
 
-        if ((input_path.isEmpty())||(output_path.isEmpty())) {templates_usage(); return -1;}
+        if ((input_path.isEmpty())||(cluster_path.isEmpty())||(output_path.isEmpty())) {templates_usage(); return -1;}
         if (clip_size==0) {templates_usage(); return -1;}
 
         if (!templates(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),clip_size)) {
@@ -516,7 +544,7 @@ int main(int argc,char *argv[]) {
         }
     }
     else if (command=="consolidate") {
-        QString cluster_path=CLP.named_parameters["cluster"];
+        QString cluster_path=CLP.named_parameters["clusters"];
         QString templates_path=CLP.named_parameters["templates"];
         QString cluster_out_path=CLP.named_parameters["cluster_out"];
         QString templates_out_path=CLP.named_parameters["templates_out"];
@@ -535,7 +563,7 @@ int main(int argc,char *argv[]) {
     }
     else if (command=="fit") {
         QString input_path=CLP.named_parameters["input"];
-        QString cluster_path=CLP.named_parameters["cluster"];
+        QString cluster_path=CLP.named_parameters["clusters"];
         QString templates_path=CLP.named_parameters["templates"];
         QString cluster_out_path=CLP.named_parameters["cluster_out"];
 
@@ -563,7 +591,7 @@ int main(int argc,char *argv[]) {
 	}
     else if (command=="create_clips_file") {
         QString input_path=CLP.named_parameters["input"];
-        QString cluster_path=CLP.named_parameters["cluster"];
+        QString cluster_path=CLP.named_parameters["clusters"];
         QString output_path=CLP.named_parameters["output"];
         QString index_out_path=CLP.named_parameters["index_out"];
         int clip_size=CLP.named_parameters["clip_size"].toInt();
@@ -573,6 +601,19 @@ int main(int argc,char *argv[]) {
 
         if (!create_clips_file(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),index_out_path.toLatin1().data(),clip_size)) {
             printf("Error in create_clips_file.\n");
+            return -1;
+        }
+    }
+    else if (command=="assemble_clusters_file") {
+        QString input_detect_path=CLP.named_parameters["input_detect"];
+        QString input_labels_path=CLP.named_parameters["input_labels"];
+        QString output_clusters_path=CLP.named_parameters["output_clusters"];
+
+        if ((input_detect_path.isEmpty())||(input_labels_path.isEmpty())) {assemble_clusters_file_usage(); return -1;}
+        if (output_clusters_path.isEmpty()) {assemble_clusters_file_usage(); return -1;}
+
+        if (!assemble_clusters_file(input_detect_path.toLatin1().data(),input_labels_path.toLatin1().data(),output_clusters_path.toLatin1().data())) {
+            printf("Error in assemble_clusters_file.\n");
             return -1;
         }
     }

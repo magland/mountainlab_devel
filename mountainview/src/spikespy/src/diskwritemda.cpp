@@ -95,14 +95,14 @@ void DiskWriteMda::allocate(int N1, int N2, int N3, int N4, int N5, int N6)
 	for (int i=0; i<MDAIO_MAX_DIMS; i++) d->m_mda_header.dims[i]=dims[i];
 	d->m_mda_header.num_dims=num_dims;
 	mda_write_header(&d->m_mda_header,d->m_file);
-	float *all_zeros=(float *)jmalloc(sizeof(float)*d->m_total_size);
+    double *all_zeros=(double *)jmalloc(sizeof(double)*d->m_total_size);
 	for (int j=0; j<d->m_total_size; j++) all_zeros[j]=0;
-	mda_write_float32(all_zeros,&d->m_mda_header,d->m_total_size,d->m_file);
+    mda_write_float64(all_zeros,&d->m_mda_header,d->m_total_size,d->m_file);
 	jfree(all_zeros);
 	d->m_allocated=true;
 }
 
-void DiskWriteMda::setValue(float val, int i1, int i2, int i3, int i4, int i5,int i6)
+void DiskWriteMda::setValue(double val, int i1, int i2, int i3, int i4, int i5,int i6)
 {
 	if (!d->m_file) return;
 	int ind=d->get_index(i1,i2,i3,i4,i5,i6);
@@ -128,7 +128,10 @@ void DiskWriteMda::setValue(float val, int i1, int i2, int i3, int i4, int i5,in
 			quint16 tmp=(quint16)val;
 			fwrite(&tmp,d->m_mda_header.num_bytes_per_entry,1,d->m_file);
 		}
-
+        else if (d->m_data_type==MDAIO_TYPE_FLOAT64) {
+            double tmp=(double)val;
+            fwrite(&tmp,d->m_mda_header.num_bytes_per_entry,1,d->m_file);
+        }
 	}
 }
 

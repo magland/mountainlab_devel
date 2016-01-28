@@ -84,7 +84,8 @@ int main(int argc, char *argv[]) {
     QString raw_path=CLP.named_parameters.value("raw");
     QString times_path=CLP.named_parameters.value("times");
     QString labels_path=CLP.named_parameters.value("labels");
-    QString cluster_path=CLP.named_parameters.value("cluster");
+    QString clusters_path=CLP.named_parameters.value("clusters");
+    if (clusters_path.isEmpty()) clusters_path=CLP.named_parameters.value("cluster"); //historical compatibility
     QString primary_channels_path=CLP.named_parameters.value("primary-channels");
     QString cross_correlograms_path=CLP.named_parameters.value("cross-correlograms");
 	QString clips_path=CLP.named_parameters.value("clips");
@@ -132,8 +133,8 @@ int main(int argc, char *argv[]) {
             }
             W->setTimesLabels(T,L);
         }
-        if (!cluster_path.isEmpty()) {
-            Mda CC; CC.read(cluster_path);
+        if (!clusters_path.isEmpty()) {
+            Mda CC; CC.read(clusters_path);
             int num_events=CC.N2();
             Mda T,L;
             T.allocate(1,num_events);
@@ -169,10 +170,10 @@ int main(int argc, char *argv[]) {
             X->setPath(raw_path);
             W->setRaw(X,true);
         }
-        if ((!cluster_path.isEmpty())&&(!cluster2_path.isEmpty())) {
+        if ((!clusters_path.isEmpty())&&(!cluster2_path.isEmpty())) {
             Mda T1,L1,T2,L2;
             {
-                Mda CC; CC.read(cluster_path);
+                Mda CC; CC.read(clusters_path);
                 int num_events=CC.N2();
                 Mda T,L;
                 T.allocate(1,num_events);

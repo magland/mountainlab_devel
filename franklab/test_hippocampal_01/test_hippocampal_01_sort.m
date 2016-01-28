@@ -31,14 +31,35 @@ end;
 
 writemda(get_geometry,sprintf('%s/locations.mda',path0));
 
-mscmd_bandpass_filter(raw_subset_mda_fname,[path0,'/pre1.mda'],opts_pre.o_filter);
+mscmd_copy(raw_subset_mda_fname,[path0,'/pre0.mda']);
+mscmd_bandpass_filter([path0,'/pre0.mda'],[path0,'/pre1.mda'],opts_pre.o_filter);
 mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],opts_pre.o_whiten);
 
 mscmd_detect([path0,'/pre2.mda'],[path0,'/detect0.mda'],opts.o_detect);
 
 mscmd_extract_clips([path0,'/pre2.mda'],[path0,'/detect0.mda'],[path0,'/clips0.mda'],opts.o_extract_clips);
 
-mscmd_isobranch([path0,'/clips0.mda'],[path0,'/labels0.mda']);
+o_isobranch.branch_thresholds=[3.5,4,5,6,7];
+o_isobranch.isocut_threshold=1.5;
+mscmd_isobranch([path0,'/clips0.mda'],[path0,'/labels0.mda'],o_isobranch);
+
+%do this!!
+%msmcd_create_clusters_file([path0,'/detect0.mda'],[path0,'/labels0.mda'],[path0,'/clusters.mda']);
+
+detect0=readmda([path0,'/detect0.mda']);
+labels0=readmda([path0,'/labels0.mda']);
+clusters0=cat(1,detect0,labels0);
+inds=find(labels0>0);
+clusters0=clusters0(:,inds);
+writemda(clusters0,[path0,'/clusters.mda']);
+
+mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],struct('clip_size',300));
+mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],opts.o_cross_correlograms.max_dt);
+mscmd_create_clips_file([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/clips.mda'],[path0,'/clips_index.mda'],opts.o_extract_clips);
+
+mscmd_templates([path0,'/pre0.mda'],[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],struct('clip_size',300));
+mscmd_templates([path0,'/pre0.mda'],[path0,'/clusters.mda'],[path0,'/templates_pre1.mda'],struct('clip_size',300));
+mscmd_create_clips_file([path0,'/pre1.mda'],[path0,'/clusters.mda'],[path0,'/clips_pre1.mda'],[path0,'/clips_pre1_index.mda'],opts.o_extract_clips);
 
 return;
 
@@ -175,7 +196,8 @@ function opts=get_sorting_options
 %% Detection options
 opts.o_detect.inner_window_width=15;
 opts.o_detect.outer_window_width=1000;
-opts.o_detect.threshold=2.5;
+opts.o_detect.normalize=0;
+opts.o_detect.threshold=4;
 opts.o_detect.use_pre1=0;
 opts.o_detect.individual_channels=0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

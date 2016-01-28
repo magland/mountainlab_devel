@@ -36,6 +36,7 @@
 #define MDAIO_TYPE_INT16 -4
 #define MDAIO_TYPE_INT32 -5
 #define MDAIO_TYPE_UINT16 -6
+#define MDAIO_TYPE_FLOAT64 -7
 
 #include <stdint.h>
 
@@ -62,7 +63,7 @@ int mda_read_float32(float *data,struct MDAIO_HEADER *H,int n,FILE *input_file);
 int mda_read_int16(int16_t *data,struct MDAIO_HEADER *H,int n,FILE *input_file);
 int mda_read_int32(int32_t *data,struct MDAIO_HEADER *H,int n,FILE *input_file);
 int mda_read_uint16(uint16_t *data,struct MDAIO_HEADER *H,int n,FILE *input_file);
-int mda_read_double(double *data,struct MDAIO_HEADER *H,int n,FILE *input_file);
+int mda_read_float64(double *data,struct MDAIO_HEADER *H,int n,FILE *input_file);
 
 //the following can be used no matter what the underlying data type is
 int mda_write_byte(unsigned char *data,struct MDAIO_HEADER *H,int n,FILE *output_file);
@@ -70,7 +71,7 @@ int mda_write_float32(float *data,struct MDAIO_HEADER *H,int n,FILE *output_file
 int mda_write_int16(int16_t *data,struct MDAIO_HEADER *H,int n,FILE *output_file);
 int mda_write_int32(int32_t *data,struct MDAIO_HEADER *H,int n,FILE *output_file);
 int mda_write_uint16(uint16_t *data,struct MDAIO_HEADER *H,int n,FILE *output_file);
-int mda_write_double(double *data,struct MDAIO_HEADER *H,int n,FILE *output_file);
+int mda_write_float64(double *data,struct MDAIO_HEADER *H,int n,FILE *output_file);
 
 //here's an example usage function. See top of file for more info.
 void transpose_array(char *infile_path,char *outfile_path);

@@ -208,8 +208,10 @@ QStringList ProcessTrackerPrivate::compute_process_code_string_list(const PTProc
 	qSort(keys);
 	foreach (QString key,keys) {
 		if ((!P.input_file_pnames.contains(key))&&(!P.output_file_pnames.contains(key))) {
-			QString str=QString("%1=%2").arg(key).arg(CLP.named_parameters.value(key));
-			code_strings << str;
+            if (!CLP.named_parameters.value(key).isEmpty()) {
+                QString str=QString("%1=%2").arg(key).arg(CLP.named_parameters.value(key));
+                code_strings << str;
+            }
 		}
 	}
 	return code_strings;

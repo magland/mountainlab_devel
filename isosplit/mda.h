@@ -5,10 +5,11 @@
 #define MDA_MAX_SIZE 512 * 512 * 512 * 10
 #define MDA_TYPE_COMPLEX -1
 #define MDA_TYPE_BYTE -2
-#define MDA_TYPE_REAL -3
+#define MDA_TYPE_FLOAT32 -3
 #define MDA_TYPE_SHORT -4
 #define MDA_TYPE_INT32 -5
 #define MDA_TYPE_UINT16 -6
+#define MDA_TYPE_FLOAT64 -6
 
 #ifdef QT_CORE_LIB
 #include <QString>

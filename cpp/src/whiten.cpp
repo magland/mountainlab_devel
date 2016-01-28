@@ -32,15 +32,10 @@ bool whiten(const char *input_path,const char *output_path) {
 		mean[m]/=N;
 	}
 
-	int N0=N;
-	if (N0>1e6) N0=1e6;
-	int stride=N/N0;
-
 	printf("Setting up matrix Y...\n");
-	MatrixXf Y(M,N0);
+    MatrixXf Y(M,N);
 	int ii=0;
-	for (int n0=0; n0<N0; n0++) {
-		int n=n0*stride;
+    for (int n=0; n<N; n++) {
 		for (int m=0; m<M; m++) {
 			Y.data()[ii]=X.value(m,n)-mean[m];
 			ii++;
@@ -74,7 +69,7 @@ bool whiten(const char *input_path,const char *output_path) {
 			for (int i=0; i<M; i++) {
 				tmp+=U0.data()[m1+M*i]*D.data()[i+M*i]*U0.data()[m2+M*i];
 			}
-			A.data()[m1+M*m2]=tmp;
+            A.data()[m1+M*m2]=sqrt(N-1)*tmp; //the constant factor is used to guarantee a unit variance on each channel
 		}
 	}
 

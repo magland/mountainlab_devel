@@ -3,8 +3,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #define UNUSED(expr) do { (void)(expr); } while (0);
+#ifdef QT_CORE_LIB
 #include <QDebug>
 #include "usagetracking.h"
+#else
+#define jmalloc malloc
+#define jfree free
+#define jfread fread
+#define jfopen fopen
+#define jfclose fclose
+#endif
 
 class MdaPrivate {
 public:
@@ -18,21 +26,23 @@ public:
 		m_size=(int *)jmalloc(sizeof(int)*MDA_MAX_DIMS);
 		for (int i=0; i<MDA_MAX_DIMS; i++) m_size[i]=1;
 		
-		m_data_real=(double *)jmalloc(sizeof(float)*1);
+        m_data_real=(double *)jmalloc(sizeof(double)*1);
 		m_data_real[0]=0;
 	
-		m_data_type=MDA_TYPE_REAL;
+        m_data_type=MDA_TYPE_FLOAT32;
 	}
 	
 	bool do_read(FILE *inf);
 	int read_int(FILE *inf);
 	float read_float(FILE *inf);
+    double read_double(FILE *inf);
 	short read_short(FILE *inf);	
 	unsigned short read_unsigned_short(FILE *inf);
 	unsigned char read_unsigned_char(FILE *inf);
 	bool do_write(FILE *outf);
 	void write_int(FILE *outf,int val);
 	void write_float(FILE *outf,float val);
+    void write_double(FILE *outf,double val);
 	void write_short(FILE *outf,short val);	
 	void write_unsigned_short(FILE *outf,unsigned short val);
 	void write_unsigned_char(FILE *outf,unsigned char val);
@@ -152,7 +162,7 @@ int Mda::totalSize() const {
 void Mda::reshape(int N1, int N2, int N3, int N4, int N5, int N6)
 {
 	if (N1*N2*N3*N4*N5*N6!=totalSize()) {
-		qWarning() << "Unable to reshape. Inconsistent size." << N1 << N2 << N3 << N4 << N5 << N6 << totalSize();
+		printf("WARNING: Unable to reshape. Inconsistent size. %d,%d,%d,%d,%d,%d %d",N1,N2,N3,N4,N5,N6,totalSize());
 		return;
 	}
 	d->m_size[0]=N1;
@@ -166,28 +176,12 @@ void Mda::reshape(int N1, int N2, int N3, int N4, int N5, int N6)
 double Mda::value1(int i) const {
 	return d->m_data_real[i];
 }
-double Mda::value(int i1,int i2,int i3) const {
-	if ((i1<0)||(i1>=size(0))) return 0;
-	if ((i2<0)||(i2>=size(1))) return 0;
-	if ((i3<0)||(i3>=size(2))) return 0;
-	return d->m_data_real[i1+size(0)*i2+size(0)*size(1)*i3];
-}
 double Mda::value(int i1,int i2,int i3,int i4) const {
 	if ((i1<0)||(i1>=size(0))) return 0;
 	if ((i2<0)||(i2>=size(1))) return 0;
 	if ((i3<0)||(i3>=size(2))) return 0;
 	if ((i4<0)||(i4>=size(3))) return 0;
 	return d->m_data_real[i1+size(0)*i2+size(0)*size(1)*i3+size(0)*size(1)*size(2)*i4];
-}
-double Mda::value(int i1,int i2,int i3,int i4,int i5,int i6) const {
-	if ((i5==0)&&(i6==0)) return value(i1,i2,i3,i4);
-	if ((i1<0)||(i1>=size(0))) return 0;
-	if ((i2<0)||(i2>=size(1))) return 0;
-	if ((i3<0)||(i3>=size(2))) return 0;
-	if ((i4<0)||(i4>=size(3))) return 0;
-	if ((i5<0)||(i5>=size(4))) return 0;
-	if ((i6<0)||(i6>=size(5))) return 0;
-	return d->m_data_real[i1+size(0)*i2+size(0)*size(1)*i3+size(0)*size(1)*size(2)*i4+size(0)*size(1)*size(2)*size(3)*i5+size(0)*size(1)*size(2)*size(3)*size(4)*i6];
 }
 double Mda::value(int num_dims,int *ind) const {
 	int tmp=0;
@@ -228,19 +222,19 @@ void Mda::setValues(double *vals) {
 void Mda::setValues(int *vals) {
 	int ts=totalSize();
 	for (int i=0; i<ts; i++) {
-		d->m_data_real[i]=(float)vals[i];
+        d->m_data_real[i]=(double)vals[i];
 	}
 }
 void Mda::setValues(short *vals) {
 	int ts=totalSize();
 	for (int i=0; i<ts; i++) {
-		d->m_data_real[i]=(float)vals[i];
+        d->m_data_real[i]=(double)vals[i];
 	}
 }
 void Mda::setValues(unsigned char *vals) {
 	int ts=totalSize();
 	for (int i=0; i<ts; i++) {
-		d->m_data_real[i]=(float)vals[i];
+        d->m_data_real[i]=(double)vals[i];
 	}
 }
 
@@ -325,7 +319,7 @@ Mda Mda::transpose() const {
 	jfree(size);
 	return ret;
 }
-bool Mda::read(char *path) {
+bool Mda::read(const char *path) {
 	allocate(1, 1);
 
 	FILE *inf=jfopen(path,"rb");
@@ -377,7 +371,7 @@ bool MdaPrivate::do_read(FILE *inf) {
 				UNUSED(im0);
 				m_data_real[ii] = re0;
 			}
-		} else if (data_type == MDA_TYPE_REAL) {
+        } else if (data_type == MDA_TYPE_FLOAT32) {
 			for (int ii = 0; ii < N; ii++) {
 				float re0 = read_float(inf);
 				m_data_real[ii] = re0;
@@ -402,6 +396,11 @@ bool MdaPrivate::do_read(FILE *inf) {
 				unsigned char re0 = read_unsigned_char(inf);
 				m_data_real[ii] = re0;
 			}
+        } else if (data_type == MDA_TYPE_FLOAT64) {
+            for (int ii = 0; ii < N; ii++) {
+                double re0 = read_double(inf);
+                m_data_real[ii] = re0;
+            }
 		} else {
 			printf ("Unrecognized data type %d\n", data_type);
 			return false;
@@ -422,6 +421,12 @@ float MdaPrivate::read_float(FILE *inf) {
 	UNUSED(b0)
 	return ret;
 }
+double MdaPrivate::read_double(FILE *inf) {
+    double ret=0;
+    int b0=jfread(&ret,8,1,inf);
+    UNUSED(b0)
+    return ret;
+}
 short MdaPrivate::read_short(FILE *inf) {
 	short ret=0;
 	int b0=jfread(&ret,2,1,inf);
@@ -441,7 +446,7 @@ unsigned char MdaPrivate::read_unsigned_char(FILE *inf) {
 	return ret;
 }
 
-bool Mda::write(char *path) {
+bool Mda::write(const char *path) {
 
 	FILE *outf=jfopen(path,"wb");
 	if (!outf) {
@@ -456,6 +461,7 @@ bool Mda::write(char *path) {
     return ret;
 }
 
+#ifdef QT_CORE_LIB
 bool Mda::read(const QString &path)
 {
     return read(path.toLatin1().data());
@@ -463,12 +469,13 @@ bool Mda::read(const QString &path)
 
 bool Mda::write(const QString &path)
 {
-	return write(path.toLatin1().data());
+    return write(path.toLatin1().data());
 }
+#endif
 
 double *Mda::dataPtr()
 {
-	return d->m_data_real;
+    return d->m_data_real;
 }
 
 bool MdaPrivate::do_write(FILE *outf) {
@@ -501,7 +508,7 @@ bool MdaPrivate::do_write(FILE *outf) {
 			write_float(outf, re0);
 			write_float(outf, 0);
 		}
-	} else if (m_data_type == MDA_TYPE_REAL) {
+    } else if (m_data_type == MDA_TYPE_FLOAT32) {
 		for (int i = 0; i < N; i++) {
 			float re0 = (float) m_data_real[i];
 			write_float(outf, re0);
@@ -527,6 +534,12 @@ bool MdaPrivate::do_write(FILE *outf) {
 			write_int(outf, re0);
 		}
 	}
+    else if (m_data_type == MDA_TYPE_FLOAT64) {
+        for (int i = 0; i < N; i++) {
+            double re0 = m_data_real[i];
+            write_double(outf, re0);
+        }
+    }
 	else {
 		printf ("Problem in do_write... unexpected data type: %d\n",m_data_type);
 		return false;
@@ -538,6 +551,9 @@ void MdaPrivate::write_int(FILE *outf,int val) {
 }
 void MdaPrivate::write_float(FILE *outf,float val) {
 	fwrite(&val,4,1,outf);
+}
+void MdaPrivate::write_double(FILE *outf,double val) {
+    fwrite(&val,8,1,outf);
 }
 void MdaPrivate::write_short(FILE *outf,short val) {
 	fwrite(&val,2,1,outf);

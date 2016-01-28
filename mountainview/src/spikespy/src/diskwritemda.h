@@ -19,8 +19,8 @@ public:
 
 	void setDataType(int data_type);
 	void allocate(int N1,int N2,int N3=1,int N4=1,int N5=1,int N6=1);
-	void setValue(float val,int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
-	void setValues(float *vals,int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
+    void setValue(double val,int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
+    void setValues(double *vals,int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
 	DiskReadMda toReadMda();
 
 private:

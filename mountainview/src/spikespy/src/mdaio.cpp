@@ -1,5 +1,5 @@
 #include "mdaio.h"
-#include "cvcommon.h"
+#include "usagetracking.h"
 
 int mda_read_header(struct MDAIO_HEADER *HH,FILE *input_file) {
 	int num_read=0;
@@ -18,7 +18,7 @@ int mda_read_header(struct MDAIO_HEADER *HH,FILE *input_file) {
 	//data type
 	num_read=jfread(&HH->data_type,4,1,input_file);
 	if (num_read<1) {
-		printf("mda_read_header: Problem reading input file.\n");
+        printf("mda_read_header: Problem reading input file.\n");
 		return 0;
 	}
 
@@ -69,6 +69,7 @@ int mda_write_header(struct MDAIO_HEADER *X,FILE *output_file) {
 	else if (X->data_type==MDAIO_TYPE_INT16) X->num_bytes_per_entry=2;
 	else if (X->data_type==MDAIO_TYPE_INT32) X->num_bytes_per_entry=4;
 	else if (X->data_type==MDAIO_TYPE_UINT16) X->num_bytes_per_entry=2;
+    else if (X->data_type==MDAIO_TYPE_FLOAT64) X->num_bytes_per_entry=8;
 
 	if ((X->num_dims<=0)||(X->num_dims>MDAIO_MAX_DIMS)) {
 		printf("mda_write_header: Problem with num dims: %d\n",X->num_dims);
@@ -125,6 +126,9 @@ int mda_read_byte(unsigned char *data,struct MDAIO_HEADER *H,int n,FILE *input_f
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_READ_MACRO(unsigned char,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_READ_MACRO(unsigned char,double)
+    }
 	else return 0;
 }
 
@@ -145,27 +149,33 @@ int mda_read_float32(float *data,struct MDAIO_HEADER *H,int n,FILE *input_file) 
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_READ_MACRO(float,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_READ_MACRO(float,double)
+    }
 	else return 0;
 }
 
-int mda_read_double(double *data,struct MDAIO_HEADER *H,int n,FILE *input_file) {
-	int i;
-	if (H->data_type==MDAIO_TYPE_BYTE) {
-		MDA_READ_MACRO(double,unsigned char)
-	}
-	else if (H->data_type==MDAIO_TYPE_FLOAT32) {
-		MDA_READ_MACRO(double,float)
-	}
-	else if (H->data_type==MDAIO_TYPE_INT16) {
-		MDA_READ_MACRO(double,int16_t)
-	}
-	else if (H->data_type==MDAIO_TYPE_INT32) {
-		MDA_READ_MACRO(double,int32_t)
-	}
-	else if (H->data_type==MDAIO_TYPE_UINT16) {
-		MDA_READ_MACRO(double,uint16_t)
-	}
-	else return 0;
+int mda_read_float64(double *data,struct MDAIO_HEADER *H,int n,FILE *input_file) {
+    int i;
+    if (H->data_type==MDAIO_TYPE_BYTE) {
+        MDA_READ_MACRO(double,unsigned char)
+    }
+    else if (H->data_type==MDAIO_TYPE_FLOAT32) {
+        MDA_READ_MACRO(double,float)
+    }
+    else if (H->data_type==MDAIO_TYPE_INT16) {
+        MDA_READ_MACRO(double,int16_t)
+    }
+    else if (H->data_type==MDAIO_TYPE_INT32) {
+        MDA_READ_MACRO(double,int32_t)
+    }
+    else if (H->data_type==MDAIO_TYPE_UINT16) {
+        MDA_READ_MACRO(double,uint16_t)
+    }
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_READ_MACRO_SAME(double,double)
+    }
+    else return 0;
 }
 
 int mda_read_int16(int16_t *data,struct MDAIO_HEADER *H,int n,FILE *input_file) {
@@ -185,6 +195,9 @@ int mda_read_int16(int16_t *data,struct MDAIO_HEADER *H,int n,FILE *input_file) 
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_READ_MACRO(int16_t,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_READ_MACRO(int16_t,double)
+    }
 	else return 0;
 }
 
@@ -205,6 +218,9 @@ int mda_read_int32(int32_t *data,struct MDAIO_HEADER *H,int n,FILE *input_file) 
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_READ_MACRO(int32_t,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_READ_MACRO(int32_t,double)
+    }
 	else return 0;
 }
 
@@ -225,6 +241,9 @@ int mda_read_uint16(uint16_t *data,struct MDAIO_HEADER *H,int n,FILE *input_file
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_READ_MACRO_SAME(uint16_t,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_READ_MACRO(uint16_t,double)
+    }
 	else return 0;
 }
 
@@ -254,6 +273,9 @@ int mda_write_byte(unsigned char *data,struct MDAIO_HEADER *H,int n,FILE *output
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_WRITE_MACRO(unsigned char,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_WRITE_MACRO(unsigned char,double)
+    }
 	else return 0;
 }
 
@@ -274,6 +296,9 @@ int mda_write_float32(float *data,struct MDAIO_HEADER *H,int n,FILE *output_file
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_WRITE_MACRO(float,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_WRITE_MACRO(float,double)
+    }
 	else return 0;
 }
 
@@ -294,6 +319,9 @@ int mda_write_int16(int16_t *data,struct MDAIO_HEADER *H,int n,FILE *output_file
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_WRITE_MACRO(int16_t,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_WRITE_MACRO(int16_t,double)
+    }
 	else return 0;
 }
 
@@ -314,6 +342,9 @@ int mda_write_int32(int32_t *data,struct MDAIO_HEADER *H,int n,FILE *output_file
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_WRITE_MACRO(int32_t,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_WRITE_MACRO(int32_t,double)
+    }
 	else return 0;
 }
 
@@ -334,26 +365,32 @@ int mda_write_uint16(uint16_t *data,struct MDAIO_HEADER *H,int n,FILE *output_fi
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
 		MDA_WRITE_MACRO_SAME(uint16_t,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_WRITE_MACRO(uint16_t,double)
+    }
 	else return 0;
 }
 
-int mda_write_double(double *data,struct MDAIO_HEADER *H,int n,FILE *output_file) {
+int mda_write_float64(double *data,struct MDAIO_HEADER *H,int n,FILE *output_file) {
 	int i;
 	if (H->data_type==MDAIO_TYPE_BYTE) {
-		MDA_WRITE_MACRO(uint16_t,unsigned char)
+        MDA_WRITE_MACRO(double,unsigned char)
 	}
 	else if (H->data_type==MDAIO_TYPE_FLOAT32) {
-		MDA_WRITE_MACRO(uint16_t,float)
+        MDA_WRITE_MACRO(double,float)
 	}
 	else if (H->data_type==MDAIO_TYPE_INT16) {
-		MDA_WRITE_MACRO(uint16_t,int16_t)
+        MDA_WRITE_MACRO(double,int16_t)
 	}
 	else if (H->data_type==MDAIO_TYPE_INT32) {
-		MDA_WRITE_MACRO(uint16_t,int32_t)
+        MDA_WRITE_MACRO(double,int32_t)
 	}
 	else if (H->data_type==MDAIO_TYPE_UINT16) {
-		MDA_WRITE_MACRO(uint16_t,uint16_t)
+        MDA_WRITE_MACRO(double,uint16_t)
 	}
+    else if (H->data_type==MDAIO_TYPE_FLOAT64) {
+        MDA_WRITE_MACRO_SAME(double,double)
+    }
 	else return 0;
 }
 

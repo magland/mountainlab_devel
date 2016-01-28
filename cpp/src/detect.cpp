@@ -4,9 +4,9 @@
 #include <math.h>
 #include <QTime>
 
-int detect_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_file,long timepoint1,long timepoint2,long overlap,int inner_window_width,int outer_window_width,double threshold,bool individual_channels);
+int detect_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_file,long timepoint1,long timepoint2,long overlap,int inner_window_width,int outer_window_width,double threshold,bool normalize,bool individual_channels);
 
-bool detect(const char *input_path,const char *output_path,int inner_window_width,int outer_window_width,double threshold,bool individual_channels) {
+bool detect(const char *input_path,const char *output_path,int inner_window_width,int outer_window_width,double threshold,bool normalize,bool individual_channels) {
 	printf("detect %s %s %d %d %g...\n",input_path,output_path,inner_window_width,outer_window_width,threshold);
 	FILE *input_file=fopen(input_path,"rb");
 	if (!input_file) {
@@ -49,7 +49,7 @@ bool detect(const char *input_path,const char *output_path,int inner_window_widt
 		}
 		long tt2=tt+chunk_size;
 		if (tt2>N) tt2=N;
-		total_num_events+=detect_2(H,input_file,H_out,output_file,tt,tt2,overlap,inner_window_width,outer_window_width,threshold,individual_channels);
+        total_num_events+=detect_2(H,input_file,H_out,output_file,tt,tt2,overlap,inner_window_width,outer_window_width,threshold,normalize,individual_channels);
 	}
 	printf("total_num_events=%d\n",total_num_events);
 	fseek(output_file,0,SEEK_SET);
@@ -63,7 +63,7 @@ bool detect(const char *input_path,const char *output_path,int inner_window_widt
 	return true;
 }
 
-int detect_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_file,long timepoint1,long timepoint2,long overlap,int inner_window_width,int outer_window_width,double threshold,bool individual_channels) {
+int detect_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_file,long timepoint1,long timepoint2,long overlap,int inner_window_width,int outer_window_width,double threshold,bool normalize,bool individual_channels) {
 	int M=H.dims[0];
 	long N=timepoint2-timepoint1;
 
@@ -101,24 +101,29 @@ int detect_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_f
 				}
 				double sliding_sumsqr=0;
 				int sliding_count=0;
-				for (int n=0; (n<=outer_window_width/2)&&(n<NN); n++) {
-					sliding_sumsqr+=X0[n]*X0[n];
-					sliding_count++;
-				}
+                if (normalize) {
+                    for (int n=0; (n<=outer_window_width/2)&&(n<NN); n++) {
+                        sliding_sumsqr+=X0[n]*X0[n];
+                        sliding_count++;
+                    }
+                }
 				for (long n=0; n<NN; n++) {
-					if (n+outer_window_width/2<NN) {
-						float val0=X0[n+outer_window_width/2];
-						sliding_sumsqr+=val0*val0;
-						sliding_count++;
-					}
-					if (n-outer_window_width/2-1>=0) {
-						float val0=X0[n-outer_window_width/2-1];
-						sliding_sumsqr-=val0*val0;
-						sliding_count--;
-					}
+                    if (normalize) {
+                        if (n+outer_window_width/2<NN) {
+                            float val0=X0[n+outer_window_width/2];
+                            sliding_sumsqr+=val0*val0;
+                            sliding_count++;
+                        }
+                        if (n-outer_window_width/2-1>=0) {
+                            float val0=X0[n-outer_window_width/2-1];
+                            sliding_sumsqr-=val0*val0;
+                            sliding_count--;
+                        }
+                    }
 					if (n>inner_window_width) {
 						float val00=X0[n];
-						double stdev=sqrt(sliding_sumsqr/(sliding_count-1));
+                        double stdev=1;
+                        if (normalize) stdev=sqrt(sliding_sumsqr/(sliding_count-1));
 						if (stdev>0) {
 							float absval00=val00; if (val00<0) absval00=-val00;
 							if (absval00/stdev>=threshold) {
@@ -182,24 +187,29 @@ int detect_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_f
 				}
 				double sliding_sumsqr=0;
 				int sliding_count=0;
-				for (int n=0; (n<=outer_window_width/2)&&(n<NN); n++) {
-					sliding_sumsqr+=X0[n]*X0[n];
-					sliding_count++;
-				}
+                if (normalize) {
+                    for (int n=0; (n<=outer_window_width/2)&&(n<NN); n++) {
+                        sliding_sumsqr+=X0[n]*X0[n];
+                        sliding_count++;
+                    }
+                }
 				for (long n=0; n<NN; n++) {
-					if (n+outer_window_width/2<NN) {
-						float val0=X0[n+outer_window_width/2];
-						sliding_sumsqr+=val0*val0;
-						sliding_count++;
-					}
-					if (n-outer_window_width/2-1>=0) {
-						float val0=X0[n-outer_window_width/2-1];
-						sliding_sumsqr-=val0*val0;
-						sliding_count--;
-					}
+                    if (normalize) {
+                        if (n+outer_window_width/2<NN) {
+                            float val0=X0[n+outer_window_width/2];
+                            sliding_sumsqr+=val0*val0;
+                            sliding_count++;
+                        }
+                        if (n-outer_window_width/2-1>=0) {
+                            float val0=X0[n-outer_window_width/2-1];
+                            sliding_sumsqr-=val0*val0;
+                            sliding_count--;
+                        }
+                    }
 					if (n>inner_window_width) {
 						float val00=X0[n];
-						double stdev=sqrt(sliding_sumsqr/(sliding_count-1));
+                        double stdev=1;
+                        if (normalize) stdev=sqrt(sliding_sumsqr/(sliding_count-1));
 						if (stdev>0) {
 							float absval00=val00; if (val00<0) absval00=-val00;
 							if (absval00/stdev>=threshold) {

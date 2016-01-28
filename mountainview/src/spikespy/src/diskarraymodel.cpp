@@ -28,7 +28,7 @@ public:
 	void read_header();
 	Mda *load_chunk(int scale,int chunk_ind);
 	Mda *load_chunk_from_file(QString path,int scale,int chunk_ind);
-	QVector<float> load_data_from_mda(QString path,int n,int i1,int i2,int i3);
+    QVector<double> load_data_from_mda(QString path,int n,int i1,int i2,int i3);
 	QString get_code(int scale,int chunk_size,int chunk_ind);
 	QString get_multiscale_file_name(int scale);
 	bool file_exists(QString path);
@@ -45,7 +45,7 @@ DiskArrayModel::DiskArrayModel(QObject *parent) : QObject(parent)
 	d->m_num_channels=1;
 	d->m_num_timepoints=0;
 	d->m_dim3=1;
-	d->m_data_type=MDA_TYPE_REAL;
+    d->m_data_type=MDA_TYPE_FLOAT32;
 }
 
 DiskArrayModel::~DiskArrayModel()
@@ -70,7 +70,7 @@ void DiskArrayModel::setFromMda(const Mda &X)
 	d->m_num_channels=X.N1();
 	d->m_num_timepoints=X.N2()*X.N3();
 	d->m_dim3=X.N3();
-	d->m_data_type=MDA_TYPE_REAL;
+    d->m_data_type=X.dataType();
 }
 
 QString DiskArrayModel::path()
@@ -105,10 +105,10 @@ Mda DiskArrayModel::loadData(int scale,int t1,int t2) {
 		else {
 			for (int tt=t1; tt<=t2; tt++) {
 				for (int mm=0; mm<d->m_num_channels; mm++) {
-					float minval=safe_value1(d->m_mda,mm+tt*scale*M);
-					float maxval=safe_value1(d->m_mda,mm+tt*scale*M);
+                    double minval=safe_value1(d->m_mda,mm+tt*scale*M);
+                    double maxval=safe_value1(d->m_mda,mm+tt*scale*M);
 					for (int dt=0; dt<scale; dt++) {
-						float tmpval=safe_value1(d->m_mda,mm+(tt*scale+dt)*M);
+                        double tmpval=safe_value1(d->m_mda,mm+(tt*scale+dt)*M);
 						if (tmpval<minval) minval=tmpval;
 						if (tmpval>maxval) maxval=tmpval;
 					}
@@ -156,7 +156,7 @@ Mda DiskArrayModel::loadData(int scale,int t1,int t2) {
 	return X;
 }
 
-float DiskArrayModel::value(int ch,int t) {
+double DiskArrayModel::value(int ch,int t) {
 	if (d->m_set_from_mda) {
 		int M=d->m_mda.N1();
 		return safe_value1(d->m_mda,ch+t*M);
@@ -294,7 +294,7 @@ bool do_minmax_downsample(QString path1,QString path2,int factor,QProgressDialog
 		}
 		jfree(buf);
 	}
-	else if (data_type==MDA_TYPE_REAL) {
+    else if (data_type==MDA_TYPE_FLOAT32) {
 		float *buf=(float *)jmalloc(sizeof(float)*factor*dim1);
 		for (int kk=0; kk<2; kk++) { //determines min or max
 			if (dim3==1) {
@@ -334,6 +334,46 @@ bool do_minmax_downsample(QString path1,QString path2,int factor,QProgressDialog
 		}
 		jfree(buf);
 	}
+    else if (data_type==MDA_TYPE_FLOAT64) {
+        double *buf=(double *)jmalloc(sizeof(double)*factor*dim1);
+        for (int kk=0; kk<2; kk++) { //determines min or max
+            if (dim3==1) {
+                fseek(inf,header_size,SEEK_SET); //need to go back to first part in this case
+            }
+            for (long i=0; i<dim2b; i++) {
+                if ((i%100==0)&&(timer.elapsed()>=500)) {
+                    timer.start();
+                    if (dlg->wasCanceled()) {
+                        QFile::remove(path2);
+                        return false;
+                    }
+                    dlg->setValue((i*50)/dim2b+50*kk);
+                    qApp->processEvents();
+                }
+                int numread=mda_read_float64(buf,&HH,factor*dim1,inf);
+                //int numread=fread(buf,sizeof(double),factor*dim1,inf);
+                double vals[dim1]; for (int a=0; a<dim1; a++) vals[a]=0;
+                if (numread<factor*dim1) {
+                    qWarning() << "Warning, unexpected problem in do_minmax_downsample" << kk << i << numread << factor << dim1;
+                }
+                for (int ch=0; ch<dim1; ch++) {
+                    vals[ch]=buf[0*dim1+ch];
+                    for (int j=0; j<numread/dim1; j++) {
+                        if (kk==0) vals[ch]=qMin(vals[ch],buf[j*dim1+ch]);
+                        else if (kk==1) vals[ch]=qMax(vals[ch],buf[j*dim1+ch]);
+                    }
+                }
+                mda_write_float64(vals,&HH,dim1,outf);
+                //fwrite(vals,sizeof(float),dim1,outf);
+            }
+            if (remainder>0) {
+                int numread=mda_read_float64(buf,&HH,remainder*dim1,inf);
+                //int b0=fread(buf,sizeof(float),remainder*dim1,inf);
+                Q_UNUSED(numread)
+            }
+        }
+        jfree(buf);
+    }
 	else if (data_type==MDA_TYPE_SHORT) {
 		qint16 *buf=(qint16 *)jmalloc(sizeof(qint16)*factor*dim1);
 		for (int kk=0; kk<2; kk++) { //determines min or max
@@ -525,7 +565,7 @@ Mda *DiskArrayModelPrivate::load_chunk(int scale,int chunk_ind) {
 
 Mda *DiskArrayModelPrivate::load_chunk_from_file(QString path,int scale,int chunk_ind) {
 	if (scale==1) {
-		QVector<float> d0=load_data_from_mda(path,m_num_channels*m_chunk_size,0,chunk_ind*m_chunk_size,0);
+        QVector<double> d0=load_data_from_mda(path,m_num_channels*m_chunk_size,0,chunk_ind*m_chunk_size,0);
 		if (d0.isEmpty()) return 0;
 		Mda *ret=new Mda();
 		ret->setDataType(m_data_type);
@@ -533,7 +573,7 @@ Mda *DiskArrayModelPrivate::load_chunk_from_file(QString path,int scale,int chun
 		int ct=0;
 		for (int tt=0; tt<m_chunk_size; tt++) {
 			for (int ch=0; ch<m_num_channels; ch++) {
-				float val=0;
+                double val=0;
 				if (ct<d0.count()) val=d0[ct];
 				ret->setValue(val,ch,tt,0);
 				ret->setValue(val,ch,tt,1);
@@ -543,8 +583,8 @@ Mda *DiskArrayModelPrivate::load_chunk_from_file(QString path,int scale,int chun
 		return ret;
 	}
 	else {
-		QVector<float> d0=load_data_from_mda(path,m_num_channels*m_chunk_size,0,chunk_ind*m_chunk_size,0);
-		QVector<float> d1=load_data_from_mda(path,m_num_channels*m_chunk_size,0,chunk_ind*m_chunk_size,1);
+        QVector<double> d0=load_data_from_mda(path,m_num_channels*m_chunk_size,0,chunk_ind*m_chunk_size,0);
+        QVector<double> d1=load_data_from_mda(path,m_num_channels*m_chunk_size,0,chunk_ind*m_chunk_size,1);
 
 		if (d0.isEmpty()) return 0;
 		Mda *ret=new Mda();
@@ -553,7 +593,7 @@ Mda *DiskArrayModelPrivate::load_chunk_from_file(QString path,int scale,int chun
 		int ct=0;
 		for (int tt=0; tt<m_chunk_size; tt++) {
 			for (int ch=0; ch<m_num_channels; ch++) {
-				float val0=0,val1=0;
+                double val0=0,val1=0;
 				if (ct<d0.count()) val0=d0[ct];
 				if (ct<d1.count()) val1=d1[ct];
 				ret->setValue(val0,ch,tt,0);
@@ -568,8 +608,8 @@ Mda *DiskArrayModelPrivate::load_chunk_from_file(QString path,int scale,int chun
 
 }
 
-QVector<float> DiskArrayModelPrivate::load_data_from_mda(QString path,int n,int i1,int i2,int i3) {
-	QVector<float> ret;
+QVector<double> DiskArrayModelPrivate::load_data_from_mda(QString path,int n,int i1,int i2,int i3) {
+    QVector<double> ret;
 	FILE *inf=jfopen(path.toLatin1().data(),"rb");
 	if (!inf) {
 		qWarning() << "Problem reading data from mda: " << path << i1 << i2 << i3 << n;
@@ -593,7 +633,7 @@ QVector<float> DiskArrayModelPrivate::load_data_from_mda(QString path,int n,int 
 		//int b0=fread(X,sizeof(unsigned char),n,inf);
 		Q_UNUSED(b0)
 		for (int i=0; i<n; i++) {
-			ret[i]=(float)X[i];
+            ret[i]=(double)X[i];
 		}
 		jfree(X);
 	}
@@ -603,27 +643,37 @@ QVector<float> DiskArrayModelPrivate::load_data_from_mda(QString path,int n,int 
 		//int b0=fread(X,sizeof(qint32),n,inf);
 		Q_UNUSED(b0)
 		for (int i=0; i<n; i++) {
-			ret[i]=(float)X[i];
+            ret[i]=(double)X[i];
 		}
 		jfree(X);
 	}
-	else if (data_type==MDA_TYPE_REAL) {
+    else if (data_type==MDA_TYPE_FLOAT32) {
 		float *X=(float *)jmalloc(sizeof(float)*n);
 		int bytes_read=mda_read_float32(X,&HH,n,inf);
 		//int bytes_read=fread(X,sizeof(float),n,inf);
 		Q_UNUSED(bytes_read);
 		for (int i=0; i<n; i++) {
-			ret[i]=(float)X[i];
+            ret[i]=(double)X[i];
 		}
 		jfree(X);
 	}
+    else if (data_type==MDA_TYPE_FLOAT64) {
+        double *X=(double *)jmalloc(sizeof(double)*n);
+        int bytes_read=mda_read_float64(X,&HH,n,inf);
+        //int bytes_read=fread(X,sizeof(double),n,inf);
+        Q_UNUSED(bytes_read);
+        for (int i=0; i<n; i++) {
+            ret[i]=(double)X[i];
+        }
+        jfree(X);
+    }
 	else if (data_type==MDA_TYPE_SHORT) {
 		short *X=(short *)jmalloc(sizeof(short)*n);
 		int bytes_read=mda_read_int16(X,&HH,n,inf);
 		//int bytes_read=fread(X,sizeof(short),n,inf);
 		Q_UNUSED(bytes_read)
 		for (int i=0; i<n; i++) {
-			ret[i]=(float)X[i];
+            ret[i]=(double)X[i];
 		}
 		jfree(X);
 	}
@@ -633,7 +683,7 @@ QVector<float> DiskArrayModelPrivate::load_data_from_mda(QString path,int n,int 
 		//int bytes_read=fread(X,sizeof(quint16),n,inf);
 		Q_UNUSED(bytes_read);
 		for (int i=0; i<n; i++) {
-			ret[i]=(float)X[i];
+            ret[i]=(double)X[i];
 		}
 		jfree(X);
 	}
