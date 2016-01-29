@@ -2,10 +2,6 @@ function test_hippocampal_01_28_2016_extract_raw
 
 mfile_path=fileparts(mfilename('fullpath'));
 path_raw=sprintf('%s/../raw/hippocampal/tetrode',mfile_path);
-path0=sprintf('%s/output',mfile_path);
-if ~exist(path0,'dir')
-    mkdir(path0);
-end;
 
 raw_mat_fname=sprintf('%s/dl12_20151208_NNF_r1_tet16_17.mat',path_raw);
 raw_mda_fname=sprintf('%s/dl12_20151208_NNF_r1_tet16_17.mda',path_raw);

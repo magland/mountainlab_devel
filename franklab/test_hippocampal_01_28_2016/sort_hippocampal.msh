@@ -25,10 +25,18 @@ mscmd copy
 echo "*** BANDPASS FILTER ***"
 mscmd bandpass_filter
 	--input=$2/pre0.mda
-	--output=$2/pre1.mda
+	--output=$2/pre1a.mda
 	--samplefreq=$samplefreq
 	--freq_min=$freq_min
 	--freq_max=$freq_max
+
+echo "*** REMOVE ARTIFACTS ***"
+mscmd remove_artifacts
+	--input=$2/pre1a.mda
+	--output=$2/pre1.mda
+	--threshold=12
+	--normalize=1
+	--exclude_interval=100
 
 echo "*** WHITEN ***"
 mscmd whiten
@@ -90,7 +98,7 @@ echo "*** CROSS CORRELOGRAMS ***"
 mscmd cross_correlograms
 	--clusters=$2/clusters.mda
 	--output=$2/cross_correlograms.mda
-	--max_dt=10000
+	--max_dt=20000
 
 echo "*** CREATE CLIPS FILE ***"
 mscmd create_clips_file

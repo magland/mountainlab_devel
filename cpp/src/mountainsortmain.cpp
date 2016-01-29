@@ -18,6 +18,8 @@
 #include "templates.h"
 #include "consolidate.h"
 #include "extract_clips.h"
+#include "extract_channels.h"
+#include "remove_artifacts.h"
 #include "create_clips_file.h"
 #include "assemble_clusters_file.h"
 #include "get_principal_components.h"
@@ -146,6 +148,22 @@ void register_processors(ProcessTracker &PT) {
 	}
     {
         PTProcessor P;
+        P.command="extract_channels";
+        P.input_file_pnames << "input";
+        P.output_file_pnames << "output";
+        P.version="0.10";
+        PT.registerProcessor(P);
+    }
+    {
+        PTProcessor P;
+        P.command="remove_artifacts";
+        P.input_file_pnames << "input";
+        P.output_file_pnames << "output";
+        P.version="0.10";
+        PT.registerProcessor(P);
+    }
+    {
+        PTProcessor P;
         P.command="create_clips_file";
         P.input_file_pnames << "input";
         P.input_file_pnames << "clusters";
@@ -240,6 +258,14 @@ void fit_usage() {
 
 void extract_clips_usage() {
     printf("mountainsort extract_clips --input=raw.mda --detect=detect.mda --output=clips.mda --clip_size=100\n");
+}
+
+void extract_channels_usage() {
+    printf("mountainsort extract_channels --input=raw.mda --output=raw2.mda --channels=1,2,3,4,5\n");
+}
+
+void remove_artifacts_usage() {
+    printf("mountainsort remove_artifacts --input=pre1a.mda --output=pre1.mda --threshold=8 --normalize=1 --exclude_interval=1000\n");
 }
 
 void create_clips_file_usage() {
@@ -589,6 +615,41 @@ int main(int argc,char *argv[]) {
 			return -1;
 		}
 	}
+    else if (command=="extract_channels") {
+        QString input_path=CLP.named_parameters["input"];
+        QString output_path=CLP.named_parameters["output"];
+        QList<QString> channels_str=CLP.named_parameters["channels"].split(",");
+        QList<int> channels;
+        for (int i=0; i<channels_str.count(); i++) {
+            channels << (channels_str[i].trimmed()).toInt();
+        }
+
+        if (input_path.isEmpty()) {extract_channels_usage(); return -1;}
+        if (output_path.isEmpty()) {extract_channels_usage(); return -1;}
+        if (channels.isEmpty()) {extract_channels_usage(); return -1;}
+
+        if (!extract_channels(input_path.toLatin1().data(),output_path.toLatin1().data(),channels)) {
+            printf("Error in extract_channels.\n");
+            return -1;
+        }
+    }
+    else if (command=="remove_artifacts") {
+        QString input_path=CLP.named_parameters["input"];
+        QString output_path=CLP.named_parameters["output"];
+        float threshold=CLP.named_parameters["threshold"].toFloat();
+        int normalize=CLP.named_parameters.value("normalize","1").toInt();
+        int exclude_interval=CLP.named_parameters["exclude_interval"].toInt();
+
+        if (input_path.isEmpty()) {printf("input path is empty.\n"); remove_artifacts_usage(); return -1;}
+        if (output_path.isEmpty()) {printf("output path is empty.\n"); remove_artifacts_usage(); return -1;}
+        if (threshold==0) {printf("threshold is zero.\n"); remove_artifacts_usage(); return -1;}
+        if (exclude_interval==0) {printf("exclude_interval is zero.\n"); remove_artifacts_usage(); return -1;}
+
+        if (!remove_artifacts(input_path.toLatin1().data(),output_path.toLatin1().data(),threshold,normalize,exclude_interval)) {
+            printf("Error in remove_artifacts.\n");
+            return -1;
+        }
+    }
     else if (command=="create_clips_file") {
         QString input_path=CLP.named_parameters["input"];
         QString cluster_path=CLP.named_parameters["clusters"];
