@@ -97,7 +97,7 @@ mscmd create_clips_file
 	--input=$2/pre2.mda
 	--clusters=$2/clusters.mda
 	--output=$2/clips.mda
-	--index_out=clips_index.mda
+	--index_out=$2/clips_index.mda
 	--clip_size=$clip_size
 
 echo "*** CREATE CLIPS FILE PRE1 ***"
