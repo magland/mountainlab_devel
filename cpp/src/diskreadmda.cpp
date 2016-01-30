@@ -148,6 +148,35 @@ double DiskReadMda::value1(int ind)
 	return X[ind%CHUNKSIZE];
 }
 
+void DiskReadMda::getData1(double *output, int i2, int i3, int i4, int i5, int i6)
+{
+	//added on 1/29/16
+	int N1=d->m_size[0];
+	if (d->m_using_memory_mda) {
+		for (int ii=0; ii<N1; ii++) {
+			output[ii]=d->m_memory_mda.value(ii,i2,i3,i4);
+		}
+		return;
+	}
+	int ind=d->get_index(0,i2,i3,i4,i5,i6);
+	if (ind<0) return;
+	int j1=ind/CHUNKSIZE;
+	int j2=(ind+N1)/CHUNKSIZE;
+	if (j1==j2) {
+		double *X=d->load_chunk(ind/CHUNKSIZE);
+		int jj=ind%CHUNKSIZE;
+		for (int ii=0; ii<N1; ii++) {
+			output[ii]=X[jj];
+			jj++;
+		}
+	}
+	else {
+		for (int ii=0; ii<N1; ii++) {
+			output[ii]=value(ii,i2,i3,i4,i5,i6);
+		}
+	}
+}
+
 void DiskReadMda::reshape(int N1, int N2, int N3, int N4, int N5, int N6)
 {
     if (d->m_using_memory_mda) {
