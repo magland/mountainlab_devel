@@ -5,3 +5,9 @@
 **/ui_*.h
 **/*.pro.user
 **/qrc_*.cpp
+**/*.aux
+**/*.log
+**/*.toc
+**/*.m~
+**/*.mexa64
+**/*.dat
