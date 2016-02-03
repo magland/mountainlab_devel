@@ -88,8 +88,10 @@ int main(int argc, char *argv[]) {
     if (clusters_path.isEmpty()) clusters_path=CLP.named_parameters.value("cluster"); //historical compatibility
     QString primary_channels_path=CLP.named_parameters.value("primary-channels");
     QString cross_correlograms_path=CLP.named_parameters.value("cross-correlograms");
+	if (cross_correlograms_path.isEmpty()) cross_correlograms_path=CLP.named_parameters.value("cross_correlograms");
 	QString clips_path=CLP.named_parameters.value("clips");
 	QString clips_index_path=CLP.named_parameters.value("clips-index");
+	if (clips_index_path.isEmpty()) clips_index_path=CLP.named_parameters.value("clips_index");
 
     QString cluster2_path=CLP.named_parameters.value("cluster2"); //for mode=compare_labels
 

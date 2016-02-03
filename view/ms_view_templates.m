@@ -36,6 +36,7 @@ y_offset=0;
 for m=1:M
     tmp=cat(2,templates(m,:,:),ones(1,Tpad,K)*inf);
     tmp=reshape(tmp,1,(T+Tpad)*K);
+    tmp(find(tmp==0))=inf;
     hh=plot(tmp+y_offset); hold on;
     set(hh,'Color',colors{1+mod(m-1,length(colors))});
     y_offset=y_offset-vspread;

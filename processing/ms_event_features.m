@@ -1,19 +1,19 @@
-function [z finfo] = ms_event_features(X,num_features,o)
+function [z subspace] = ms_event_features(X,num_features,o)
 
 if nargin<3, o = []; end
 if ~isfield(o,'fmethod'), o.fmethod='pca'; end  % default
 [M T Ns] = size(X);
-tic; finfo = [];
+tic;
 % call requested alg...
 if strcmp(o.fmethod,'pca'), [z U] = features_pca(X);
-  finfo.subspace = reshape(U,[size(X,1),size(X,2),size(U,2)]);
+  subspace = reshape(U,[size(X,1),size(X,2),size(U,2)]);
 elseif strcmp(o.fmethod,'pcachan')
   z = zeros(M*T,Ns); U = zeros(M*T,M*T);
   for m=1:M                % PCA for each channel separately
     r = m+(0:T-1)*M;  % row indices to write to: all 1st dims together, etc.
     [z(r,:) U(r,r)]= features_pca(X(m,:,:));
   end
-  finfo.subspace = reshape(U,[size(X,1),size(X,2),size(U,2)]);
+  subspace = reshape(U,[size(X,1),size(X,2),size(U,2)]);
 elseif strcmp(o.fmethod,'cen'), z = features_spatial_centroid(X,o.d);
 elseif strcmp(o.fmethod,'raw')
   z = reshape(permute(X,[2 1 3]),[M*T Ns]); % matrix: events are cols
@@ -23,6 +23,7 @@ end
 %%%%%
 
 z=z(1:num_features,:);
+subspace=subspace(:,:,1:num_features);
 
 function [z U] = features_pca(X)
 % FEATURES_PCA - get principal component analysis feature vectors, for Ns large

@@ -20,9 +20,9 @@ clips=readmda([mfile_path,'/tmp_clips.mda']);
 
 use_it=zeros(1,NC);
 
-for j=1:300
+for j=1:10
     fprintf('j=%d\n',j);
-    [clips0,inds0]=random_orthant(clips,6);
+    [clips0,inds0]=random_orthant(clips,5);
     NC0=size(clips0,3);
 
     [A,norms]=compute_scores_matrix(clips0);
@@ -32,17 +32,45 @@ for j=1:300
     inds1=find(aa>0.5);
     use_it(inds0(inds1))=use_it(inds0(inds1))+1;
     %figure; imagesc(A); colorbar;
-    fprintf('Using %d of %d clips.\n',count(se_it),length(use_it));
+    fprintf('Using %d of %d clips.\n',sum(use_it~=0),length(use_it));
 end;
 
-fprintf('Using %d of %d clips.\n',sum(use_it),length(use_it));
+fprintf('Using %d of %d clips.\n',sum(use_it~=0),length(use_it));
 
-clips1=clips(:,:,find(use_it));
+figure; hist(use_it,1000);
+
+inds1=find(use_it);
+clips1=clips(:,:,inds1);
 FF=ms_event_features(clips1,6);
 labels=isosplit(FF);
 figure; ms_view_clusters(FF,labels);
 figure; ms_view_templates_from_clips(clips1,labels);
 figure; ms_view_templates(get_example_clips(clips1,labels,5));
+drawnow;
+
+K=max(labels);
+
+clips_norms=sqrt(squeeze(sum(sum(clips.^2,1),2)));
+for k=1:K
+    inds_k=find(labels==k);
+    fprintf('k=%d, %d points\n',k,length(inds_k));
+    clips1_k=clips1(:,:,inds_k);
+    clips1_k_norms=sqrt(squeeze(sum(sum(clips1_k.^2,1),2)));
+    ips=zeros(size(clips1_k,3),size(clips,3));
+    fprintf('Computing ips...\n')
+    for j=1:size(clips1_k,3)
+        ips(j,:)=squeeze(sum(sum(clips.*repmat(clips1_k(:,:,j),1,1,size(clips,3)),1),2));
+    end;
+    [NORMS1_k,NORMS]=ndgrid(clips1_k_norms,clips_norms);
+    LARGEST_NORMS=max(NORMS1_k,NORMS);
+    scores=ips./LARGEST_NORMS;
+    scores_sorted=sort(scores,1);
+    scores0=scores_sorted(5,:);
+    figure; plot(clips_norms,scores0,'b.'); hold on;
+    plot(clips1_k_norms,scores0(inds1(inds_k)),'r.');
+    title(sprintf('k=%d',k));
+    drawnow;
+end;
 
 return;
 
@@ -156,7 +184,7 @@ clip_norms=reshape(sqrt(sum(sum(clips.^2,1),2)),1,NC);
 largest_clip_norms=reshape(max(clip_norms(ii1(:)),clip_norms(ii2(:))),NC,NC);
 ips=zeros(NC,NC);
 for j=1:NC
-    if (mod(j,50)==0) disp(j); end;
+    if (mod(j,500)==0) disp(j); end;
     CC=clips(:,:,j);
     ips(j,:)=reshape(sum(sum(repmat(CC,1,1,NC).*clips,1),2),1,NC);
 end;

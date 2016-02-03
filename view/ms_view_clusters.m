@@ -39,7 +39,7 @@ elseif M==3
             if (k>0)
                 plot3(X(1,inds),X(2,inds),X(3,inds),'.','Color',colors{k}); hold on;
             else
-                plot(X(1,inds),X(2,inds),X(3,inds),'.','Color',[0.5,0.5,0.5]); hold on;
+                plot3(X(1,inds),X(2,inds),X(3,inds),'+','Color',[0.5,0.5,0.5]); hold on;
             end;
         end;
     end;
