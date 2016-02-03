@@ -1,7 +1,9 @@
 function test_2_2_2016_B
 
+close all;
+
 mfile_path=fileparts(mfilename('fullpath'));
-path0=[mfile_path,'/../franklab/test_hippocampal_01_28_2016/tetrode2_output'];
+path0=[mfile_path,'/../franklab/test_hippocampal_01_28_2016/tetrode1_output'];
 
 o_filter.samplefreq=30000;
 o_filter.freq_min=100;
@@ -79,6 +81,7 @@ for ii=1:length(clusterings)
 end;
 
 all_templates=group_templates(all_templates);
+all_templates=cat(3,zeros(M,T),all_templates);
 
 figure; ms_view_templates(all_templates);
 K=size(all_templates,3);
@@ -95,9 +98,10 @@ clip_norms=reshape(sqrt(sum(sum(clips.^2,1),2)),1,NC);
 diffsqr=repmat(clip_norms,K,1).^2-2*ips+repmat(template_norms',1,NC).^2;
 
 sigma=1.2;
-logprobs=-2*diffsqr/sigma^2;
-logmargins=logsumexp(cat(1,logprobs,-10*ones(1,NC)),1);
-logprobs=logprobs-repmat(logmargins,K,1);
+logprobs1=-2*diffsqr/sigma^2/(M*T);
+logmargins=logsumexp(cat(1,logprobs1,log(0.2*ones(1,NC))),1);
+%logmargins=logsumexp(logprobs1);
+logprobs=logprobs1-repmat(logmargins,K,1);
 probs=exp(logprobs);
 
 end
