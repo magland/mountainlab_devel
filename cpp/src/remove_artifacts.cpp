@@ -22,62 +22,63 @@ bool remove_artifacts(const char *input_path, const char *output_path, float thr
     float stdevs[M];
     for (int m=0; m<M; m++) stdevs[m]=1;
 
-    QTime timer; timer.start();
-    if (normalize) {
-        printf("Normalizing...\n");
-        int stride=1+N/10000;
-        float sum[M]; float sumsqr[M]; int ct[M];
-        for (int m=0; m<M; m++) {
-            sum[m]=0; sumsqr[m]=0; ct[m]=0;
-        }
-        for (int i=0; i<N; i+=stride) {
-            if (timer.elapsed()>1000) {
-                printf("Part 1 - %d%%\n",(int)(i*1.0/N*100));
-                timer.restart();
-            }
-            for (int m=0; m<M; m++) {
-                float val=X.value(m,i);
-                sum[m]+=val;
-                sumsqr[m]+=val*val;
-                ct[m]++;
-            }
-        }
-        for (int m=0; m<M; m++) {
-            if (ct[m]>=2) {
-                stdevs[m]=sqrt((sumsqr[m]-sum[m]*sum[m]/ct[m])/(ct[m]-1));
-            }
-        }
-    }
+	QTime timer;
+	timer.start();
+	if (normalize) {
+		printf("Normalizing...\n");
+		int stride=1+N/10000;
+		float sum[M]; float sumsqr[M]; int ct[M];
+		for (int m=0; m<M; m++) {
+			sum[m]=0; sumsqr[m]=0; ct[m]=0;
+		}
+		for (int i=0; i<N; i+=stride) {
+			if (timer.elapsed()>1000) {
+				printf("Part 1 - %d%%\n",(int)(i*1.0/N*100));
+				timer.restart();
+			}
+			for (int m=0; m<M; m++) {
+				float val=X.value(m,i);
+				sum[m]+=val;
+				sumsqr[m]+=val*val;
+				ct[m]++;
+			}
+		}
+		for (int m=0; m<M; m++) {
+			if (ct[m]>=2) {
+				stdevs[m]=sqrt((sumsqr[m]-sum[m]*sum[m]/ct[m])/(ct[m]-1));
+			}
+		}
+	}
 
-    printf("Identifying timepoints to remove...\n");
-    timer.start();
-    int i=0;
-    while (i<N) {
-        if (timer.elapsed()>1000) {
-            printf("Part 2 - %d%%\n",(int)(i*1.0/N*100));
-            timer.restart();
-        }
-        float maxval=0;
-        for (int m=0; m<M; m++) {
-            float val=fabs(X.value(m,i)/stdevs[m]);
-            if (val>maxval) {
-                maxval=val;
-            }
-        }
-        if (maxval>threshold) {
-            for (int dd=-exclude_interval/2; dd<-exclude_interval/2+exclude_interval; dd++) {
-                int j=i+dd;
-                if ((j>=0)&&(j<N)) {
-                    to_include[j]=0;
-                }
-            }
-            i+=exclude_interval/6; //skip a bit to save some time
-            i++;
-        }
-        else {
-            i++;
-        }
-    }
+	printf("Identifying timepoints to remove...\n");
+	timer.start();
+	int i=0;
+	while (i<N) {
+		if ((i%1000==0)&&(timer.elapsed()>1000)) {
+			printf("Part 2 - %d%%\n",(int)(i*1.0/N*100));
+			timer.restart();
+		}
+		float maxval=0;
+		for (int m=0; m<M; m++) {
+			float val=fabs(X.value(m,i)/stdevs[m]);
+			if (val>maxval) {
+				maxval=val;
+			}
+		}
+		if (maxval>threshold) {
+			for (int dd=-exclude_interval/2; dd<-exclude_interval/2+exclude_interval; dd++) {
+				int j=i+dd;
+				if ((j>=0)&&(j<N)) {
+					to_include[j]=0;
+				}
+			}
+			i+=exclude_interval/6; //skip a bit to save some time
+			i++;
+		}
+		else {
+			i++;
+		}
+	}
 
     printf("Removing and writing output...\n");
     MDAIO_HEADER H_out;
@@ -99,7 +100,7 @@ bool remove_artifacts(const char *input_path, const char *output_path, float thr
     float *buf=(float *)malloc(sizeof(float)*M);
     timer.start();
     for (int n=0; n<N; n++) {
-        if (timer.elapsed()>1000) {
+		if ((n%1000==0)&&(timer.elapsed()>1000)) {
             printf("Part 3 - %d%%\n",(int)(n*1.0/N*100));
             timer.restart();
         }

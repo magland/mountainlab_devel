@@ -81,19 +81,24 @@ end;
 all_templates=group_templates(all_templates);
 
 figure; ms_view_templates(all_templates);
+K=size(all_templates,3);
 
-% for ii=1:length(tt_list)-1
-%     inds1=clusterings{ii}.inds;
-%     inds2=clusterings{ii+1}.inds;
-%     labels1=clusterings{ii}.labels;
-%     labels2=clusterings{ii+1}.labels;
-%     [~,common1,common2]=intersect(inds1,inds2);
-%     if (length(common1)>1)
-%         labels1_common=labels1(common1);
-%         labels2_common=labels2(common2);
-%         [matching12,matching21]=do_label_matching(labels1_common,labels2_common)
-%     end;
-% end
+fprintf('Computing ips... ');
+ips=zeros(K,NC);
+for k=1:K
+    fprintf('%d ',k);
+    ips(k,:)=squeeze(sum(sum(clips.*repmat(all_templates(:,:,k),1,1,NC),1),2));
+end;
+fprintf('\nComputing norms, etc...\n');
+template_norms=reshape(sqrt(sum(sum(all_templates.^2,1),2)),1,K);
+clip_norms=reshape(sqrt(sum(sum(clips.^2,1),2)),1,NC);
+diffsqr=repmat(clip_norms,K,1).^2-2*ips+repmat(template_norms',1,NC).^2;
+
+sigma=1.2;
+logprobs=-2*diffsqr/sigma^2;
+logmargins=logsumexp(cat(1,logprobs,-10*ones(1,NC)),1);
+logprobs=logprobs-repmat(logmargins,K,1);
+probs=exp(logprobs);
 
 end
 
@@ -134,7 +139,7 @@ figure; imagesc(MM2'); colorbar;
 new_templates=zeros(M,T,0);
 for j=1:length(CC)
     new_templates=cat(3,new_templates,templates(:,:,CC{j}));
-    new_templates=cat(3,new_templates,zeros(M,T,2));
+    %new_templates=cat(3,new_templates,zeros(M,T,2));
 end;
 templates=new_templates;
 
