@@ -3,21 +3,33 @@ function test_2_2_2016_B
 close all;
 
 mfile_path=fileparts(mfilename('fullpath'));
-path0=[mfile_path,'/../franklab/test_hippocampal_01_28_2016/tetrode1_output'];
+path0=[mfile_path,'/../franklab/test_hippocampal_01_28_2016/tetrode2_output'];
 
+plausibility_threshold=0.55;
+tt_list=4.5:0.5:12;
+dtt=0.5;
+num_features=6;
+cross_correlograms_max_dt=6000;
+merge_threshold=0.85;
+
+o_mild_filter.samplefreq=30000;
+o_mild_filter.freq_min=50;
+o_mild_filter.freq_max=10000;
+o_mild_filter.outlier_threshold=500;
 o_filter.samplefreq=30000;
 o_filter.freq_min=100;
 o_filter.freq_max=10000;
 o_filter.outlier_threshold=500;
-o_detect.threshold=4;
+o_detect.threshold=tt_list(1);
 o_detect.individual_channels=0;
 o_detect.normalize=0;
-o_detect.inner_window_width=30;
+o_detect.inner_window_width=15;
 o_detect.outer_window_width=1000;
-o_extract_clips.clip_size=60;
+o_extract_clips.clip_size=120;
 o_whiten=struct;
 
 mscmd_bandpass_filter([path0,'/pre0.mda'],[path0,'/pre1.mda'],o_filter);
+mscmd_bandpass_filter([path0,'/pre0.mda'],[path0,'/pre0_mild.mda'],o_mild_filter);
 mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],o_whiten);
 mscmd_detect([path0,'/pre2.mda'],[mfile_path,'/tmp_detect.mda'],o_detect);
 mscmd_extract_clips([path0,'/pre2.mda'],[mfile_path,'/tmp_detect.mda'],[mfile_path,'/tmp_clips.mda'],o_extract_clips);
@@ -32,15 +44,11 @@ clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
 clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
 
-tt_list=4:0.5:12;
-dt=0.5;
-num_features=6;
-
 clusterings={};
 for ii=1:length(tt_list)
     tt=tt_list(ii);
-    tt2=tt+dt;
-    if (ii==length(tt_list)) tt2=inf; end;
+    tt2=tt+dtt;
+    if (ii==length(tt_list)), tt2=inf; end;
     fprintf('tt=%g... ',tt);
     inds_tt=find((clip_peaks>=tt)&(clip_peaks<=tt2));
     CC.tt=tt;
@@ -80,8 +88,13 @@ for ii=1:length(clusterings)
     all_templates=cat(3,all_templates,clusterings{ii}.medoids);
 end;
 
+num_passes=2;
+for pass=1:num_passes
+
 all_templates=group_templates(all_templates);
-all_templates=cat(3,zeros(M,T),all_templates);
+if pass==1
+    all_templates=cat(3,zeros(M,T),all_templates); %add the zero template
+end;
 
 figure; ms_view_templates(all_templates);
 K=size(all_templates,3);
@@ -103,7 +116,86 @@ logmargins=logsumexp(cat(1,logprobs1,log(0.2*ones(1,NC))),1);
 %logmargins=logsumexp(logprobs1);
 logprobs=logprobs1-repmat(logmargins,K,1);
 probs=exp(logprobs);
+corr_matrix=corrcoef(probs');
+figure; imagesc(corr_matrix');
+title('Correlation matrix for posterior classification prob vectors');
 
+if pass==1
+    cliques=greedy_cliques(corr_matrix>=merge_threshold);
+    templates_new=zeros(M,T,length(cliques));
+    for cc=1:length(cliques)
+        inds_unclassified=cliques{cc};
+        templates_new(:,:,cc)=mean(all_templates(:,:,inds_unclassified),3);
+    end;
+    all_templates=templates_new;
+end;
+
+end;
+
+plausibility_factors=probs./repmat(max(probs,[],2),1,size(probs,2));
+
+detect=readmda([mfile_path,'/tmp_detect.mda']);
+pre2=readmda([path0,'/pre2.mda']);
+times0=detect(2,:);
+times=[];
+labels=[];
+used=zeros(size(times0));
+for k=1:K
+    inds_k=find(plausibility_factors(k,:)>=plausibility_threshold);
+    times=[times,times0(inds_k)];
+    labels=[labels,ones(1,length(inds_k))*k];
+    used(inds_k)=1;
+end;
+inds_unclassified=find(used==0);
+times=[times,times0(inds_unclassified)]; labels=[labels,zeros(1,length(inds_unclassified))];
+CM=compute_coincidence_matrix(times,labels);
+figure; imagesc(CM');
+fprintf('%d classified, %d unclassified events.\n',length(find(labels>0)),length(find(labels==0)));
+clips_unclassified=ms_extract_clips(pre2,times(find(labels==0)),o_extract_clips.clip_size);
+FF_unclassified=ms_event_features(clips_unclassified,num_features);
+labels_unclassified=isosplit(FF_unclassified);
+figure; ms_view_clusters(FF_unclassified,labels_unclassified); title('Unclassified events');
+[times,sort_inds]=sort(times);
+labels=labels(sort_inds);
+clusters=zeros(3,length(times));
+clusters(2,:)=times;
+clusters(3,:)=labels;
+[clips1,clips1_index]=ms_create_clips_index(ms_extract_clips(pre2,times,o_extract_clips.clip_size),labels);
+writemda(clips1,[mfile_path,'/tmp_clips.mda']);
+writemda(clips1_index,[mfile_path,'/tmp_clips_index.mda']);
+writemda(clusters,[mfile_path,'/tmp_clusters.mda']);
+%spikespy({pre2,times,labels});
+mscmd_cross_correlograms([mfile_path,'/tmp_clusters.mda'],[mfile_path,'/tmp_cross_correlograms.mda'],cross_correlograms_max_dt);
+mscmd_templates([path0,'/pre0_mild.mda'],[mfile_path,'/tmp_clusters.mda'],[mfile_path,'/tmp_templates_raw.mda'],struct('clip_size',200));
+mscmd_templates([path0,'/pre2.mda'],[mfile_path,'/tmp_clusters.mda'],[mfile_path,'/tmp_templates.mda'],struct('clip_size',200));
+templates_raw=readmda([mfile_path,'/tmp_templates_raw.mda']);
+figure; ms_view_templates(templates_raw);
+view_params.raw=[path0,'/pre2.mda'];
+view_params.clusters=[mfile_path,'/tmp_clusters.mda'];
+view_params.cross_correlograms=[mfile_path,'/tmp_cross_correlograms.mda'];
+view_params.templates=[mfile_path,'/tmp_templates.mda'];
+view_params.clips=[mfile_path,'/tmp_clips.mda'];
+view_params.clips_index=[mfile_path,'/tmp_clips_index.mda'];
+ms_mountainview(view_params);
+
+end
+
+function [CM_normalized,CM]=compute_coincidence_matrix(times,labels)
+K=max(labels);
+N=max(times);
+CM=zeros(K,K);
+for k1=1:K
+    for k2=1:K
+        CM(k1,k2)=length(intersect(times(find(labels==k1)),times(find(labels==k2))));
+    end;
+end;
+%Now, normalize
+CM_normalized=zeros(K,K);
+for k1=1:K
+    for k2=1:K
+        CM_normalized(k1,k2)=CM(k1,k2)./(CM(k1,k1)+CM(k2,k2)-CM(k1,k2));
+    end;
+end;
 end
 
 function m = compute_medoid(X)
@@ -113,6 +205,7 @@ function m = compute_medoid(X)
 dists=zeros(N,N);
 for m=1:M
     [grid1,grid2]=ndgrid(X(m,:),X(m,:));
+    %dists=dists+sqrt((grid1-grid2).^2);
     dists=dists+(grid1-grid2).^2;
 end;
  
@@ -156,17 +249,24 @@ end
 
 function C=greedy_cliques(A)
 C={};
+used=zeros(1,size(A,1));
 while max(A(:))>0
     A0=A; for j=1:size(A,1) A0(j,j)=0; end;
     cc=maximalCliques(A0);
     [maxval,ind0]=max(sum(cc,1));
     if (maxval==1)
+        inds0=find(used==0);
+        for aa=1:length(inds0)
+            C{end+1}=[inds0(aa)];
+        end;
         break;
     end;
     ind0=ind0(1);
-    C{end+1}=find(cc(:,ind0));
-    A(find(cc(:,ind0)),:)=0;
-    A(:,find(cc(:,ind0)))=0;
+    ind_cc=find(cc(:,ind0));
+    C{end+1}=ind_cc;
+    A(ind_cc,:)=0;
+    A(:,ind_cc)=0;
+    used(ind_cc)=1;
 end;
 end
 

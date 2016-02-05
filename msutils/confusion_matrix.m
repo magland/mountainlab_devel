@@ -30,10 +30,17 @@ if (~isfield(opts,'max_matching_offset')) opts.max_matching_offset=3; end;
 K1=max(L1); K2=max(L2);
 CM=zeros(K1+1,K2+1);
 
+inds1_ok=find(L1>0);
+T1=T1(inds1_ok); L1=L1(inds1_ok);
+inds2_ok=find(L2>0);
+T2=T2(inds2_ok); L2=L2(inds2_ok);
+
 if (~isfield(opts,'map12'))
     opts.map12=zeros(1,K1);
     [~,opts.map12]=confusion_matrix(T1,L1,T2,L2,opts);
 end;
+
+
 
 for pass=1:2
     %on the first pass we are giving priority to matches that agree with opts.map12

@@ -55,6 +55,7 @@ fclose(FF);
 end
 
 function ret=check_if_integer(X)
+ret=0;
 if (length(X)==0) ret=1; return; end;
 if (X(1)~=round(X(1))) ret=0; return; end;
 tmp=X(:)-round(X(:));

@@ -42,12 +42,12 @@ for m=1:M
     y_offset=y_offset-vspread;
 end;
 
-Tmargin=2*T+Tpad;
-vmargin=vspread*2;
-xlim([-Tmargin,Tmargin+(T+Tpad)*K+Tmargin]);
+Tmargin=T+Tpad;
+vmargin=vspread*1.5;
+xlim([-Tmargin,(T+Tpad)*K+Tmargin]);
 ylim([-vspread*(M-1)-vmargin,vmargin]);
 set(gca,'xtick',[]); set(gca,'ytick',[]);
-set(gca,'position',[0,0,1,1]);
+%set(gca,'position',[0,0,1,1]);
 
 label_color=[0.7,0.7,0.7];
 
@@ -80,7 +80,8 @@ end
 function test_ms_view_templates
 
 mfile_path=fileparts(mfilename('fullpath'));
-templates=readmda(sprintf('%s/../example_data/templates0.mda',mfile_path));
+%templates=readmda(sprintf('%s/../example_data/templates0.mda',mfile_path));
+templates=randn(6,120,10);
 
 opts.stdev=templates*0.2;
 
