@@ -1,6 +1,93 @@
 function tails_toward_zero
 
-test1;
+%test1;
+test2;
+
+end
+
+function test2
+
+close all;
+
+% Set up the true shapes
+T=200;
+Tcenter=101;
+M=2;
+tt=linspace(-6,6,T);
+
+pop0=400; pop1=400; pop2=400; pop3=400;
+ampl1=8; ampl2=8; ampl3=8;
+
+neurons={};
+
+shape0=zeros(M,T);
+shape0(1,:)=ampl1*(abs(tt)<=1).*((1-abs(tt)).^3-0.1);
+shape0(2,:)=-ampl1*(abs(tt)<=1)*0.2;
+NNN.shape=shape0;
+NNN.population=pop1;
+neurons{end+1}=NNN;
+
+shape0=zeros(M,T);
+shape0(1,:)=ampl2*(abs(tt)<=1)*0.2;
+shape0(2,:)=ampl2*(abs(tt)<=1).*((1-abs(tt)).^1);
+NNN.shape=shape0;
+NNN.population=pop2;
+neurons{end+1}=NNN;
+
+shape0=zeros(M,T);
+shape0(1,:)=ampl3*(abs(tt)<=1)*0.2;
+shape0(2,:)=ampl3*(abs(tt)<=1).*((1-abs(tt)).^3-0.1);
+NNN.shape=shape0;
+NNN.population=pop3;
+neurons{end+1}=NNN;
+
+% Set up the simulated clips and the true labels
+clips=zeros(M,T,0);
+labels_true=[];
+
+X0=randn(2,T,pop0);
+clips=cat(3,clips,X0);
+labels_true=[labels_true,ones(1,pop0)*(length(neurons)+1)];
+
+for j=1:length(neurons)
+    NNN=neurons{j};
+    pop0=NNN.population;
+    shape0=NNN.shape;
+    shapes=repmat(shape0,1,1,pop0).*repmat(rand(1,1,pop0),M,T,1);
+    X1=randn(M,T,pop0)+shapes;
+    clips=cat(3,clips,X1);
+    labels_true=[labels_true,ones(1,pop0)*j];
+end;
+
+N=length(labels_true);
+
+scramble=randsample(N,N);
+clips=clips(:,:,scramble);
+labels_true=labels_true(scramble);
+
+for j=1:N
+    clips(:,:,j)=smooth(clips(:,:,j));
+end;
+
+figure;
+ms_view_templates(clips(:,:,1:20)); title('Example clips');
+
+figure;
+ms_view_templates_from_clips(clips,labels_true); set(gcf,'Name','True templates');
+
+num_features=2;
+FF=ms_event_features(clips,num_features);
+
+figure; 
+ms_view_clusters(FF,labels_true);
+hold on;
+th=linspace(0,2*pi,40);
+for r0=4:4:20
+    plot(r0*cos(th),r0*sin(th),'m--');
+    hold on;
+end;
+title('Clustering in spherical shells');
+
 
 end
 
@@ -97,8 +184,6 @@ ms_view_clusters(FF,labels2); title('isobranch clustering');
 
 figure; 
 ms_view_templates_from_clips(clips,labels2); set(gcf,'Name','Derived templates');
-
-
 
 end
 

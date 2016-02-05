@@ -109,8 +109,8 @@ for k=1:size(plausibility_factors,1);
     used(inds_k)=1;
 end;
 [~,sort_inds]=sort(times); times=times(sort_inds); labels=labels(sort_inds);
-CM=compute_coincidence_matrix(times,labels);
-figure; imagesc(CM'); title('Coincidence matrix'); drawnow;
+%CM=compute_coincidence_matrix(times,labels);
+%figure; imagesc(CM'); title('Coincidence matrix'); drawnow;
 
 % AA=all_templates;
 % AA=AA-repmat(mean(AA,2),1,T,1);
@@ -168,7 +168,25 @@ CM2=CM./repmat(sum(CM,2),1,size(CM,2));
 figure; imagesc(CM1'); colorbar; xlabel('KlustaKwik Clusters'); ylabel('MountainSort Clusters'); title('Confusion Matrix Normalized by Rows');
 figure; imagesc(CM2'); colorbar; xlabel('KlustaKwik Clusters'); ylabel('MountainSort Clusters'); title('Confusion Matrix Normalized by Columns');
 
+open_mv_compare([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/clusters_kk.mda']);
+
 end
+
+function open_mv_compare(raw,clusters1,clusters2)
+mfile_path=fileparts(mfilename('fullpath'));
+exe_fname=sprintf('%s/../../mountainview/bin/mountainview',mfile_path);
+
+cmd='';
+cmd=[cmd,sprintf('%s --mode=compare_labels ',exe_fname)];
+
+cmd=[cmd,sprintf('--raw=%s ',raw)];
+cmd=[cmd,sprintf('--cluster=%s ',clusters1)];
+cmd=[cmd,sprintf('--cluster2=%s ',clusters2)];
+
+fprintf('%s\n',cmd);
+system(sprintf('%s &',cmd));
+end
+
 
 function templates=merge_templates(templates,AM)
 [M,T,K]=size(templates);
