@@ -1,4 +1,4 @@
-function test_hippocampal_02_05_2016
+function test_hippocampal_02_04_2016
 
 close all; drawnow;
 
@@ -12,7 +12,9 @@ extract_raw_data(raw_path,path0,tetrode_num);
 
 plausibility_threshold=0.6;
 merge_threshold=0.8;
-tt_list=6:0.2:20;
+tt_range=[5,15];
+num_tt_steps=20;
+tt_overlap=1;
 num_features=6;
 cross_correlograms_max_dt=6000;
 sigma=1.5;
@@ -25,7 +27,7 @@ o_filter.samplefreq=30000;
 o_filter.freq_min=100;
 o_filter.freq_max=10000;
 o_filter.outlier_threshold=500;
-o_detect.threshold=tt_list(1);
+o_detect.threshold=tt_range(1);
 o_detect.individual_channels=0;
 o_detect.normalize=0;
 o_detect.inner_window_width=15;
@@ -39,73 +41,202 @@ mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],o_whiten);
 mscmd_detect([path0,'/pre2.mda'],[path0,'/detect.mda'],o_detect);
 mscmd_extract_clips([path0,'/pre2.mda'],[path0,'/detect.mda'],[path0,'/clips.mda'],o_extract_clips);
 
+%pre2=readmda([path0,'/pre2.mda']);
+%spikespy({pre2,times,labels});
+
 fprintf('Reading...\n');
 clips=readmda([path0,'/clips.mda']);
-%clips=clips(:,:,1:10000);
 [M,T,NC]=size(clips);
 
-fprintf('Branch cluster...\n');
-TREE=branch_cluster(clips,tt_list,num_features);
-TREE=assign_levels(TREE);
-figure;
-plot_tree(TREE);
+fprintf('Shell cluster...\n');
+[templates0,clusterings]=shell_cluster(clips,tt_range,num_tt_steps,tt_overlap,num_features);
+all_templates=group_templates(templates0);
+figure; ms_view_templates(all_templates); drawnow;
+[~,~,K_all]=size(all_templates);
+title('All templates');
 
-%NN=enumerate_paths(label_paths);
-%print_path_node(NN,'');
+fprintf('Posterior probabilities...');
+[probs,plausibility_factors]=compute_posterior_probabilities(clips,all_templates,sigma);
+corr_matrix=corrcoef(probs');
+figure; imagesc(corr_matrix');
+title('Correlation matrix for posterior classification prob vectors'); drawnow;
+plausibility_factors=probs./repmat(max(probs,[],2),1,size(probs,2));
+figure; hist(max(plausibility_factors,[],1),linspace(-0.02,1.02,1000));
+title('Plausibility factors for all events'); drawnow;
+return;
 
-% figure;
-% aa=label_paths; aa(find(aa(:)==0))=inf;
-% for k=1:min(10000,NC)
-%     tmp=aa(:,k);
-%     plot(1:length(tt_list),tmp+randn(size(tmp))*0.05,'color',rand(1,3));
-%     hold on;
+fprintf('Computing times/labels and coincidence matrix...\n');
+detect=readmda([path0,'/detect.mda']);
+times0=detect(2,:);
+times=[]; labels=[]; used=zeros(size(times0));
+%plausible_events=(plausibility_factors>plausibility_threshold);
+
+for k=1:size(plausibility_factors,1);
+    inds_k=find((plausibility_factors(k,:)>=plausibility_threshold)&(probs(k,:)>=1.0*max(probs,[],1)));
+    times=[times,times0(inds_k)];
+    labels=[labels,ones(1,length(inds_k))*k];
+    used(inds_k)=1;
+end;
+[~,sort_inds]=sort(times); times=times(sort_inds); labels=labels(sort_inds);
+%CM=compute_coincidence_matrix(times,labels);
+%figure; imagesc(CM'); title('Coincidence matrix'); drawnow;
+
+% AA=all_templates;
+% AA=AA-repmat(mean(AA,2),1,T,1);
+% AA=reshape(AA,M*T,K_all);
+% cmat=corrcoef(AA);
+% figure; imagesc(cmat');
+% title('Correlation matrix for all templates');
+% CC=greedy_cliques(cmat>=merge_threshold);
+
+%CC=greedy_cliques((CM+CM')/2>=merge_threshold);
+%CC=greedy_cliques(max(CM,CM')>=merge_threshold);
+% 
+% times=[];
+% labels=[];
+% for j=1:length(CC)
+%     inds00=CC{j};
+%     inds1=find(max(plausibility_factors(inds00,:),[],1)>=plausibility_threshold);
+%     times=[times,times0(inds1)];
+%     labels=[labels,ones(1,length(inds1))*j];
 % end;
+% [~,sort_inds]=sort(times); times=times(sort_inds); labels=labels(sort_inds);
+% CM=compute_coincidence_matrix(times,labels);
+% figure; imagesc(CM'); title('Coincidence matrix'); drawnow;
+
+clusters=zeros(3,length(times));
+clusters(2,:)=times;
+clusters(3,:)=labels;
+
+fprintf('Writing output and preparing view...\n');
+pre2=readmda([path0,'/pre2.mda']);
+[clips1,clips1_index]=ms_create_clips_index(ms_extract_clips(pre2,times,o_extract_clips.clip_size),labels);
+writemda(clips1,[path0,'/clips.mda']);
+writemda(clips1_index,[path0,'/clips_index.mda']);
+writemda(clusters,[path0,'/clusters.mda']);
+
+mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],cross_correlograms_max_dt);
+mscmd_templates([path0,'/pre0_mild.mda'],[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],struct('clip_size',200));
+mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],struct('clip_size',200));
+
+templates_raw=readmda([path0,'/templates_raw.mda']);
+figure; ms_view_templates(templates_raw);
+
+view_params.raw=[path0,'/pre2.mda'];
+view_params.clusters=[path0,'/clusters.mda'];
+view_params.cross_correlograms=[path0,'/cross_correlograms.mda'];
+view_params.templates=[path0,'/templates.mda'];
+view_params.clips=[path0,'/clips.mda'];
+view_params.clips_index=[path0,'/clips_index.mda'];
+ms_mountainview(view_params);
 
 end
 
-function plot_tree(TREE)
-for k=1:length(TREE.children)
-    for ct=1:ceil(TREE.children{k}.count/40)
-        plot([TREE.tt,TREE.children{k}.tt],[TREE.level,TREE.children{k}.level]+randn(1,2)*0.1,'color',rand(3,1));
-        hold on;
+function templates=merge_templates(templates,AM)
+[M,T,K]=size(templates);
+cliques=greedy_cliques(AM);
+templates_new=zeros(M,T,length(cliques));
+for cc=1:length(cliques)
+    inds00=cliques{cc};
+    templates_new(:,:,cc)=mean(templates(:,:,inds00),3);
+end;
+templates=templates_new;
+end
+
+function [CM_normalized,CM]=compute_coincidence_matrix(times,labels)
+K=max(labels);
+N=max(times);
+CM=zeros(K,K);
+for k1=1:K
+    for k2=1:K
+        CM(k1,k2)=length(intersect(times(find(labels==k1)),times(find(labels==k2))));
     end;
-    drawnow;
-    plot_tree(TREE.children{k});
 end;
-end
-
-function [TREE,max_level]=assign_levels(TREE,level)
-if (nargin<2) level=1; end;
-TREE.level=level;
-max_level=level;
-for j=1:length(TREE.children)
-    [TREE.children{j},max_level]=assign_levels(TREE.children{j},max_level);
-    if (j<length(TREE.children)) max_level=max_level+1; end;
-end;
-end
-
-function print_path_node(NN,prefix)
-if (NN.count<100) return; end;
-fprintf('%s%s (%d)\n',prefix,NN.path,NN.count);
-while 1
-    if (length(NN.children)>1)
-        for j=1:length(NN.children)
-            print_path_node(NN.children{j},[prefix,'    ']);
-        end;
-        break
-    else
-        if (length(NN.children)==1)
-            NN=NN.children{1};
-        else
-            break;
-        end;
+%Now, normalize
+for k1=1:K
+    for k2=1:K
+        CM_normalized(k1,k2)=CM(k1,k2)/CM(k1,k1);
     end;
 end;
 end
 
+function [posterior_probs,corr_matrix]=compute_posterior_probabilities_try(clips,templates,sigma)
+fprintf('Computing ips... ');
+[M,T,K]=size(templates);
+[~,~,NC]=size(clips);
+ips=zeros(K,NC);
+for k=1:K
+    fprintf('%d ',k);
+    ips(k,:)=squeeze(sum(sum(clips.*repmat(templates(:,:,k),1,1,NC),1),2));
+end;
+fprintf('\nComputing norms, etc...\n');
+template_norms=reshape(sqrt(sum(sum(templates.^2,1),2)),1,K);
+clip_norms=reshape(sqrt(sum(sum(clips.^2,1),2)),1,NC);
+diffsqr=repmat(clip_norms,K,1).^2-2*ips+repmat(template_norms',1,NC).^2;
 
-function TREE=branch_cluster(clips,tt_list,num_features)
+logprobs1=-2*diffsqr/sigma^2/(M*T); %KxNC
+logprobs2=-2*clip_norms.^2/sigma^2/(M*T); %1xNC
+logprobs3=log(0.05)*ones(1,NC); %1xNC
 
+posterior_probs=zeros(K,NC);
+for k=1:K
+    posterior_probs(k,:)=exp(logprobs1(k,:) - logsumexp(cat(1,logprobs1(k,:),logprobs2,logprobs3),1) );
+end;
+
+corr_matrix=corrcoef(posterior_probs');
+end
+
+function [probs,corr_matrix]=compute_posterior_probabilities_with_scaling(clips,templates,sigma)
+fprintf('Computing ips... ');
+[M,T,K]=size(templates);
+[~,~,NC]=size(clips);
+ips=zeros(K,NC);
+for k=1:K
+    fprintf('%d ',k);
+    ips(k,:)=squeeze(sum(sum(clips.*repmat(templates(:,:,k),1,1,NC),1),2));
+end;
+fprintf('\nComputing norms, etc...\n');
+template_norms=reshape(sqrt(sum(sum(templates.^2,1),2)),1,K);
+clip_norms=reshape(sqrt(sum(sum(clips.^2,1),2)),1,NC);
+
+%scale_constants=ips./repmat((template_norms').^2,1,NC);
+%adjusted_template_norms=scale_constants.*repmat((template_norms'),1,NC);
+diffsqr=repmat(clip_norms,K,1).^2-ips.^2./repmat((template_norms'),1,NC).^2;
+
+logprobs1=-2*diffsqr/sigma^2/(M*T);
+logmargins=logsumexp(cat(1,logprobs1,log(0.2*ones(1,NC))),1);
+%logmargins=logsumexp(logprobs1);
+logprobs=logprobs1-repmat(logmargins,K,1);
+probs=exp(logprobs);
+corr_matrix=corrcoef(probs');
+end
+
+function [probs,plausibility_factors]=compute_posterior_probabilities(clips,templates,sigma)
+fprintf('Computing ips... ');
+[M,T,K]=size(templates);
+[~,~,NC]=size(clips);
+ips=zeros(K,NC);
+for k=1:K
+    fprintf('%d ',k);
+    ips(k,:)=squeeze(sum(sum(clips.*repmat(templates(:,:,k),1,1,NC),1),2));
+end;
+fprintf('\nComputing norms, etc...\n');
+template_norms=reshape(sqrt(sum(sum(templates.^2,1),2)),1,K);
+clip_norms=reshape(sqrt(sum(sum(clips.^2,1),2)),1,NC);
+diffsqr=repmat(clip_norms,K,1).^2-2*ips+repmat(template_norms',1,NC).^2;
+
+logprobs1=-2*diffsqr/sigma^2/(M*T);
+logmargins=logsumexp(cat(1,logprobs1,log(0.2*ones(1,NC))),1);
+%logmargins=logsumexp(logprobs1);
+logprobs=logprobs1-repmat(logmargins,K,1);
+probs=exp(logprobs);
+
+normalizations=exp(logsumexp(cat(1,zeros(1,K),log(0.2*ones(1,K)))));
+plausibility_factors=probs./repmat(normalizations',1,NC);
+
+end
+
+function [templates,clusterings]=shell_cluster(clips,tt_range,num_tt_steps,tt_overlap,num_features)
 [M,T,NC]=size(clips);
 
 fprintf('Computing peaks...\n');
@@ -113,39 +244,80 @@ clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
 clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
 
-if (length(tt_list)>0)
-    tt=tt_list(1);
-else
-    tt=inf;
+sorted_peaks=sort(clip_peaks);
+inds00=find((sorted_peaks>=tt_range(1))&(sorted_peaks<=tt_range(2)));
+sorted_peaks=sorted_peaks(inds00);
+tt1_list=zeros(1,num_tt_steps);
+tt2_list=zeros(1,num_tt_steps);
+for jj=1:num_tt_steps
+    ind1=max(1,ceil(length(sorted_peaks)*(jj-1)/num_tt_steps+1));
+    ind2=min(length(sorted_peaks),ceil(length(sorted_peaks)*(jj-1+1+tt_overlap)/num_tt_steps+1));
+    tt1_list(jj)=sorted_peaks(ind1);
+    tt2_list(jj)=sorted_peaks(ind2);
 end;
-TREE.tt=tt;
-inds_tt=find(clip_peaks>=tt);
-fprintf('tt=%.2f, %d events... ',tt,length(inds_tt));
-clips_tt=clips(:,:,inds_tt);
-fprintf('features... ');
-[FF_tt,subspace_tt]=ms_event_features(clips_tt,num_features);
-fprintf('isosplit... ');
-labels_tt=isosplit(FF_tt);
-K=max(labels_tt);
-fprintf('K=%d\n',K);
 
-template0=zeros(M,T);
-% if (length(inds_tt)>0)
-%     FF_tt_medoid=compute_medoid(FF_tt);
-%     for jjj=1:size(subspace_tt,3)
-%         template0=template0+FF_tt_medoid(jjj)*subspace_tt(:,:,jjj);
-%     end;
-% end;
-TREE.medoid=template0;
-TREE.count=size(clips,3);
+clusterings={};
+for ii=1:length(tt1_list)
+    tt1=tt1_list(ii);
+    tt2=tt2_list(ii);
+    if (ii==length(tt1_list)), tt2=inf; end;
+    fprintf('tt1=%g tt2=%g... ',tt1,tt2);
+    inds_tt=find((clip_peaks>=tt1)&(clip_peaks<=tt2));
+    CC.tt=tt1;
+    CC.inds=inds_tt;
+    if (length(inds_tt)>1)
+        clips_tt=clips(:,:,inds_tt);
+        fprintf('features... ');
+        [FF_tt,subspace_tt]=ms_event_features(clips_tt,num_features);
+        fprintf('isosplit... ');
+        labels_tt=isosplit(FF_tt);
+        K=max(labels_tt);
+        fprintf('K=%d\n',K);
+        CC.labels=labels_tt;
+        CC.K=K;
+        CC.features=FF_tt;
+        CC.clips=clips_tt;
+        CC.medoids=zeros(M,T,K);
+        for k=1:K
+            FF_tt_k=FF_tt(:,find(labels_tt==k));
+            FF_tt_k_medoid=compute_medoid(FF_tt_k);
+            template0=zeros(M,T);
+            for jjj=1:size(subspace_tt,3)
+                template0=template0+FF_tt_k_medoid(jjj)*subspace_tt(:,:,jjj);
+            end;
+            CC.medoids(:,:,k)=template0;
+        end;
+    else
+        CC.labels=[];
+        CC.K=0;
+        CC.features=zeros(num_features,0);
+        CC.clips=zeros(M,T,0);
+        CC.medoids=zeros(M,T,0);
+    end;
+    clusterings{end+1}=CC;
+end
 
-TREE.inds_tt=inds_tt;
-TREE.children={};
-for k=1:K
-    inds_k=find(labels_tt==k);
-    clips_k=clips(:,:,inds_tt(inds_k));
-    CHILD_TREE=branch_cluster(clips_k,tt_list(2:end),num_features);
-    TREE.children{end+1}=CHILD_TREE;
+for ii=1:length(clusterings)-1
+    K1=clusterings{ii}.K;
+    K2=clusterings{ii+1}.K;
+    LM=zeros(K1,K2);
+    [inds_intersect,ii1,ii2]=intersect(clusterings{ii}.inds,clusterings{ii+1}.inds);
+    if (length(inds_intersect)>0)
+        labels1=clusterings{ii}.labels(ii1);
+        labels2=clusterings{ii+1}.labels(ii2);
+        for k1=1:K1
+            for k2=1:K2
+                LM(k1,k2)=length(find((labels1==k1)&(labels2==k2)));
+            end;
+        end;
+    end;
+    clusterings{ii}.label_matches=LM;
+end;
+clusterings{end}.label_matches=zeros(clusterings{end}.K,0);
+
+templates=zeros(M,T,0);
+for ii=1:length(clusterings)
+    templates=cat(3,templates,clusterings{ii}.medoids);
 end;
 
 end
@@ -184,6 +356,7 @@ end;
 templates=new_templates;
 
 end
+
 
 function extract_raw_data(raw_path,output_path,tetrode_num)
 
