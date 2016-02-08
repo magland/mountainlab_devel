@@ -1,4 +1,4 @@
-function test_hippocampal_02_04_2016
+function test_hippocampal_02_06_2016
 
 close all; drawnow;
 
@@ -14,7 +14,7 @@ plausibility_threshold=0.6;
 merge_threshold=0.95;
 tt_range=[5,15];
 num_tt_steps=20;
-tt_overlap=1;
+tt_overlap=2;
 num_features=12;
 cross_correlograms_max_dt=6000;
 sigma=1.5;
@@ -51,13 +51,17 @@ fprintf('Shell cluster...\n');
 %figure; treeplot(tree_vec);
 %figure; ms_view_templates(cluster_templates);
 figure; ms_view_templates(templates0); drawnow;
-[leaf_clusters,leaf_templates]=find_leaf_clusters(templates0,levels,merge_threshold);
-figure; ms_view_templates(leaf_templates);
+%[leaf_clusters,leaf_templates]=find_leaf_clusters(templates0,levels,merge_threshold);
+%figure; ms_view_templates(leaf_templates);
 
 all_templates=group_templates(templates0);
 figure; ms_view_templates(all_templates); drawnow;
+
 [~,~,K_all]=size(all_templates);
-return;
+figure; imagesc(corrcoef(reshape(all_templates,M*T,K_all))'); colorbar;
+
+%templates1=order_templates_by_most_important(all_templates);
+%figure; ms_view_templates(templates1); drawnow;
 
 fprintf('Posterior probabilities...');
 [probs,plausibility_factors]=compute_posterior_probabilities(clips,all_templates,sigma);
@@ -108,6 +112,60 @@ view_params.templates=[path0,'/templates.mda'];
 view_params.clips=[path0,'/clips.mda'];
 view_params.clips_index=[path0,'/clips_index.mda'];
 ms_mountainview(view_params);
+
+end
+
+function [MM,MMnorm]=cross_labels_matrix(labels1,labels2)
+K1=max(labels1);
+K2=max(labels2);
+MM=zeros(K1,K2);
+for k1=1:K1
+    for k2=1:K2
+        MM(k1,k2)=length(find((labels1==k1)&(labels2==k2)));
+    end;
+end;
+MMnorm=zeros(K1,K2);
+for k1=1:K1
+    for k2=1:K2
+        MMnorm(k1,k2)=MM(k1,k2)/(sum(MM(k1,:))+sum(MM(:,k2))-MM(k1,k2));
+    end;
+end;
+end
+
+function templates=order_templates_by_most_important(templates)
+
+[M,T,K]=size(templates);
+AA=templates-repmat(mean(templates,2),1,T,1);
+AA=reshape(AA,M*T,K);
+
+% norms=sqrt(sum(AA.^2,1));
+% AA=AA./repmat(norms,M*T,1);
+% FF=ms_event_features(reshape(AA,M,T,K),3);
+% labels=isosplit(FF);
+% figure; ms_view_clusters(FF,labels);
+
+corr_matrix=corrcoef(AA);
+best_inds=[];
+for k=1:K
+
+[~,ind]=max(sum(corr_matrix,1));
+if (length(best_inds)==0)
+    maxes_so_far=zeros(1,K);
+else
+    maxes_so_far=max(corr_matrix(best_inds,:),[],1);
+end;
+scores=zeros(1,K);
+for k_candidate=1:K
+    tmp=corr_matrix(k_candidate,:);
+    scores(k_candidate)=sum(max(tmp,maxes_so_far).^2);
+end;
+[~,best0]=max(scores);
+best0
+best_inds=[best_inds,best0];
+
+end;
+
+templates=templates(:,:,best_inds);
 
 end
 
@@ -422,6 +480,54 @@ for ii=1:length(tt1_list)
     clusterings{end+1}=CC;
 end
 
+
+
+for jj=1:(length(clusterings)-1)
+    CC1=clusterings{jj};
+    CC2=clusterings{jj+1};
+    [~,ii1,ii2]=intersect(CC1.inds,CC2.inds);
+    labels1=CC1.labels(ii1);
+    labels2=CC2.labels(ii2);
+    [MM,MMnorm]=cross_labels_matrix(labels1,labels2);
+    clusterings{jj}.connections=zeros(1,CC1.K);
+    for kk=1:CC1.K
+        [~,ind0]=max(MM(kk,:)); ind0=ind0(1);
+        if (MMnorm(kk,ind0)>=0.6)
+            clusterings{jj}.connections(kk)=ind0;
+        else
+            clusterings{jj}.connections(kk)=0;
+        end;
+    end;
+    map=zeros(1,clusterings{jj+1}.K);
+    aa=1
+    for kk=1:clusterings{jj}.K
+        if (clusterings{jj}.connections(kk)>0)
+            map(clusterings{jj}.connections(kk))=kk;
+        end;
+    end;
+    inds=find(map==0);
+    if (length(inds)>0)
+        disp(map);
+        disp(inds);
+        map(inds)=max(map)+1:length(map);
+    end;
+    [~,map_inv]=sort(map);
+    clusterings{jj+1}.labels=map(clusterings{jj+1}.labels);
+    clusterings{jj+1}.medoids=clusterings{jj+1}.medoids(:,:,map_inv);
+end;
+
+figure;
+for jj=1:length(clusterings)-1
+    CC=clusterings{jj};
+    for kk=1:length(CC.connections)
+        if (CC.connections(kk)>0)
+            plot([jj,jj+1],[kk,CC.connections(kk)]); hold on;
+        end;
+    end;
+end;
+disp(ylim+[-0.5,0.5]);
+ylim(ylim+[-0.5,0.5]);
+
 templates=zeros(M,T,0);
 levels=zeros(1,0);
 for ii=1:length(clusterings)
@@ -688,3 +794,4 @@ end
        
 
 end % maximalCliques
+
