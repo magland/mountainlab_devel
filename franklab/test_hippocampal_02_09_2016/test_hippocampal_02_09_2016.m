@@ -105,8 +105,8 @@ labels=clusters(3,:);
 fprintf('Writing output and preparing view...\n');
 pre2=readmda([path0,'/pre2.mda']);
 [clips1,clips1_index]=ms_create_clips_index(ms_extract_clips(pre2,times,o_extract_clips.clip_size),labels);
-writemda(clips1,[path0,'/clips.mda']);
-writemda(clips1_index,[path0,'/clips_index.mda']);
+writemda(clips1,[path0,'/clips0.mda']);
+writemda(clips1_index,[path0,'/clips0_index.mda']);
 writemda(clusters,[path0,'/clusters.mda']);
 writemda(corr_matrix,[path0,'/correlation_matrix.mda']);
 
@@ -123,8 +123,8 @@ view_params.raw=[path0,'/pre2.mda'];
 view_params.clusters=[path0,'/clusters.mda'];
 view_params.cross_correlograms=[path0,'/cross_correlograms.mda'];
 view_params.templates=[path0,'/templates.mda'];
-view_params.clips=[path0,'/clips.mda'];
-view_params.clips_index=[path0,'/clips_index.mda'];
+view_params.clips=[path0,'/clips0.mda'];
+view_params.clips_index=[path0,'/clips0_index.mda'];
 ms_mountainview(view_params);
 
 end
