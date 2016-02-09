@@ -22,7 +22,9 @@ HEADERS += \
     diskarraymodelclipssubset.h \
     mvcdfview.h \
     static_neuron_colors.h \
-    mvutils.h
+    mvutils.h \
+    mvmergewidget.h \
+    correlationmatrixview.h
 SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
@@ -34,7 +36,9 @@ SOURCES += mountainviewmain.cpp \
     diskarraymodelclipssubset.cpp \
     mvcdfview.cpp \
     static_neuron_colors.cpp \
-    mvutils.cpp
+    mvutils.cpp \
+    mvmergewidget.cpp \
+    correlationmatrixview.cpp
 
 HEADERS += get_principal_components.h
 SOURCES += get_principal_components.cpp

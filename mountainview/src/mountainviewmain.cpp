@@ -18,6 +18,7 @@
 #include "histogramview.h"
 #include "mvoverviewwidget.h"
 #include "mvlabelcomparewidget.h"
+#include "mvmergewidget.h"
 
 /*
  * TO DO:
@@ -93,7 +94,10 @@ int main(int argc, char *argv[]) {
 	QString clips_index_path=CLP.named_parameters.value("clips-index");
 	if (clips_index_path.isEmpty()) clips_index_path=CLP.named_parameters.value("clips_index");
 
-    QString cluster2_path=CLP.named_parameters.value("cluster2"); //for mode=compare_labels
+	QString clusters2_path=CLP.named_parameters.value("clusters2"); //for mode=compare_labels
+	if (clusters2_path.isEmpty()) clusters2_path=CLP.named_parameters.value("cluster2"); //historical compatibility
+
+	QString correlation_matrix_path=CLP.named_parameters.value("correlation_matrix"); //for mode=merge
 
     if (mode=="overview") {
         MVOverviewWidget *W=new MVOverviewWidget;
@@ -156,6 +160,17 @@ int main(int argc, char *argv[]) {
         }
         W->updateWidgets();
     }
+	else if (mode=="merge") {
+		printf("merge...\n");
+		MVMergeWidget *W=new MVMergeWidget;
+		W->setRawPath(raw_path);
+		W->setClustersPath(clusters_path);
+		Mda CM; CM.read(correlation_matrix_path);
+		W->setCorrelationMatrix(CM);
+		W->show();
+		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
+		W->resize(1800,1200);
+	}
     else if (mode=="compare_labels") {
         printf("compare_labels...\n");
         MVLabelCompareWidget *W=new MVLabelCompareWidget;
@@ -172,7 +187,7 @@ int main(int argc, char *argv[]) {
             X->setPath(raw_path);
             W->setRaw(X,true);
         }
-        if ((!clusters_path.isEmpty())&&(!cluster2_path.isEmpty())) {
+		if ((!clusters_path.isEmpty())&&(!clusters2_path.isEmpty())) {
             Mda T1,L1,T2,L2;
             {
                 Mda CC; CC.read(clusters_path);
@@ -187,7 +202,7 @@ int main(int argc, char *argv[]) {
                 T1=T; L1=L;
             }
             {
-                Mda CC; CC.read(cluster2_path);
+				Mda CC; CC.read(clusters2_path);
                 int num_events=CC.N2();
                 Mda T,L;
                 T.allocate(1,num_events);

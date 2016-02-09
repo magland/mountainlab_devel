@@ -161,7 +161,7 @@ void SSTimeSeriesView::setUniformVerticalChannelSpacing(bool val)
     d->m_plot->setUniformVerticalChannelSpacing(val);
 }
 
-void SSTimeSeriesView::setTimesLabels(const QList<float> &times, const QList<float> &labels)
+void SSTimeSeriesView::setTimesLabels(const QList<double> &times, const QList<double> &labels)
 {
     Mda TL0;
     TL0.allocate(2,times.count());
@@ -179,7 +179,7 @@ SSLabelsModel *SSTimeSeriesView::getLabels()
 	return d->m_labels;
 }
 
-float SSTimeSeriesView::currentValue()
+double SSTimeSeriesView::currentValue()
 {
 	if (!d->m_data) return 0;
 	int ch0=currentChannel();

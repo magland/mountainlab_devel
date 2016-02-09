@@ -15,17 +15,15 @@ To compile the software run:
 ./compile_mountainsort_cpp.sh
 ./compile_spikespy.sh
 
-Copy raw data ms11d45.dat to franklab/raw
+Copy raw data to franklab/raw
 
 Open MATLAB
 > cd mountainsort
 > ms_setup_path
-> addpath franklab/experiment1
-> experiment1_sort
+> addpath franklab/[name_of_experiment]
+> [name_of_experiment]
 
-(Should take less than 3 minutes, will create data in franklab/experiment1/output)
-
-> experiment1_view
+(Should take less than 3 minutes, will create data in franklab/[name_of_experiment]/output*)
 
 ****************************************************
 

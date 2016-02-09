@@ -10,11 +10,11 @@ path0=[mfile_path,sprintf('/output_tetrode%d',tetrode_num)];
 if ~exist(path0,'dir') mkdir(path0); end;
 extract_raw_data(raw_path,path0,tetrode_num);
 
-plausibility_threshold=0.6;
+plausibility_threshold=0.8;
 merge_threshold=0.95;
-tt_range=[5,15];
-num_tt_steps=20;
-tt_overlap=2;
+tt_range=[4,20];
+num_tt_steps=10;
+tt_overlap=1;
 num_features=12;
 cross_correlograms_max_dt=6000;
 sigma=1.5;
@@ -492,28 +492,28 @@ for jj=1:(length(clusterings)-1)
     clusterings{jj}.connections=zeros(1,CC1.K);
     for kk=1:CC1.K
         [~,ind0]=max(MM(kk,:)); ind0=ind0(1);
-        if (MMnorm(kk,ind0)>=0.6)
+        if (MMnorm(kk,ind0)>=0.8)
             clusterings{jj}.connections(kk)=ind0;
         else
             clusterings{jj}.connections(kk)=0;
         end;
     end;
     map=zeros(1,clusterings{jj+1}.K);
-    aa=1
+    aa=1;
     for kk=1:clusterings{jj}.K
         if (clusterings{jj}.connections(kk)>0)
-            map(clusterings{jj}.connections(kk))=kk;
+            map(clusterings{jj}.connections(kk))=aa;
+            aa=aa+1;
         end;
     end;
     inds=find(map==0);
     if (length(inds)>0)
-        disp(map);
-        disp(inds);
         map(inds)=max(map)+1:length(map);
     end;
     [~,map_inv]=sort(map);
     clusterings{jj+1}.labels=map(clusterings{jj+1}.labels);
     clusterings{jj+1}.medoids=clusterings{jj+1}.medoids(:,:,map_inv);
+    clusterings{jj}.connections(find(clusterings{jj}.connections))=map(clusterings{jj}.connections(find(clusterings{jj}.connections)));
 end;
 
 figure;
@@ -521,7 +521,7 @@ for jj=1:length(clusterings)-1
     CC=clusterings{jj};
     for kk=1:length(CC.connections)
         if (CC.connections(kk)>0)
-            plot([jj,jj+1],[kk,CC.connections(kk)]); hold on;
+            plot([jj,jj+1],[kk,CC.connections(kk)],'k'); hold on;
         end;
     end;
 end;

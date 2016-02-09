@@ -27,11 +27,11 @@ public:
 
 	void setChannelLabels(const QStringList &labels);
 	void setUniformVerticalChannelSpacing(bool val);
-    void setTimesLabels(const QList<float> &times,const QList<float> &labels);
+	void setTimesLabels(const QList<double> &times,const QList<double> &labels);
 
 	SSLabelsModel *getLabels();
 
-	float currentValue();
+	double currentValue();
 	QString viewType();
     void setMarkerLinesVisible(bool val);
 

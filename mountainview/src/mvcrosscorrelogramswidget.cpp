@@ -13,12 +13,12 @@
 class MVCrossCorrelogramsWidgetPrivate {
 public:
 	MVCrossCorrelogramsWidget *q;
-	QString m_path;
 
 	int m_base_unit_num;
 	int m_current_unit_num;
 	QSet<int> m_selected_unit_nums;
 	QList<int> m_unit_numbers;
+	DiskReadMda m_data;
 
 	QList<HistogramView *> m_histogram_views;
 	int m_num_columns;
@@ -45,7 +45,12 @@ MVCrossCorrelogramsWidget::~MVCrossCorrelogramsWidget()
 
 void MVCrossCorrelogramsWidget::setCrossCorrelogramsPath(const QString &path)
 {
-	d->m_path=path;
+	d->m_data.setPath(path);
+}
+
+void MVCrossCorrelogramsWidget::setCrossCorrelogramsData(const DiskReadMda &X)
+{
+	d->m_data=X;
 }
 
 typedef QList<float> FloatList;
@@ -155,21 +160,16 @@ float compute_max(const QList<FloatList> &data0) {
 
 void MVCrossCorrelogramsWidget::updateWidget()
 {
-	if (d->m_path.isEmpty()) return;
-
-	DiskReadMda X;
-	X.setPath(d->m_path);
-
 	QProgressDialog dlg;
 	dlg.show();
 	dlg.setLabelText("Loading cross correlograms...");
 	dlg.repaint(); qApp->processEvents();
 	QList<FloatList> data0;
 	if (d->m_unit_numbers.isEmpty()) {
-		data0=get_cross_correlogram_datas_2(X,d->m_base_unit_num);
+		data0=get_cross_correlogram_datas_2(d->m_data,d->m_base_unit_num);
 	}
 	else {
-		data0=get_cross_correlogram_datas_3(X,d->m_unit_numbers);
+		data0=get_cross_correlogram_datas_3(d->m_data,d->m_unit_numbers);
 	}
 
 	int K=data0.count()-1;

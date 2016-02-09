@@ -2,6 +2,7 @@
 #define MVCROSSCORRELOGRAMSWIDGET_H
 
 #include <QWidget>
+#include "diskreadmda.h"
 
 class MVCrossCorrelogramsWidgetPrivate;
 class MVCrossCorrelogramsWidget : public QWidget
@@ -13,6 +14,7 @@ public:
 	virtual ~MVCrossCorrelogramsWidget();
 
 	void setCrossCorrelogramsPath(const QString &path);
+	void setCrossCorrelogramsData(const DiskReadMda &X);
 	void updateWidget();
 
 	int currentUnit();

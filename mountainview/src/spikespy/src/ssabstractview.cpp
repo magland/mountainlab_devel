@@ -597,7 +597,7 @@ void SSAbstractView::centerOnCursor()
 	d->scroll_to_current_x_if_needed(true);
 }
 
-float SSAbstractView::currentValue()
+double SSAbstractView::currentValue()
 {
 	return 0;
 }

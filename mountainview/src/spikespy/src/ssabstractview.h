@@ -45,7 +45,7 @@ public:
 	void setActivated(bool val);
 	void centerOnCursor();
 	
-	virtual float currentValue();
+	virtual double currentValue();
 	virtual QString viewType()=0;
 
 protected:
