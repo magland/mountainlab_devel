@@ -5,7 +5,7 @@ close all; drawnow;
 %%%% Parameters and settings
 tetrode_num=1;
 plausibility_threshold=0.5;
-merge_threshold=0.95; %Keep this high for now
+merge_threshold=0.98; %Keep this high for now
 tt_range=[5,15];
 num_tt_steps=20;
 tt_overlap=1;
