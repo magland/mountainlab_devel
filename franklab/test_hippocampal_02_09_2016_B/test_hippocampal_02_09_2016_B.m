@@ -1,13 +1,13 @@
-function test_hippocampal_02_09_2016
+function test_hippocampal_02_09_2016_B
 
 close all; drawnow;
 
 %%%% Parameters and settings
 tetrode_num=1;
 plausibility_threshold=0.6;
-merge_threshold=0.9; %Keep this high for now
-tt_range=[5,15];
-num_tt_steps=10;
+merge_threshold=0.8; %Keep this high for now
+tt_range=[4,15];
+num_tt_steps=12;
 tt_overlap=1;
 num_features=6;
 cross_correlograms_max_dt=6000;
@@ -58,65 +58,71 @@ title('Unmerged templates'); drawnow;
 [~,~,K_all]=size(all_templates);
 title('All templates'); drawnow;
 
-%%%% Posterior probabilities and plausibility factors
-fprintf('Posterior probabilities and plausibility factors...');
-[probs,plausibility_factors]=compute_posterior_probabilities(clips,all_templates,sigma);
-corr_matrix=corrcoef(probs');
-figure; imagesc(corr_matrix');
-title('Correlation matrix for posterior classification prob vectors'); drawnow;
-figure; hist(max(plausibility_factors,[],1),linspace(-0.02,1.02,1000));
-title('Plausibility factors for all events'); drawnow;
-
-%%%% Times and labels
-fprintf('Computing times/labels and coincidence matrix...\n');
-detect=readmda([path0,'/detect.mda']);
-times0=detect(2,:);
-times=[]; labels_unmerged=[]; peaks=[]; used=zeros(size(times0));
-[~,best_ks]=max(probs,[],1);
-for k=1:size(probs,1);
-    inds_k=find((plausibility_factors(k,:)>=plausibility_threshold)&(best_ks==k));
-    times=[times,times0(inds_k)];
-    labels_unmerged=[labels_unmerged,ones(1,length(inds_k))*k];
-    peaks=[peaks,peaks0(inds_k)];
-    used(inds_k)=1;
+for ii=1:length(clusterings)
+    K1=clusterings{ii}.K;
+    clusterings{ii}.clusters={};
+    labels1=clusterings{ii}.labels;
+    for k1=1:K1
+        inds_k1=find(labels1==k1);
+        CL.inds=clusterings{ii}.inds(inds_k1);
+        if (ii>1)
+            K2=clusterings{ii-1}.K;
+            labels2=clusterings{ii-1}.labels;
+            [inds_intersect,ii1,ii2]=intersect(clusterings{ii}.inds,clusterings{ii-1}.inds);
+            label_counts=zeros(1,K2);
+            label_tots=zeros(1,K2);
+            for k2=1:K2
+                label_counts(k2)=length(find((labels1(ii1)==k1)&(labels2(ii2)==k2)));
+                label_tots(k2)=length(find((labels1(ii1)==k1)|(labels2(ii2)==k2)));
+            end;
+            inds00=find(label_counts>=label_tots*merge_threshold);
+            if (length(inds00)>0)
+                k2=inds00(1);
+                fprintf('Merging [%d,%d] to [%d,%d]\n',ii,k1,ii-1,k2);
+                CL.inds=union(CL.inds,clusterings{ii-1}.inds(find(labels2==k2)));
+                clusterings{ii-1}.clusters{k2}.inds=[];
+            end;
+        end;
+        clusterings{ii}.clusters{end+1}=CL;
+    end;
 end;
-inds_0=find(used==0);
-times=[times,times0(inds_0)];
-labels_unmerged=[labels_unmerged,ones(1,length(inds_0))*0];
-peaks=[peaks,peaks0(inds_0)];
-[~,sort_inds]=sort(times); times=times(sort_inds); labels_unmerged=labels_unmerged(sort_inds); peaks=peaks(sort_inds);
-clusters_unmerged=zeros(4,length(times));
-clusters_unmerged(2,:)=times;
-clusters_unmerged(3,:)=labels_unmerged;
-clusters_unmerged(4,:)=peaks;
 
-%%%% Merge
-cliques=ms_greedy_cliques(corr_matrix>=merge_threshold);
-label_map=ones(1,max(labels_unmerged));
-for jj=1:length(cliques)
-    label_map(cliques{jj})=jj;
+clusters={};
+for ii=1:length(clusterings)
+    for jj=1:length(clusterings{ii}.clusters)
+        CC=clusterings{ii}.clusters{jj};
+        if (length(CC.inds)>0)
+            clusters{end+1}=CC;
+        end;
+    end;
 end;
-clusters=clusters_unmerged;
-nonzero_inds=find(clusters_unmerged(3,:)>0);
-clusters(3,nonzero_inds)=label_map(clusters(3,nonzero_inds));
-labels=clusters(3,:);
 
-%%%% Writing output and preparing view
-fprintf('Writing output and preparing view...\n');
-pre2=readmda([path0,'/pre2.mda']);
-[clips1,clips1_index]=ms_create_clips_index(ms_extract_clips(pre2,times,o_extract_clips.clip_size),labels);
-writemda(clips1,[path0,'/clips0.mda']);
-writemda(clips1_index,[path0,'/clips0_index.mda']);
-writemda(clusters,[path0,'/clusters.mda']);
-writemda(corr_matrix,[path0,'/correlation_matrix.mda']);
-
-%%%% Cross correlograms and templates
-mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],cross_correlograms_max_dt);
-mscmd_templates([path0,'/pre0_mild.mda'],[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],struct('clip_size',200));
-mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],struct('clip_size',200));
-templates=readmda([path0,'/templates.mda']);
+templates=zeros(M,T,0);
+labels=zeros(1,NC);
+groups=[];
+for ii=1:length(clusters)
+    fprintf('.');
+    inds=clusters{ii}.inds;
+    %templates(:,:,ii)=mean(clips(:,:,inds),3);
+    [split_templates,split_labels]=split_cluster_by_peak_amplitudes(clips(:,:,inds));
+    templates=cat(3,templates,split_templates);
+    labels(inds)=max([0,labels])+split_labels;
+    groups=[groups,ones(1,size(split_templates,3))*ii];
+end;
+fprintf('\n');
 figure; ms_view_templates(templates);
-title('Merged templates'); drawnow;
+
+detect=readmda([path0,'/detect.mda']);
+clusters=zeros(4,NC);
+clusters(1:2,:)=detect;
+clusters(3,:)=labels;
+
+writemda(templates,[path0,'/templates.mda']);
+writemda(clusters,[path0,'/clusters.mda']);
+mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],cross_correlograms_max_dt);
+[clips0,clips0_index]=ms_create_clips_index(clips,labels);
+writemda(clips0,[path0,'/clips0.mda']);
+writemda(clips0_index,[path0,'/clips0_index.mda']);
 
 %%%% MountainView
 view_params.raw=[path0,'/pre2.mda'];
@@ -126,6 +132,68 @@ view_params.templates=[path0,'/templates.mda'];
 view_params.clips=[path0,'/clips0.mda'];
 view_params.clips_index=[path0,'/clips0_index.mda'];
 ms_mountainview(view_params);
+
+fprintf('Computing ips... ');
+[M,T,K]=size(templates);
+ips=zeros(K,NC);
+for k=1:K
+    fprintf('%d ',k);
+    ips(k,:)=squeeze(sum(sum(clips.*repmat(templates(:,:,k),1,1,NC),1),2));
+end;
+fprintf('\nComputing norms, etc...\n');
+template_norms=reshape(sqrt(sum(sum(templates.^2,1),2)),1,K);
+clip_norms=reshape(sqrt(sum(sum(clips.^2,1),2)),1,NC);
+diffsqr=repmat(clip_norms,K,1).^2-2*ips+repmat(template_norms',1,NC).^2;
+
+end
+
+function [templates,labels]=split_cluster_by_peak_amplitudes(clips)
+[M,T,NC]=size(clips);
+clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
+clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
+clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
+
+incr=1.0;
+
+candidate_cutoffs=ceil(min(clip_peaks)/incr)*incr:incr:floor(max(clip_peaks)/incr)*incr;
+cutoffs=[-inf];
+for ii=1:length(candidate_cutoffs)
+    cc=candidate_cutoffs(ii);
+    n1=length(find((clip_peaks<cc)&(clip_peaks>=cutoffs(end))));
+    n2=length(find(clip_peaks>=cc));
+    if (n1>=30)&&(n2>=30)
+        cutoffs=[cutoffs,cc];
+    end;
+end;
+cutoffs=[cutoffs,inf];
+
+templates=zeros(M,T,length(cutoffs)-1);
+labels=zeros(1,NC);
+for ii=1:length(cutoffs)-1
+    inds=find((clip_peaks>=cutoffs(ii))&(clip_peaks<cutoffs(ii+1)));
+    templates(:,:,ii)=compute_clips_medoid(clips(:,:,inds));
+    labels(inds)=max(labels)+1;
+end;
+
+end
+
+function template=compute_clips_medoid(clips)
+num_features=18;
+FF=ms_event_features(clips,num_features);
+[M,N]=size(FF);
+dists=zeros(N,N);
+for m=1:M
+    [grid1,grid2]=ndgrid(FF(m,:),FF(m,:));
+    dists=dists+sqrt((grid1-grid2).^2);
+end;
+avg_dists=mean(dists,1);
+[~,ind]=min(avg_dists);
+m=ind(1);
+
+sorted_dists=sort(dists(m,:));
+dist_cutoff=sorted_dists(ceil(length(sorted_dists)*0.3));
+inds=find(dists(m,:)<=dist_cutoff);
+template=mean(clips(:,:,inds),3);
 
 end
 
@@ -343,3 +411,5 @@ end
 function ret=compute_correlation(v1,v2)
 ret=sum(v1.*v2)/sqrt(sum(v1.^2)*sum(v2.^2));
 end
+
+
