@@ -5,10 +5,10 @@ close all; drawnow;
 %%%% Parameters and settings
 tetrode_num=1;
 plausibility_threshold=0.6;
-merge_threshold=0.8; %Keep this high for now
+merge_threshold=0.9;
 num_tt_steps=12;
 tt_overlap=1;
-num_features=6;
+num_features=12;
 cross_correlograms_max_dt=6000;
 sigma=1.5;
 o_mild_filter.samplefreq=30000;
@@ -92,7 +92,7 @@ ms_mountainview(view_params);
 
 %%%% Split clusters by peak amplitudes
 templates_split=split_clusters_by_peak_amplitudes(clips,labels);
-ms_view_templates(templates_split);
+figure; ms_view_templates(templates_split);
 
 end
 
@@ -124,14 +124,14 @@ clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
 clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
 
-sorted_peaks=sort(clip_peaks);
+sorted_abs_peaks=sort(abs(clip_peaks));
 tt1_list=zeros(1,num_tt_steps);
 tt2_list=zeros(1,num_tt_steps);
 for jj=1:num_tt_steps
-    ind1=max(1,ceil(length(sorted_peaks)*(jj-1)/num_tt_steps+1));
-    ind2=min(length(sorted_peaks),ceil(length(sorted_peaks)*(jj-1+1+tt_overlap)/num_tt_steps+1));
-    tt1_list(jj)=sorted_peaks(ind1);
-    tt2_list(jj)=sorted_peaks(ind2);
+    ind1=max(1,ceil(length(sorted_abs_peaks)*(jj-1)/num_tt_steps+1));
+    ind2=min(length(sorted_abs_peaks),ceil(length(sorted_abs_peaks)*(jj-1+1+tt_overlap)/num_tt_steps+1));
+    tt1_list(jj)=sorted_abs_peaks(ind1);
+    tt2_list(jj)=sorted_abs_peaks(ind2);
 end;
 
 clusterings={};
@@ -140,7 +140,7 @@ for ii=1:length(tt1_list)
     tt2=tt2_list(ii);
     if (ii==length(tt1_list)), tt2=inf; end;
     fprintf('tt1=%g tt2=%g... ',tt1,tt2);
-    inds_tt=find((clip_peaks>=tt1)&(clip_peaks<tt2));
+    inds_tt=find((abs(clip_peaks)>=tt1)&(abs(clip_peaks)<tt2));
     CC.inds=inds_tt;
     if (length(inds_tt)>1)
         clips_tt=clips(:,:,inds_tt);
@@ -276,6 +276,7 @@ for k=1:K
     inds=find(labels==k);
     templates0=split_cluster_by_peak_amplitudes(clips(:,:,inds));
     templates=cat(3,templates,templates0);
+    if (k<K) templates=cat(3,templates,zeros(M,T,2)); end;
 end;
 end
 
