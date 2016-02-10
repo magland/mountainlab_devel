@@ -1,10 +1,11 @@
 function test_hippocampal_02_10_2016
 
+close all; drawnow;
+
 %%%% Parameters and settings
 tetrode_num=1;
 plausibility_threshold=0.6;
 merge_threshold=0.8; %Keep this high for now
-tt_range=[4,15];
 num_tt_steps=12;
 tt_overlap=1;
 num_features=6;
@@ -18,7 +19,7 @@ o_filter.samplefreq=30000;
 o_filter.freq_min=100;
 o_filter.freq_max=10000;
 o_filter.outlier_threshold=500;
-o_detect.threshold=tt_range(1);
+o_detect.threshold=4;
 o_detect.individual_channels=0;
 o_detect.normalize=0;
 o_detect.inner_window_width=15;
@@ -50,18 +51,48 @@ clips=readmda([path0,'/clips.mda']);
 
 %%%% Shell cluster
 fprintf('Shell cluster...\n');
-[labels,peaks]=shell_cluster(clips,tt_range,num_tt_steps,tt_overlap,num_features,merge_threshold);
+[labels,peaks]=shell_cluster(clips,num_tt_steps,tt_overlap,num_features,merge_threshold);
 K=max(labels);
 clusters=zeros(4,NC);
 detect=readmda([path0,'/detect.mda']);
+times=detect(2,:);
 clusters(1:2,:)=detect;
 clusters(3,:)=labels;
 clusters(4,:)=peaks;
 writemda(clusters,[path0,'/clusters.mda']);
-mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],o_templates);
+%mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],o_templates);
+%templates=readmda([path0,'/templates.mda']);
+%figure; 
+%ms_view_templates(templates);
+
+%%%% Writing output and preparing view
+fprintf('Writing output and preparing view...\n');
+pre2=readmda([path0,'/pre2.mda']);
+[clips1,clips1_index]=ms_create_clips_index(ms_extract_clips(pre2,times,o_extract_clips.clip_size),labels);
+writemda(clips1,[path0,'/clips0.mda']);
+writemda(clips1_index,[path0,'/clips0_index.mda']);
+writemda(clusters,[path0,'/clusters.mda']);
+%writemda(corr_matrix,[path0,'/correlation_matrix.mda']);
+
+%%%% Cross correlograms and templates
+mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],cross_correlograms_max_dt);
+mscmd_templates([path0,'/pre0_mild.mda'],[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],struct('clip_size',200));
+mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],struct('clip_size',200));
 templates=readmda([path0,'/templates.mda']);
-figure; 
-ms_view_templates(templates);
+figure; ms_view_templates(templates);
+
+%%%% MountainView
+view_params.raw=[path0,'/pre2.mda'];
+view_params.clusters=[path0,'/clusters.mda'];
+view_params.cross_correlograms=[path0,'/cross_correlograms.mda'];
+view_params.templates=[path0,'/templates.mda'];
+view_params.clips=[path0,'/clips0.mda'];
+view_params.clips_index=[path0,'/clips0_index.mda'];
+ms_mountainview(view_params);
+
+%%%% Split clusters by peak amplitudes
+templates_split=split_clusters_by_peak_amplitudes(clips,labels);
+ms_view_templates(templates_split);
 
 end
 
@@ -85,7 +116,7 @@ template=mean(clips(:,:,inds),3);
 
 end
 
-function [labels,clip_peaks]=shell_cluster(clips,tt_range,num_tt_steps,tt_overlap,num_features,merge_threshold)
+function [labels,clip_peaks]=shell_cluster(clips,num_tt_steps,tt_overlap,num_features,merge_threshold)
 [M,T,NC]=size(clips);
 
 fprintf('Computing peaks...\n');
@@ -94,8 +125,6 @@ clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
 
 sorted_peaks=sort(clip_peaks);
-inds00=find((sorted_peaks>=tt_range(1))&(sorted_peaks<=tt_range(2)));
-sorted_peaks=sorted_peaks(inds00);
 tt1_list=zeros(1,num_tt_steps);
 tt2_list=zeros(1,num_tt_steps);
 for jj=1:num_tt_steps
@@ -111,7 +140,7 @@ for ii=1:length(tt1_list)
     tt2=tt2_list(ii);
     if (ii==length(tt1_list)), tt2=inf; end;
     fprintf('tt1=%g tt2=%g... ',tt1,tt2);
-    inds_tt=find((clip_peaks>=tt1)&(clip_peaks<=tt2));
+    inds_tt=find((clip_peaks>=tt1)&(clip_peaks<tt2));
     CC.inds=inds_tt;
     if (length(inds_tt)>1)
         clips_tt=clips(:,:,inds_tt);
@@ -133,29 +162,33 @@ end
 for ii=1:length(clusterings)
     K1=clusterings{ii}.K;
     clusterings{ii}.clusters={};
-    labels1=clusterings{ii}.labels;
     for k1=1:K1
-        inds_k1=find(labels1==k1);
-        CL.inds=clusterings{ii}.inds(inds_k1);
-        if (ii>1)
-            K2=clusterings{ii-1}.K;
-            labels2=clusterings{ii-1}.labels;
-            [inds_intersect,ii1,ii2]=intersect(clusterings{ii}.inds,clusterings{ii-1}.inds);
-            label_counts=zeros(1,K2);
-            label_tots=zeros(1,K2);
+        clusterings{ii}.clusters{k1}.inds=clusterings{ii}.inds(find(clusterings{ii}.labels==k1));
+    end;
+    if ii>1
+        K2=clusterings{ii-1}.K;
+        match_counts=zeros(K1,K2);
+        for k1=1:K1
             for k2=1:K2
-                label_counts(k2)=length(find((labels1(ii1)==k1)&(labels2(ii2)==k2)));
-                label_tots(k2)=length(find((labels1(ii1)==k1)|(labels2(ii2)==k2)));
-            end;
-            inds00=find(label_counts>=label_tots*merge_threshold);
-            if (length(inds00)>0)
-                k2=inds00(1);
-                fprintf('Merging [%d,%d] to [%d,%d]\n',ii,k1,ii-1,k2);
-                CL.inds=union(CL.inds,clusterings{ii-1}.inds(find(labels2==k2)));
-                clusterings{ii-1}.clusters{k2}.inds=[];
+                inds_k1=clusterings{ii}.inds(find(clusterings{ii}.labels==k1));
+                inds_k2=clusterings{ii-1}.inds(find(clusterings{ii-1}.labels==k2));
+                match_counts(k1,k2)=length(intersect(inds_k1,inds_k2));
             end;
         end;
-        clusterings{ii}.clusters{end+1}=CL;
+        for k1=1:K1
+            for k2=1:K2
+                numer=match_counts(k1,k2);
+                denom=sum(match_counts(k1,:))+sum(match_counts(:,k2))-match_counts(k1,k2);
+                if ((denom)&&(numer/denom>=merge_threshold))
+                    pct=numer/denom;
+                    fprintf('Merging [%d,%d] to [%d,%d] (%d%%)\n',ii,k1,ii-1,k2,floor(pct*100));
+                    inds_k1=clusterings{ii}.clusters{k1}.inds;
+                    inds_k2=clusterings{ii-1}.clusters{k2}.inds;
+                    clusterings{ii}.clusters{k1}.inds=union(inds_k1,inds_k2);
+                    clusterings{ii-1}.clusters{k2}.inds=[];
+                end;
+            end;
+        end;
     end;
 end;
 
@@ -173,6 +206,13 @@ labels=zeros(1,NC);
 for jj=1:length(clusters)
     labels(clusters{jj}.inds)=jj;
 end;
+
+K=max(labels);
+used=zeros(1,K); used(labels)=1; iii=find(used);
+mapping=zeros(1,K);
+for jj=1:length(iii) mapping(iii(jj))=jj; end;
+labels=mapping(labels);
+K=max(labels);
 
 end
 
@@ -228,3 +268,43 @@ avg_dists=mean(dists,1);
 m=X(:,ind); 
 end
 
+function templates=split_clusters_by_peak_amplitudes(clips,labels)
+[M,T,NC]=size(clips);
+templates=zeros(M,T,0);
+K=max(labels);
+for k=1:K
+    inds=find(labels==k);
+    templates0=split_cluster_by_peak_amplitudes(clips(:,:,inds));
+    templates=cat(3,templates,templates0);
+end;
+end
+
+function [templates,labels]=split_cluster_by_peak_amplitudes(clips)
+[M,T,NC]=size(clips);
+clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
+clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
+clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
+
+incr=1.0;
+
+candidate_cutoffs=ceil(min(clip_peaks)/incr)*incr:incr:floor(max(clip_peaks)/incr)*incr;
+cutoffs=[-inf];
+for ii=1:length(candidate_cutoffs)
+    cc=candidate_cutoffs(ii);
+    n1=length(find((clip_peaks<cc)&(clip_peaks>=cutoffs(end))));
+    n2=length(find(clip_peaks>=cc));
+    if (n1>=30)&&(n2>=30)
+        cutoffs=[cutoffs,cc];
+    end;
+end;
+cutoffs=[cutoffs,inf];
+
+templates=zeros(M,T,length(cutoffs)-1);
+labels=zeros(1,NC);
+for ii=1:length(cutoffs)-1
+    inds=find((clip_peaks>=cutoffs(ii))&(clip_peaks<cutoffs(ii+1)));
+    templates(:,:,ii)=compute_clips_medoid(clips(:,:,inds));
+    labels(inds)=max(labels)+1;
+end;
+
+end
