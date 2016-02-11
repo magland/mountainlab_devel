@@ -37,6 +37,7 @@ if (~isfield(opts,'K')) opts.K=25; end;
 if (~isfield(opts,'minsize')) opts.minsize=3; end;
 if (~isfield(opts,'verbose')) opts.verbose=0; end;
 if (~isfield(opts,'verbose2')) opts.verbose2=0; end;
+if (~isfield(opts,'verbose3')) opts.verbose3=0; end;
 if (~isfield(opts,'max_iterations_per_number_clusters')) opts.max_iterations_per_number_clusters=5000; end;
 if (~isfield(opts,'return_iterations')) opts.return_iterations=0; end;
 if (~isfield(opts,'isocut_threshold')) opts.isocut_threshold=1.2; end;
@@ -59,7 +60,7 @@ attempted_redistributions=zeros(0,1);
 if (opts.return_iterations) info.iterations={}; end;
 
 if opts.verbose2
-    fig_verbose=figure; title('debug isosplit');
+    fig_verbose2=figure; title('debug isosplit');
 end;
 
 info.num_iterations=0;
@@ -129,8 +130,9 @@ while true
         if (opts.return_iterations) info.iterations{end+1}=labels; end;
         
         if opts.verbose2
-            figure(fig_verbose);
-            ss_view_clusters(X,labels,struct('create_figure',0));
+            figure(fig_verbose2);
+            %ss_view_clusters(X,labels,struct('create_figure',0));
+            ms_view_clusters(X,labels);
             pause(0.1);
         end;
         
@@ -203,6 +205,17 @@ if ((length(ii1)==length(inds1))&&(length(ii2)==length(inds2)))
 			redistributed=0;
 		end;
 	end;
+end;
+
+if (opts.verbose3)
+    figure;
+    bins=linspace(min(XX),max(XX),100);
+    if (length(ii2)>0)
+        histogram(XX(find(XX<=cutpoint)),bins,'FaceColor','b','EdgeColor','b'); hold on;
+        histogram(XX(find(XX>cutpoint)),bins,'FaceColor','r','EdgeColor','r');
+    else
+        histogram(XX,bins,'FaceColor','k','EdgeColor','k');
+    end;
 end;
 
 end

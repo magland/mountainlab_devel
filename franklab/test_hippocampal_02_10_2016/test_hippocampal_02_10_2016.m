@@ -5,7 +5,7 @@ close all; drawnow;
 %%%% Parameters and settings
 tetrode_num=1;
 plausibility_threshold=0.6;
-merge_threshold=0.9;
+merge_threshold=0.8;
 num_tt_steps=12;
 tt_overlap=1;
 num_features=12;
@@ -286,7 +286,7 @@ clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
 clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
 
-incr=1.0;
+incr=1;
 
 candidate_cutoffs=ceil(min(clip_peaks)/incr)*incr:incr:floor(max(clip_peaks)/incr)*incr;
 cutoffs=[-inf];
