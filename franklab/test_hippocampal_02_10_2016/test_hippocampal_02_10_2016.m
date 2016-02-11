@@ -24,7 +24,7 @@ o_detect.individual_channels=0;
 o_detect.normalize=0;
 o_detect.inner_window_width=15;
 o_detect.outer_window_width=1000;
-o_extract_clips.clip_size=120;
+o_extract_clips.clip_size=60;
 o_whiten=struct;
 o_templates.clip_size=o_extract_clips.clip_size;
 
@@ -96,24 +96,17 @@ figure; ms_view_templates(templates_split);
 
 end
 
-function template=compute_clips_medoid(clips)
+function template=compute_clips_template(clips)
+[M,T,NC]=size(clips);
 num_features=18;
 FF=ms_event_features(clips,num_features);
-[M,N]=size(FF);
-dists=zeros(N,N);
-for m=1:M
-    [grid1,grid2]=ndgrid(FF(m,:),FF(m,:));
-    dists=dists+sqrt((grid1-grid2).^2);
-end;
-avg_dists=mean(dists,1);
-[~,ind]=min(avg_dists);
-m=ind(1);
-
-sorted_dists=sort(dists(m,:));
+FFmm=ms_geometric_median(FF);
+diffs=FF-repmat(FFmm,1,NC);
+dists=sqrt(sum(diffs.^2,1));
+sorted_dists=sort(dists);
 dist_cutoff=sorted_dists(ceil(length(sorted_dists)*0.3));
-inds=find(dists(m,:)<=dist_cutoff);
+inds=find(dists<=dist_cutoff);
 template=mean(clips(:,:,inds),3);
-
 end
 
 function [labels,clip_peaks]=shell_cluster(clips,num_tt_steps,tt_overlap,num_features,merge_threshold)
@@ -255,19 +248,6 @@ writemda(L,[output_path,'/locations.mda']);
 
 end
 
-function m = compute_medoid(X)
-[M,N]=size(X);
-dists=zeros(N,N);
-for m=1:M
-    [grid1,grid2]=ndgrid(X(m,:),X(m,:));
-    dists=dists+sqrt((grid1-grid2).^2);
-    %dists=dists+(grid1-grid2).^2;
-end;
-avg_dists=mean(dists,1);
-[~,ind]=min(avg_dists);
-m=X(:,ind); 
-end
-
 function templates=split_clusters_by_peak_amplitudes(clips,labels)
 [M,T,NC]=size(clips);
 templates=zeros(M,T,0);
@@ -304,7 +284,7 @@ templates=zeros(M,T,length(cutoffs)-1);
 labels=zeros(1,NC);
 for ii=1:length(cutoffs)-1
     inds=find((clip_peaks>=cutoffs(ii))&(clip_peaks<cutoffs(ii+1)));
-    templates(:,:,ii)=compute_clips_medoid(clips(:,:,inds));
+    templates(:,:,ii)=compute_clips_template(clips(:,:,inds));
     labels(inds)=max(labels)+1;
 end;
 

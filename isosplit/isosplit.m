@@ -41,6 +41,7 @@ if (~isfield(opts,'verbose3')) opts.verbose3=0; end;
 if (~isfield(opts,'max_iterations_per_number_clusters')) opts.max_iterations_per_number_clusters=5000; end;
 if (~isfield(opts,'return_iterations')) opts.return_iterations=0; end;
 if (~isfield(opts,'isocut_threshold')) opts.isocut_threshold=1.2; end;
+if (~isfield(opts,'use_geometric_median')) opts.use_geometric_median=0; end;
 
 [M,N]=size(X);
 opts.K=min(opts.K,N); %Added by jfm on 11/12/15
@@ -50,7 +51,7 @@ timer_initialization=tic;
 labels=local_kmeans_sorber(X,opts.K);
 info.T_initialization=toc(timer_initialization);
 
-centroids=compute_centroids(X,labels);
+centroids=compute_centroids(X,labels,opts);
 distances=compute_distances(centroids);
 
 %Here is a list of the attempted cluster splits/redistributions -- we don't
@@ -82,8 +83,7 @@ while true
 	timer_find_centroids=tic;
 	inds1=find(labels==label1);
 	inds2=find(labels==label2);
-	%centroid1=mean(X(:,inds1),2); centroid2=mean(X(:,inds2),2);
-	centroid1=centroids(:,label1); centroid2=centroids(:,label2);
+    centroid1=centroids(:,label1); centroid2=centroids(:,label2);
 	%code=get_code(X,inds1,inds2); %This is the code used to add to the attempted_redistributions list
 	%code=sum(centroid1.*centroid2);
 	info.T_find_centroids=info.T_find_centroids+toc(timer_find_centroids);
@@ -112,13 +112,21 @@ while true
 		end;
 		labels(ii1)=label1;
 		labels(ii2)=label2;
-		centroids(:,label1)=mean(X(:,ii1),2);
+        if (opts.use_geometric_median)
+            centroids(:,label1)=compute_geometric_median(X(:,ii1));
+        else
+            centroids(:,label1)=mean(X(:,ii1),2);
+        end;
 		tmp0=sum((centroids-repmat(centroids(:,label1),1,size(centroids,2))).^2,1);
 		tmp0(ismember(tmp0,attempted_redistributions))=inf;
 		distances(:,label1)=tmp0;
 		distances(label1,:)=distances(:,label1); distances(label1,label1)=inf;
 		if (length(ii2>0))
-			centroids(:,label2)=mean(X(:,ii2),2);
+            if (opts.use_geometric_median)
+                centroids(:,label2)=compute_geometric_median(X(:,ii2));
+            else
+                centroids(:,label2)=mean(X(:,ii2),2);
+            end;
 			tmp0=sum((centroids-repmat(centroids(:,label2),1,size(centroids,2))).^2,1);
 			tmp0(ismember(tmp0,attempted_redistributions))=inf;
 			distances(:,label2)=tmp0;
@@ -275,14 +283,18 @@ end
 % code=mean(mean(X(:,inds1),1),2)*mean(mean(X(:,inds2),1),2); %Not strictly guaranteed to be unique ... but very very likely.
 % end
 
-function centroids=compute_centroids(X,labels)
+function centroids=compute_centroids(X,labels,opts)
 
 L=max(labels);
 M=size(X,1);
 centroids=zeros(M,L);
 for j=1:L
 	inds=find(labels==j);
-	centroids(:,j)=mean(X(:,inds),2);
+    if (opts.use_geometric_median)
+        centroids(:,j)=compute_geometric_median(X(:,inds));
+    else
+        centroids(:,j)=mean(X(:,inds),2);
+    end;
 end;
 
 end
@@ -377,6 +389,7 @@ pops={1000,800,400};
 shapes={[1,1,0],[2,1,0],[1,2,0]};
 opts.K=25;
 opts.return_iterations=1;
+opts.use_geometric_median=1;
 
 fprintf('seed = %d\n',seed0);
 
@@ -438,6 +451,28 @@ end;
 %imwrite(mov, map, 'isosplit_demo.gif', 'DelayTime',0.8, 'LoopCount',0);
 
 end
+
+function [mm,changes]=compute_geometric_median(X,num_iterations)
+if nargin<2, num_iterations=10; end;
+
+[M,N]=size(X);
+weights=ones(1,N);
+changes=[];
+for it=1:num_iterations
+    weights=weights/sum(weights);
+    mm=X*weights';
+    if (it>1)
+        changes=[changes,sqrt(sum((mm-mm_old).^2))];
+    end;
+    mm_old=mm;
+    diffs=X-repmat(mm,1,N);
+    weights=sqrt(sum(diffs.^2,1));
+    inds=find(weights~=0);
+    weights(inds)=1./weights(inds);
+end;
+
+end
+
 
 function isosplit_test
 	
@@ -529,9 +564,15 @@ end
 function W=find_svm_discriminant_direction(X,Y)
 
 AA=cat(2,X,Y);
-[~,SS]=evalc('svmtrain(transpose(cat(2,ones(1,size(X,2)),ones(1,size(Y,2))*2)),transpose(AA))'); %need to use evalc to suppress verbosity
-W=AA(:,SS.sv_indices)*SS.sv_coef;
+classes=cat(2,ones(1,size(X,2)),ones(1,size(Y,2)));
+model=fitcsvm(AA',classes','KernelFunction','linear');
+W=model.Beta;
 W=W/sqrt(sum(W.^2));
+
+% AA=cat(2,X,Y);
+% [~,SS]=evalc('svmtrain(transpose(cat(2,ones(1,size(X,2)),ones(1,size(Y,2))*2)),transpose(AA))'); %need to use evalc to suppress verbosity
+% W=AA(:,SS.sv_indices)*SS.sv_coef;
+% W=W/sqrt(sum(W.^2));
 
 end
 
@@ -542,3 +583,4 @@ catch
     compile_mex_isocut;
 end;
 end
+
