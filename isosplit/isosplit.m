@@ -42,6 +42,7 @@ if (~isfield(opts,'max_iterations_per_number_clusters')) opts.max_iterations_per
 if (~isfield(opts,'return_iterations')) opts.return_iterations=0; end;
 if (~isfield(opts,'isocut_threshold')) opts.isocut_threshold=1.2; end;
 if (~isfield(opts,'use_geometric_median')) opts.use_geometric_median=0; end;
+if (~isfield(opts,'whiten_at_each_iteration')) opts.whiten_at_each_iteration=0; end;
 
 [M,N]=size(X);
 opts.K=min(opts.K,N); %Added by jfm on 11/12/15
@@ -68,6 +69,7 @@ info.num_iterations=0;
 num_iterations_with_same_number_of_clusters=0;
 while true
 	info.num_iterations=info.num_iterations+1;
+    if (mod(info.num_iterations,20)==0) fprintf('|'); end;
 	old_labels=labels;
 	%find the closest two clusters to check for redistribution/merging
 	%we want the centroids to be as close as possible, but we want to
@@ -140,7 +142,7 @@ while true
         if opts.verbose2
             figure(fig_verbose2);
             %ss_view_clusters(X,labels,struct('create_figure',0));
-            ms_view_clusters(X,labels);
+            ms_view_clusters(X,labels); axis square; daspect([1,1,1]);
             pause(0.1);
         end;
         
@@ -156,8 +158,38 @@ while true
   	end;
 	%toc
 end;
+fprintf('\n');
 
 end
+
+function [X1b,X2b,V]=whiten_two_clusters(X1,X2)
+M=size(X1,1);
+N1=size(X1,2);
+N2=size(X2,2);
+
+% Important to subtract the two centroids before whitening!
+centroid1=mean(X1,2);
+centroid2=mean(X2,2);
+Y1=X1-repmat(centroid1,1,N1);
+Y2=X2-repmat(centroid2,1,N2);
+
+% Combine the data
+Y=cat(2,Y1,Y2);
+N=N1+N2;
+
+% Obtain the whitening matrix using svd
+[U,D,V] = svd(Y,'econ');
+D(D~=0)=1./D(D~=0);
+% Amd apply it to the original (non-mean subtracted) data
+X1b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X1);
+X2b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X2);
+
+% The best direction is now the one connecting the centroids.
+centroid1b=mean(X1b,2);
+centroid2b=mean(X2b,2);
+V=centroid2b-centroid1b;
+end
+
 
 function [ii1,ii2,redistributed,info0]=attempt_to_redistribute_two_clusters(X,inds1,inds2,centroid1,centroid2,opts)
 
@@ -170,14 +202,18 @@ inds12=cat(2,inds1,inds2);
 X1=X(:,inds1);
 X2=X(:,inds2);
 
-V=centroid2-centroid1; %the vector from one centroid to another
-%V=find_svm_discriminant_direction(X1,X2);
+if (opts.whiten_at_each_iteration)
+    [X1,X2,V]=whiten_two_clusters(X1,X2);
+else
+    V=centroid2-centroid1; %the vector from one centroid to another
+    %V=find_svm_discriminant_direction(X1,X2);
+end;
 
 if (sum(V.^2)==0)
 	warning('isosplit: vector V is null.');
 end;
 V=V/sqrt(sum(V.^2));
-XX=V'*X(:,inds12); %Project onto the line connecting the centroids
+XX=V'*cat(2,X1,X2); %Project onto the line connecting the centroids
 info0.T_projection=toc(timer_projection);
 
 opts2.verbose=opts.verbose2;
@@ -382,14 +418,14 @@ function isosplit_iteration_demo
 close all;
 
 seed0=randi(10000);
-seed0=6239;
+%seed0=6239;
 rng(seed0);
 centers={[0,0],[5,3.8],[-4.5,3]};
 pops={1000,800,400};
 shapes={[1,1,0],[2,1,0],[1,2,0]};
-opts.K=25;
+opts.K=30;
 opts.return_iterations=1;
-opts.use_geometric_median=1;
+opts.use_geometric_median=0;
 
 fprintf('seed = %d\n',seed0);
 

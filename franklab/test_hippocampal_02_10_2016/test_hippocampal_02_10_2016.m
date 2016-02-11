@@ -140,7 +140,7 @@ for ii=1:length(tt1_list)
         fprintf('features... ');
         [FF_tt,subspace_tt]=ms_event_features(clips_tt,num_features);
         fprintf('isosplit... ');
-        labels_tt=isosplit(FF_tt);
+        labels_tt=isosplit2(FF_tt,struct('verbose',0,'verbose3',0));
         K=max(labels_tt);
         fprintf('K=%d\n',K);
         CC.labels=labels_tt;
