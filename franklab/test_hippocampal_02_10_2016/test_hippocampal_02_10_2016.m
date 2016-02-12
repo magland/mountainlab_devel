@@ -1,16 +1,14 @@
 function test_hippocampal_02_10_2016
 
-close all; drawnow;
+%close all; drawnow;
 
 %%%% Parameters and settings
-tetrode_num=1;
-plausibility_threshold=0.6;
-merge_threshold=0.8;
-num_tt_steps=12;
-tt_overlap=1;
-num_features=12;
+tetrode_num=2;
+shell_opts.min_shell_count=2000;
+shell_opts.shell_increment=0.5;
+shell_opts.num_features=12;
+shell_opts.merge_threshold=0.8;
 cross_correlograms_max_dt=6000;
-sigma=1.5;
 o_mild_filter.samplefreq=30000;
 o_mild_filter.freq_min=50;
 o_mild_filter.freq_max=10000;
@@ -24,9 +22,8 @@ o_detect.individual_channels=0;
 o_detect.normalize=0;
 o_detect.inner_window_width=15;
 o_detect.outer_window_width=1000;
-o_extract_clips.clip_size=60;
+o_extract_clips.clip_size=120;
 o_whiten=struct;
-o_templates.clip_size=o_extract_clips.clip_size;
 
 %%%% Set up paths
 mfile_path=fileparts(mfilename('fullpath'));
@@ -51,7 +48,7 @@ clips=readmda([path0,'/clips.mda']);
 
 %%%% Shell cluster
 fprintf('Shell cluster...\n');
-[labels,peaks]=shell_cluster(clips,num_tt_steps,tt_overlap,num_features,merge_threshold);
+[labels,peaks]=shell_cluster(clips,shell_opts);
 K=max(labels);
 clusters=zeros(4,NC);
 detect=readmda([path0,'/detect.mda']);
@@ -109,7 +106,86 @@ inds=find(dists<=dist_cutoff);
 template=mean(clips(:,:,inds),3);
 end
 
-function [labels,clip_peaks]=shell_cluster(clips,num_tt_steps,tt_overlap,num_features,merge_threshold)
+function [peak_mins,peak_maxs]=define_shells(clip_peaks,opts)
+
+% do the negatives
+peak_mins_neg=[];
+peak_maxs_neg=[];
+if (min(clip_peaks)<0)
+    max0=0;
+    min0=max0-opts.shell_increment;
+    while 1
+        if (max0<min(clip_peaks)) break; end;
+        if (length(find((min0<=clip_peaks)&(clip_peaks<max0)))>=opts.min_shell_count)
+            if (length(find(clip_peaks<min0))>=opts.min_shell_count)
+                peak_mins_neg=[peak_mins_neg,min0];
+                peak_maxs_neg=[peak_maxs_neg,max0];
+                max0=min0;
+                min0=max0-opts.shell_increment;
+            else
+                peak_mins_neg=[peak_mins_neg,-inf];
+                peak_maxs_neg=[peak_maxs_neg,max0];
+                max0=-inf; min0=-inf;
+            end;
+        else
+            min0=min0-opts.shell_increment;
+            if (min0<min(clip_peaks))
+                peak_mins_neg=[peak_mins_neg,-inf];
+                peak_maxs_neg=[peak_maxs_neg,max0];
+                max0=-inf; min0=-inf;
+            end;
+        end;
+    end;
+end;
+% do the overlap
+for j=1:length(peak_maxs_neg)-1
+    peak_mins_neg(j)=peak_mins_neg(j+1);
+end;
+
+% do the positives
+peak_mins_pos=[];
+peak_maxs_pos=[];
+if (max(clip_peaks)>0)
+    min0=0;
+    max0=min0+opts.shell_increment;
+    while 1
+        if (min0>max(clip_peaks)) break; end;
+        if (length(find((min0<=clip_peaks)&(clip_peaks<max0)))>=opts.min_shell_count)
+            if (length(find(clip_peaks>=max0))>=opts.min_shell_count)
+                peak_mins_pos=[peak_mins_pos,min0];
+                peak_maxs_pos=[peak_maxs_pos,max0];
+                min0=max0;
+                max0=min0+opts.shell_increment;
+            else
+                peak_mins_pos=[peak_mins_pos,min0];
+                peak_maxs_pos=[peak_maxs_pos,inf];
+                min0=inf; max0=inf;
+            end;
+        else
+            max0=max0+opts.shell_increment;
+            if (max0>max(clip_peaks))
+                peak_mins_pos=[peak_mins_pos,min0];
+                peak_maxs_pos=[peak_maxs_pos,inf];
+                min0=inf; max0=inf;
+            end;
+        end;
+    end;
+end;
+% do the overlap
+for j=1:length(peak_mins_pos)-1
+    peak_maxs_pos(j)=peak_maxs_pos(j+1);
+end;
+
+% combine and sort
+peak_mins=[peak_mins_neg,peak_mins_pos];
+peak_maxs=[peak_maxs_neg,peak_maxs_pos];
+[~,inds]=sort(peak_mins);
+peak_mins=peak_mins(inds);
+peak_maxs=peak_maxs(inds);
+
+end
+
+function [labels,clip_peaks]=shell_cluster(clips,opts)
 [M,T,NC]=size(clips);
 
 fprintf('Computing peaks...\n');
@@ -117,33 +193,26 @@ clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
 clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
 
-sorted_abs_peaks=sort(abs(clip_peaks));
-tt1_list=zeros(1,num_tt_steps);
-tt2_list=zeros(1,num_tt_steps);
-for jj=1:num_tt_steps
-    ind1=max(1,ceil(length(sorted_abs_peaks)*(jj-1)/num_tt_steps+1));
-    ind2=min(length(sorted_abs_peaks),ceil(length(sorted_abs_peaks)*(jj-1+1+tt_overlap)/num_tt_steps+1));
-    tt1_list(jj)=sorted_abs_peaks(ind1);
-    tt2_list(jj)=sorted_abs_peaks(ind2);
-end;
+[peak_mins,peak_maxs]=define_shells(clip_peaks,opts);
 
 clusterings={};
-for ii=1:length(tt1_list)
-    tt1=tt1_list(ii);
-    tt2=tt2_list(ii);
-    if (ii==length(tt1_list)), tt2=inf; end;
-    fprintf('tt1=%g tt2=%g... ',tt1,tt2);
-    inds_tt=find((abs(clip_peaks)>=tt1)&(abs(clip_peaks)<tt2));
-    CC.inds=inds_tt;
-    if (length(inds_tt)>1)
-        clips_tt=clips(:,:,inds_tt);
+for ii=1:length(peak_mins)
+    rr1=peak_mins(ii);
+    rr2=peak_maxs(ii);
+    fprintf('rr1=%g rr2=%g... ',rr1,rr2);
+    inds_shell=find((clip_peaks>=rr1)&(clip_peaks<rr2));
+    CC.inds=inds_shell;
+    CC.rr1=rr1;
+    CC.rr2=rr2;
+    if (length(inds_shell)>1)
+        clips_shell=clips(:,:,inds_shell);
         fprintf('features... ');
-        [FF_tt,subspace_tt]=ms_event_features(clips_tt,num_features);
+        FF_shell=ms_event_features(clips_shell,opts.num_features);
         fprintf('isosplit... ');
-        labels_tt=isosplit2(FF_tt,struct('verbose',0,'verbose3',0));
-        K=max(labels_tt);
+        labels_shell=isosplit2(FF_shell,struct('whiten_at_each_comparison',1));
+        K=max(labels_shell);
         fprintf('K=%d\n',K);
-        CC.labels=labels_tt;
+        CC.labels=labels_shell;
         CC.K=K;
     else
         CC.labels=[];
@@ -172,7 +241,7 @@ for ii=1:length(clusterings)
             for k2=1:K2
                 numer=match_counts(k1,k2);
                 denom=sum(match_counts(k1,:))+sum(match_counts(:,k2))-match_counts(k1,k2);
-                if ((denom)&&(numer/denom>=merge_threshold))
+                if ((denom)&&(numer/denom>=opts.merge_threshold))
                     pct=numer/denom;
                     fprintf('Merging [%d,%d] to [%d,%d] (%d%%)\n',ii,k1,ii-1,k2,floor(pct*100));
                     inds_k1=clusterings{ii}.clusters{k1}.inds;

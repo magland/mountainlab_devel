@@ -178,13 +178,15 @@ void find_best_pair(int &label1,int &label2,bool *active_labels,Mda &distances,Q
 				if (active_labels[k1]) {
 					double dist=Dptr[k1+ii2];
 					if (dist>=0) {
-						if (!attempted_redistributions.contains(dist)) {
+                        if (false) {
+                        //if (!attempted_redistributions.contains(dist)) {
 							if ((best_dist<0)||(dist<best_dist)) {
 								best_dist=dist;
 								label1=k1;
 								label2=k2;
 							}
-						}
+                        //}
+                        }
 					}
 				}
 			}
