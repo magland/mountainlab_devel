@@ -1,9 +1,15 @@
 #include "isosplit.h"
-#include <QSet>
+//#include <QSet>
 #include <QVector>
 #include <QDebug>
 #include <math.h>
 #include "isocut.h"
+
+QVector<int> isosplit(Mda &X,float ks_threshold,int K_init) {
+    return QVector<int>();
+}
+
+#ifdef NOT_DEFINED
 
 //choose K distinct (sorted) integers between 0 and N-1. If K>N then it will repeat the last integer a suitable number of times
 QList<int> choose_random_indices(int N,int K) {;
@@ -408,3 +414,5 @@ QVector<int> isosplit(Mda &X,float ks_threshold,int k_init) {
     for (int n=0; n<N; n++) labels2 << labels_map[labels[n]];
     return labels2;
 }
+
+#endif
