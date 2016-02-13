@@ -28,7 +28,7 @@ function [clips_out,clips_index]=ms_create_clips_index(clips,labels)
 % See also: ms_extract_clips, ms_mountainview, ms_view_templates_from_clips
 
 % Author: Jeremy Magland
-% Jan 2016; Last revision: 13-Feb-2106
+% Jan 2016; Last revision: 13-Feb-2016
 
 [M,T,NC]=size(clips);
 clips_out=zeros(M,T,NC);

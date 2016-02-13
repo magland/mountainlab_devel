@@ -1,4 +1,30 @@
 function Y=ms_filter(X,opts)
+%MS_FILTER - Bandpass filter using smooth roll-offs in Fourier space
+%
+%Consider using mscmd_bandpass_filter
+%
+% Syntax:  [Y] = ms_filter(X,opts)
+%
+% Inputs:
+%    X - MxN array of raw data
+%    opts.samplefreq - the sampling frequency corresponding to X, e.g.
+%                      30000
+%    opts.freq_min - the lower end of the bandpass filter
+%    opts.freq_max - the upper end of the bandpass filter
+%
+% Outputs:
+%    Y - MxN array of filtered data
+%
+% Example:
+%    Y=ms_filter(X,struct('samplefreq',30000,'freq_min',300,'freq_max',6000));
+%
+% Other m-files required: none
+%
+% See also: mscmd_bandpass_filter, spikespy
+
+% Author: Jeremy Magland and Alex Barnett
+% Oct 2015; Last revision: 13-Feb-2016
+
 Y=freqfilter(X,opts.samplefreq,opts.freq_min,opts.freq_max);
 end
 

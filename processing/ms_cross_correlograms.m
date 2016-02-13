@@ -30,7 +30,7 @@ function [CC,CCmda]=ms_cross_correlograms(times,labels,max_dt)
 % See also: mscmd_cross_correlograms, ms_mountainview
 
 % Author: Jeremy Magland
-% Jan 2016; Last revision: 13-Feb-2106
+% Jan 2016; Last revision: 13-Feb-2016
 
 [times,inds]=sort(times);
 labels=labels(inds);

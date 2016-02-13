@@ -1,4 +1,30 @@
 function mscmd_cross_correlograms(clusters_path,output_path,max_dt)
+%MSCMD_CROSS_CORRELOGRAMS - Generate cross-correlogram data, which in
+%particular may be used for MountainView visualization.
+%
+%MountainView can be used to view cross-correlograms. It requires the
+%cross-correlograms to be prepared with a particular format. This function
+%outputs a file that is prepared to be read by MountainView
+%
+%This is a fast implementation and is much preferred over
+%ms_cross_correlograms.
+%
+% Syntax:  mscmd_cross_correlograms(clusters_path,output_path,max_dt)
+%
+% Inputs:
+%    clusters_path - path of input array of times/labels. See docs for the
+%                    format of the clusters.mda file.
+%    output_path - path of the output .mda file that will contain the array
+%                  of cross-correlogram data, to be read in by MountainView
+%    max_dt - the maximum integer timepoint interval to consider
+%
+%
+% Other m-files required: mscmd_exe
+%
+% See also: ms_cross_correlograms, ms_mountainview
+
+% Author: Jeremy Magland
+% Jan 2016; Last revision: 13-Feb-2016
 
 if nargin==0, test_mscmd_cross_correlograms; return; end;
 

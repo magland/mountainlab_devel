@@ -1,4 +1,5 @@
 function mscmd_consolidate(cluster_path,templates_path,cluster_out_path,templates_out_path,load_channels_path,opts)
+% This function will need to be revisited
 
 if (nargin<6) opts=struct; end;
 

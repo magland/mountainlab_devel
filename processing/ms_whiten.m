@@ -1,4 +1,22 @@
 function X=ms_whiten(X)
+%MS_WHITEN - Channel-whiten an array of raw or preprocessed data
+%
+%Consider using mscmd_whiten
+%
+% Syntax:  [Y] = ms_whiten(X)
+%
+% Inputs:
+%    X - MxN array of raw or pre-processed data
+%
+% Outputs:
+%    Y - MxN array of channel-whitened data
+%
+% Other m-files required: none
+%
+% See also: mscmd_whiten, spikespy
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 13-Feb-2106
 
 if nargin<1, test_ms_whiten; return; end;
 

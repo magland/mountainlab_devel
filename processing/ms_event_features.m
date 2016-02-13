@@ -22,10 +22,10 @@ function [FF subspace] = ms_event_features(clips,num_features,opts)
 %
 % Other m-files required: none
 %
-% See also: ms_extract_clips, isosplit2, ms_view_clusters
+% See also: mscmd_features, ms_extract_clips, isosplit2, ms_view_clusters
 
 % Author: Jeremy Magland and Alex Barnett
-% Oct 2015; Last revision: 13-Feb-2106
+% Oct 2015; Last revision: 13-Feb-2016
 
 if nargin<3, opts = []; end
 if ~isfield(opts,'fmethod'), opts.fmethod='pca'; end  % default
