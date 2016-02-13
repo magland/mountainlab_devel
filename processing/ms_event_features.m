@@ -1,28 +1,55 @@
-function [z subspace] = ms_event_features(X,num_features,o)
+function [FF subspace] = ms_event_features(clips,num_features,opts)
+%MS_EVENT_FEATURES - Extract PCA features from an array of events
+%
+%Consider using mscmd_features
+%
+% Syntax:  [FF, subspace] = ms_event_features(clips,num_features,opts)
+%
+% Inputs:
+%    clips - MxTxNC array of clips (see ms_extract_clips)
+%    num_features - the number of PCA features to extract
+%    opts - don't use any options for now, please
+%
+% Outputs:
+%    FF - num_features x NC array of features
+%    subspace - MxTxnum_features array of principal components
+%
+% Example:
+%    clips=ms_extract_clips(X,times0,100);
+%    FF=ms_event_features(clips,3);
+%    labels=isosplit2(FF)
+%    ms_view_clusters(FF,labels);
+%
+% Other m-files required: none
+%
+% See also: ms_extract_clips, isosplit2, ms_view_clusters
 
-if nargin<3, o = []; end
-if ~isfield(o,'fmethod'), o.fmethod='pca'; end  % default
-[M T Ns] = size(X);
+% Author: Jeremy Magland and Alex Barnett
+% Oct 2015; Last revision: 13-Feb-2106
+
+if nargin<3, opts = []; end
+if ~isfield(opts,'fmethod'), opts.fmethod='pca'; end  % default
+[M T Ns] = size(clips);
 tic;
 % call requested alg...
-if strcmp(o.fmethod,'pca'), [z U] = features_pca(X);
-  subspace = reshape(U,[size(X,1),size(X,2),size(U,2)]);
-elseif strcmp(o.fmethod,'pcachan')
-  z = zeros(M*T,Ns); U = zeros(M*T,M*T);
+if strcmp(opts.fmethod,'pca'), [FF U] = features_pca(clips);
+  subspace = reshape(U,[size(clips,1),size(clips,2),size(U,2)]);
+elseif strcmp(opts.fmethod,'pcachan')
+  FF = zeros(M*T,Ns); U = zeros(M*T,M*T);
   for m=1:M                % PCA for each channel separately
     r = m+(0:T-1)*M;  % row indices to write to: all 1st dims together, etc.
-    [z(r,:) U(r,r)]= features_pca(X(m,:,:));
+    [FF(r,:) U(r,r)]= features_pca(clips(m,:,:));
   end
-  subspace = reshape(U,[size(X,1),size(X,2),size(U,2)]);
-elseif strcmp(o.fmethod,'cen'), z = features_spatial_centroid(X,o.d);
-elseif strcmp(o.fmethod,'raw')
-  z = reshape(permute(X,[2 1 3]),[M*T Ns]); % matrix: events are cols
+  subspace = reshape(U,[size(clips,1),size(clips,2),size(U,2)]);
+elseif strcmp(opts.fmethod,'cen'), FF = features_spatial_centroid(clips,opts.d);
+elseif strcmp(opts.fmethod,'raw')
+  FF = reshape(permute(clips,[2 1 3]),[M*T Ns]); % matrix: events are cols
 else, error('unknown fmethod in features!');
 end
 %fprintf('features done in %.3g s\n',toc)
 %%%%%
 
-z=z(1:num_features,:);
+FF=FF(1:num_features,:);
 subspace=subspace(:,:,1:num_features);
 
 function [z U] = features_pca(X)

@@ -1,11 +1,43 @@
-function [times_pos,times_neg]=ms_detect(X,opts)
+function times0=ms_detect(X,opts)
+%MS_DETECT - Detect super-threshold events in a raw/preprocessed dataset
+%
+%Consider using mscmd_detect
+%
+% Syntax:  [times0] = ms_detect(X,opts)
+%
+% Inputs:
+%    X - MxN array of raw or preprocessed data
+%    opts.detect_interval - minimum number of integer timepoints separating
+%                           two detected events
+%    opts.detect_threshold - detect events where the absolute value of the
+%                            signal (on some channel) exceeds this
+%                            threshold.
+%    opts.clip_size - this just events the very beginning and end of the
+%                     timeseries data. Makes sure we allow enough space to
+%                     later extract a clip of this size.
+%
+% Outputs:
+%    times0 - 1xL array of integer timepoints where an event has been
+%             detected.
+%
+% Example:
+%    times0=ms_detect(X,struct('detect_threshold',5,'detect_interval',15,'clip_size',100));
+%    clips=ms_extract_clips(X,times0,100);
+%    spikespy(clips);
+%
+% Other m-files required: none
+%
+% See also: mscmd_detect, ms_extract_clips, spikespy
+
+% Author: Jeremy Magland
+% Jan 2016; Last revision: 13-Feb-2106
 
 if nargin==0 test_ms_detect; return; end;
 
-[times_pos]=ms_detect_2(X,opts);
-times_neg=[];
+times0=ms_detect_2(X,opts);
 return;
 
+%The old method....
 detect_interval=opts.detect_interval;
 detect_threshold=opts.detect_threshold;
 

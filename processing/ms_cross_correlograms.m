@@ -1,4 +1,36 @@
 function [CC,CCmda]=ms_cross_correlograms(times,labels,max_dt)
+%MS_CROSS_CORRELOGRAMS - The slow way to generate cross correlogram data.
+%Better to use mscmd_cross_correlograms
+%
+%MountainView can be used to view cross-correlograms. It requires the
+%cross-correlograms to be prepared with a particular format, provided in
+%the CCmda file.
+%
+% Syntax:  [CC,CCmda] = ms_cross_correlograms(times,labels,max_dt)
+%
+% Inputs:
+%    times - 1xL array of integer timepoints
+%    labels - 1xL array of corresponding labels
+%    max_dt - the maximum integer timepoint interval to consider
+%
+% Outputs:
+%    CC - KxK cell array where K=max(labels)
+%         each CC{k1,k2} is a vector of event time differences between
+%         clusters k1 and k2
+%    CCmda - The information in CC organized into a single array that can
+%            be used by MountainView when written as a file.
+%
+% Example: 
+%    [~,CCmda]=ms_cross_correlograms(times,labels,1000)
+%    writemda('cross_correlograms.mda',CCmda);
+%    % Now run MountainView and point to this file
+%
+% Other m-files required: none
+%
+% See also: mscmd_cross_correlograms, ms_mountainview
+
+% Author: Jeremy Magland
+% Jan 2016; Last revision: 13-Feb-2106
 
 [times,inds]=sort(times);
 labels=labels(inds);
