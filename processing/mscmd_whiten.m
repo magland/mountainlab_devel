@@ -1,6 +1,26 @@
 function mscmd_whiten(input_path,output_path,opts)
+%MSCMD_WHITEN - Channel-whiten an array of raw or preprocessed data
+%
+%This is a wrapper to the command-line mountainsort procedure. It has
+%similar functionality to ms_whiten.
+%
+% Syntax:  ms_whiten(input_path,output_path,opts)
+%
+% Inputs:
+%    input_path - path to MxN array of raw or pre-processed data
+%    output_path - path to MxN output array of whitened data
+%
+% Outputs:
+%    Y - MxN array of channel-whitened data
+%
+% Other m-files required: none
+%
+% See also: mscmd_whiten, spikespy
 
-if (nargin<1) test_mscmd_whiten; return; end;
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 13-Feb-2106
+
+%if (nargin<1) test_mscmd_whiten; return; end; % test is no longer valid
 
 if (nargin<3) opts=struct; end;
 %if (~isfield(opts,'ncomp')) opts.ncomp=4; end;
@@ -18,7 +38,7 @@ end;
 
 end
 
-function test_mscmd_whiten
+function test_mscmd_whiten_old
 
 close all;
 
