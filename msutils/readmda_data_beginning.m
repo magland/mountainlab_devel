@@ -1,4 +1,22 @@
 function A=readmda_data_beginning(fname,num_timepoints)
+%READMDA - same as readmda, except only reads the beginning of the file,
+%which is convenient for exploring large files
+%
+% Syntax: A=readmda_data_beginning(fname,num_timepoints)
+%
+% Inputs:
+%    fname - path to the MxN .mda file
+%
+% Outputs:
+%    A - the multi-dimensional array, but only the first num_timepoints
+%    time points (second dimension)
+%
+% Other m-files required: none
+%
+% See also: readmda, writemda
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
 
 F=fopen(fname,'rb');
 

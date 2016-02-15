@@ -1,4 +1,28 @@
 function [mm,changes]=ms_geometric_median(X,num_iterations)
+%MS_GEOMETRIC_MEDIAN - estimate the geometric median of a collection of
+%points in n dimensions using a fixed number of iterations of the
+%weiszfeld algorithm
+%
+% Useful for extracting a template or representative waveform from a
+% collection of features derived from event clips in a single cluster.
+%
+% Syntax:  [mm,changes]=ms_geometric_median(X,num_iterations)
+%
+% Inputs:
+%    X - nxL array of points in n dimensions
+%    num_iterations - fixed number of iterations for the weiszfeld
+%    algorithm
+%
+% Outputs:
+%    mm - nx1 vector, the approximate geometric median
+%    changes - optional output for convergence monitoring
+%
+% Other m-files required: none
+%
+% See also: mscmd_features, ms_event_features
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
 if nargin<2, num_iterations=10; end;
 
 [M,N]=size(X);

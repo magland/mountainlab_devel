@@ -1,4 +1,20 @@
 function ms_view_templates(templates,opts)
+%MS_VIEW_TEMPLATES - View spike type templates or a sequence of event clips
+%
+% Syntax:  ms_view_templates(templates,opts)
+%
+% Inputs:
+%    templates - MxTxK array of spike type templates or array of event
+%    clips
+%    opts.Tpad - the spacing between templates, (default floor(T*0.2))
+%    opts.stdev - optional MxTxK array of standard deviations to be viewed
+%
+% Other m-files required: none
+%
+% See also: mscmd_templates, ms_templates, ms_view_templates_from_clips
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
 
 if (nargin<1) test_ms_view_templates; return; end;
 

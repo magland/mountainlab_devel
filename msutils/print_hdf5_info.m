@@ -1,4 +1,20 @@
 function print_hdf5_info(path)
+%PRINT_HDF5_INFO - display information about a generic HDF5 file. Useful
+%for exploring the contents of the file.
+%
+% Uses MATLAB's hdf5info and hdf5read
+%
+% Syntax: print_hdf5_info(path)
+%
+% Inputs:
+%    path - path to the hdf5 file
+%
+% Other m-files required: none
+%
+% See also: 
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
 
 fprintf('%s\n',path);
 info=hdf5info(path);

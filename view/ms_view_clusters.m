@@ -1,11 +1,28 @@
-function ms_view_clusters(X,labels)
+function ms_view_clusters(features,labels)
+%MS_VIEW_CLUSTERS - 2D or 3D view of clusters in feature space, colored by
+%labels
+%
+% Syntax:  ms_view_clusters(features,labels)
+%
+% Inputs:
+%    features - RxL array of features (R>=2), e.g., optained by
+%               mscmd_features or ms_event_features
+%    labels - 1xL array of integer labels (controls the colors of the data
+%    points)
+%
+% Other m-files required: distinguishable_colors
+%
+% See also: mscmd_features, ms_event_features
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
 
 if nargin<1, test_ms_view_clusters; return; end;
 
 addpath([fileparts(mfilename('fullpath')),'/colorspace']);
 
-M=size(X,1); if (M>3) X=X(1:3,:); end; M=size(X,1);
-N=size(X,2);
+M=size(features,1); if (M>3) features=features(1:3,:); end; M=size(features,1);
+N=size(features,2);
 
 if nargin<2
     labels=ones(1,N);
@@ -24,9 +41,9 @@ if M==2
         inds=find(labels==k);
         if (length(inds)>0)
             if (k>0)
-                plot(X(1,inds),X(2,inds),'.','Color',colors{k}); hold on;
+                plot(features(1,inds),features(2,inds),'.','Color',colors{k}); hold on;
             else
-                plot(X(1,inds),X(2,inds),'.','Color',[0.5,0.5,0.5]); hold on;
+                plot(features(1,inds),features(2,inds),'.','Color',[0.5,0.5,0.5]); hold on;
             end;
         end;
     end;
@@ -37,9 +54,9 @@ elseif M==3
         inds=find(labels==k);
         if (length(inds)>0)
             if (k>0)
-                plot3(X(1,inds),X(2,inds),X(3,inds),'.','Color',colors{k}); hold on;
+                plot3(features(1,inds),features(2,inds),features(3,inds),'.','Color',colors{k}); hold on;
             else
-                plot3(X(1,inds),X(2,inds),X(3,inds),'+','Color',[0.5,0.5,0.5]); hold on;
+                plot3(features(1,inds),features(2,inds),features(3,inds),'+','Color',[0.5,0.5,0.5]); hold on;
             end;
         end;
     end;

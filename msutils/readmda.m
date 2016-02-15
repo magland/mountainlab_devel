@@ -1,4 +1,23 @@
 function A=readmda(fname)
+%READMDA - read the contents of a .mda file. MDA stands for
+%multi-dimensional array.
+%
+% See http://magland.github.io//articles/mda-format/
+%
+% Syntax: A=readmda(fname)
+%
+% Inputs:
+%    fname - path to the .mda file
+%
+% Outputs:
+%    A - the multi-dimensional array
+%
+% Other m-files required: none
+%
+% See also: writemda
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
 
 F=fopen(fname,'rb');
 

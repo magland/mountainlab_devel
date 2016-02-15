@@ -1,4 +1,21 @@
 function view_cross_correlograms(CC,k)
+%VIEW_CROSS_CORRELOGRAMS - View cross-correlograms
+%
+% Syntax:  view_cross_correlograms(CC,k)
+%
+% Inputs:
+%    CC - either CC or CCmda output from ms_cross_correlograms, or CCmda
+%    output from mscmd_cross_correlograms
+%    k - either zero (for auto-correlograms) or >0 for cross-correlograms
+%    with label k
+%
+% Other m-files required: none
+%
+% See also: ms_cross_correlograms, mscmd_cross_correlograms,
+% ms_mountainview
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
 
 if (isstr(CC))
     CC=readmda(CC);

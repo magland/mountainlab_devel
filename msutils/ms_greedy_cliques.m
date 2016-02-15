@@ -1,4 +1,27 @@
 function C=ms_greedy_cliques(A)
+%MS_GREEDY_CLIQUES - obtain a partition of cliques from an adjacency
+%matrix using a greedy algorithm and the Bron-Kerbosch algorithm for
+%finding maximal cliques.
+%
+% Note that the maximal cliques for A are not usually disjoint. Therefore a
+% greedy algorithm is needed to return a true partition. This function is
+% useful for merging clusters based on a similarity metric.
+%
+% Syntax: C=ms_greedy_cliques
+%
+% Inputs:
+%    A - KxK adjacency matrix
+%
+% Outputs:
+%    C - cell array of index vectors
+%
+% Other m-files required: none
+%
+% See also: 
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
+
 C={};
 used=zeros(1,size(A,1));
 while max(A(:))>0
