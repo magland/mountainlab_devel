@@ -1,9 +1,9 @@
 function test_hippocampal_02_10_2016
 
-%close all; drawnow;
+close all; drawnow;
 
 %%%% Parameters and settings
-tetrode_num=2;
+tetrode_num=1;
 shell_opts.min_shell_count=2000;
 shell_opts.shell_increment=0.5;
 shell_opts.num_features=12;
@@ -72,20 +72,20 @@ writemda(clusters,[path0,'/clusters.mda']);
 %writemda(corr_matrix,[path0,'/correlation_matrix.mda']);
 
 %%%% Cross correlograms and templates
-mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],cross_correlograms_max_dt);
-mscmd_templates([path0,'/pre0_mild.mda'],[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],struct('clip_size',200));
-mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],struct('clip_size',200));
-templates=readmda([path0,'/templates.mda']);
-figure; ms_view_templates(templates);
+% mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],cross_correlograms_max_dt);
+% mscmd_templates([path0,'/pre0_mild.mda'],[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],struct('clip_size',200));
+% mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],struct('clip_size',200));
+% templates=readmda([path0,'/templates.mda']);
+% figure; ms_view_templates(templates);
 
 %%%% MountainView
-view_params.raw=[path0,'/pre2.mda'];
-view_params.clusters=[path0,'/clusters.mda'];
-view_params.cross_correlograms=[path0,'/cross_correlograms.mda'];
-view_params.templates=[path0,'/templates.mda'];
-view_params.clips=[path0,'/clips0.mda'];
-view_params.clips_index=[path0,'/clips0_index.mda'];
-ms_mountainview(view_params);
+% view_params.raw=[path0,'/pre2.mda'];
+% view_params.clusters=[path0,'/clusters.mda'];
+% view_params.cross_correlograms=[path0,'/cross_correlograms.mda'];
+% view_params.templates=[path0,'/templates.mda'];
+% view_params.clips=[path0,'/clips0.mda'];
+% view_params.clips_index=[path0,'/clips0_index.mda'];
+% ms_mountainview(view_params);
 
 %%%% Split clusters by peak amplitudes
 labels_split=split_clusters_by_peak_amplitudes(clips,labels);
@@ -95,7 +95,7 @@ for k=1:K_split
     inds_k=find(labels_split==k);
     templates_split(:,:,k)=compute_clips_template(clips(:,:,inds_k));
     inds0=find_spikes_that_do_not_fit_well(clips(:,:,inds_k),templates_split(:,:,k));
-    fprintf('k=%d: %d/%d spikes fit well.\n',k,length(inds_k)-length(inds0),length(inds_k));
+    fprintf('k=%d: Using %d/%d spikes (%d%%).\n',k,length(inds_k)-length(inds0),length(inds_k),floor((length(inds_k)-length(inds0))/length(inds_k)*100));
     labels_split(inds_k(inds0))=0;
 end;
 clusters_split=readmda([path0,'/clusters.mda']);
@@ -121,13 +121,16 @@ function inds0=find_spikes_that_do_not_fit_well(clips,template)
 [M,T,L]=size(clips);
 Vclips=reshape(clips,M*T,L);
 Vtemplate=reshape(template,M*T,1);
-template_norm=sqrt(Vtemplate'*Vtemplate);
-clip_norms=sqrt(sum(Vclips.^2,1));
-Vclips_resid=Vclips-repmat(Vtemplate,1,L);
-clip_norms_resid=sqrt(sum(Vclips_resid.^2,1));
-%norm_reduction=clip_norms-clip_norms_resid;
-%inds0=find(norm_reduction<template_norm*0.5);
-inds0=find(clip_norms_resid>sqrt(M*T)*2);
+Vclips=Vclips.*abs(repmat(Vtemplate,1,L));
+Vtemplate=Vtemplate.*abs(Vtemplate);
+Vresid=Vclips-repmat(Vtemplate,1,L);
+Vresid_norm=sqrt(sum(Vresid.^2,1));
+Vtemplate_norm=sqrt(Vtemplate'*Vtemplate);
+
+sigma=1;
+expected_vresid_norm=Vtemplate_norm*sigma;
+score=Vresid_norm./expected_vresid_norm;
+inds0=find(score>1.2);
 end
 
 function template=compute_clips_template(clips)
