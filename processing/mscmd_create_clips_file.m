@@ -19,6 +19,7 @@ function mscmd_create_clips_file(raw_path,clusters_path,output_clips_path,output
 %    output_index_path - path to create the index file used by
 %                        mountainview. See ms_create_clips_index for more
 %                        info.
+%    opts.clip_size - number of time points in a clip
 %
 % Other m-files required: mscmd_exe
 %

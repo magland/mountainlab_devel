@@ -88,12 +88,54 @@ view_params.clips_index=[path0,'/clips0_index.mda'];
 ms_mountainview(view_params);
 
 %%%% Split clusters by peak amplitudes
-templates_split=split_clusters_by_peak_amplitudes(clips,labels);
+labels_split=split_clusters_by_peak_amplitudes(clips,labels);
+K_split=max(labels_split);
+templates_split=zeros(M,T,K_split);
+for k=1:K_split
+    inds_k=find(labels_split==k);
+    templates_split(:,:,k)=compute_clips_template(clips(:,:,inds_k));
+    inds0=find_spikes_that_do_not_fit_well(clips(:,:,inds_k),templates_split(:,:,k));
+    fprintf('k=%d: %d/%d spikes fit well.\n',k,length(inds_k)-length(inds0),length(inds_k));
+    labels_split(inds_k(inds0))=0;
+end;
+clusters_split=readmda([path0,'/clusters.mda']);
+clusters_split(3,:)=labels_split;
+writemda(clusters_split,[path0,'/clusters_split.mda']);
 figure; ms_view_templates(templates_split);
+writemda(templates_split,[path0,'/templates_split.mda']);
+mscmd_create_clips_file([path0,'/pre2.mda'],[path0,'/clusters_split.mda'],[path0,'/clips0_split.mda'],[path0,'/clips0_split_index.mda'],struct('clip_size',o_extract_clips.clip_size));
+mscmd_cross_correlograms([path0,'/clusters_split.mda'],[path0,'/cross_correlograms_split.mda'],cross_correlograms_max_dt);
+
+%%%% MountainView
+view_params.raw=[path0,'/pre2.mda'];
+view_params.clusters=[path0,'/clusters_split.mda'];
+view_params.cross_correlograms=[path0,'/cross_correlograms_split.mda'];
+view_params.templates=[path0,'/templates_split.mda'];
+view_params.clips=[path0,'/clips0_split.mda'];
+view_params.clips_index=[path0,'/clips0_split_index.mda'];
+ms_mountainview(view_params);
 
 end
 
+function inds0=find_spikes_that_do_not_fit_well(clips,template)
+[M,T,L]=size(clips);
+Vclips=reshape(clips,M*T,L);
+Vtemplate=reshape(template,M*T,1);
+template_norm=sqrt(Vtemplate'*Vtemplate);
+clip_norms=sqrt(sum(Vclips.^2,1));
+Vclips_resid=Vclips-repmat(Vtemplate,1,L);
+clip_norms_resid=sqrt(sum(Vclips_resid.^2,1));
+%norm_reduction=clip_norms-clip_norms_resid;
+%inds0=find(norm_reduction<template_norm*0.5);
+inds0=find(clip_norms_resid>sqrt(M*T)*2);
+end
+
 function template=compute_clips_template(clips)
+[M,T,NC]=size(clips);
+if (length(clips(:))==0)
+    template=zeros(M,T);
+    return;
+end;
 [M,T,NC]=size(clips);
 num_features=18;
 FF=ms_event_features(clips,num_features);
@@ -317,43 +359,30 @@ writemda(L,[output_path,'/locations.mda']);
 
 end
 
-function templates=split_clusters_by_peak_amplitudes(clips,labels)
+function [labels_out]=split_clusters_by_peak_amplitudes(clips,labels)
 [M,T,NC]=size(clips);
 templates=zeros(M,T,0);
 K=max(labels);
+labels_out=zeros(1,NC);
 for k=1:K
     inds=find(labels==k);
-    templates0=split_cluster_by_peak_amplitudes(clips(:,:,inds));
-    templates=cat(3,templates,templates0);
-    if (k<K) templates=cat(3,templates,zeros(M,T,2)); end;
+    labels0=split_cluster_by_peak_amplitudes(clips(:,:,inds));
+    labels_out(inds)=labels0+max(labels_out);
 end;
 end
 
-function [templates,labels]=split_cluster_by_peak_amplitudes(clips)
+function [labels]=split_cluster_by_peak_amplitudes(clips)
 [M,T,NC]=size(clips);
 clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
 clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
 
-incr=1;
+[peak_mins,peak_maxs]=define_shells(clip_peaks,struct('shell_increment',2,'min_shell_count',200));
 
-candidate_cutoffs=ceil(min(clip_peaks)/incr)*incr:incr:floor(max(clip_peaks)/incr)*incr;
-cutoffs=[-inf];
-for ii=1:length(candidate_cutoffs)
-    cc=candidate_cutoffs(ii);
-    n1=length(find((clip_peaks<cc)&(clip_peaks>=cutoffs(end))));
-    n2=length(find(clip_peaks>=cc));
-    if (n1>=30)&&(n2>=30)
-        cutoffs=[cutoffs,cc];
-    end;
-end;
-cutoffs=[cutoffs,inf];
-
-templates=zeros(M,T,length(cutoffs)-1);
+templates=zeros(M,T,length(peak_mins));
 labels=zeros(1,NC);
-for ii=1:length(cutoffs)-1
-    inds=find((clip_peaks>=cutoffs(ii))&(clip_peaks<cutoffs(ii+1)));
-    templates(:,:,ii)=compute_clips_template(clips(:,:,inds));
+for ii=1:length(peak_mins)
+    inds=find((clip_peaks>=peak_mins(ii))&(clip_peaks<peak_maxs(ii)));
     labels(inds)=max(labels)+1;
 end;
 
