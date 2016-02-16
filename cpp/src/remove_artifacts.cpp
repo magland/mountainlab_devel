@@ -1,8 +1,7 @@
 #include "remove_artifacts.h"
-
 #include "diskreadmda.h"
 #include "mdaio.h"
-
+#include <math.h>
 #include <QTime>
 
 bool remove_artifacts(const char *input_path, const char *output_path, float threshold, bool normalize, int exclude_interval)

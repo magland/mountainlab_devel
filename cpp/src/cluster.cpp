@@ -2,6 +2,7 @@
 #include "mdaio.h"
 #include "isosplit.h"
 #include "diskreadmda.h"
+#include <stdio.h>
 
 int get_num_channels(const char *path);
 int cluster_2(int ch,DiskReadMda &F,MDAIO_HEADER *H_out,FILE *output_file,int *num_clusters,int label_offset,float ks_threshold,int K_init);

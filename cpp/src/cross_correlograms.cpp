@@ -1,6 +1,7 @@
 #include "cross_correlograms.h"
 #include "diskreadmda.h"
 #include <QList>
+#include <stdio.h>
 
 typedef QList<int> IntList;
 bool cross_correlograms(const char *clusters_path,const char *output_path,int max_dt) {

@@ -3,6 +3,9 @@
 #include "isosplit.h"
 #include "get_principal_components.h"
 #include <QVector>
+#include <stdio.h>
+#include <math.h>
+
 
 QVector<int> do_isobranch(Mda &clips, const QList<float> &branch_thresholds, int num_features, float isocut_threshold, int K_init);
 

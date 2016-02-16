@@ -90,5 +90,7 @@ HEADERS += get_command_line_params.h
 SOURCES += get_command_line_params.cpp
 
 QMAKE_LFLAGS += -fopenmp
-QMAKE_CXXFLAGS += -fopenmp -std=c++11
+QMAKE_CXXFLAGS += -fopenmp
+#-std=c++11   # AHB removed since not in GNU gcc 4.6.3
+
 LIBS += -fopenmp -lfftw3 -lfftw3_threads

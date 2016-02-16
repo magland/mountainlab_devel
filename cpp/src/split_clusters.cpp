@@ -4,6 +4,7 @@
 #include "get_principal_components.h"
 #include "isosplit.h"
 #include "omp.h"
+#include <stdio.h>
 
 QList<int> get_times(DiskReadMda &C,int k);
 int get_K(DiskReadMda &C);

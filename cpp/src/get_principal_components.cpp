@@ -1,6 +1,6 @@
 #include "get_principal_components.h"
 #include <QDebug>
-
+#include <math.h>
 
 void make_random_vector(int M,double *v) {
 	for (int i=0; i<M; i++) v[i]=(qrand()*1.0/RAND_MAX)*2-1;
