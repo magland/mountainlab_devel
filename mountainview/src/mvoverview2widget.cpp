@@ -14,6 +14,7 @@ public:
 	DiskReadMda m_raw;
 	DiskReadMda m_firings_original;
 	Mda m_firings;
+	QList<int> m_original_cluster_numbers;
 
 	SSTimeSeriesView *m_raw_view;
 	MVCrossCorrelogramsWidget *m_cross_correlograms_widget;
@@ -21,6 +22,7 @@ public:
 	MVOverview2WidgetControlPanel *m_control_panel;
 
 	QSplitter *m_splitter1,*m_splitter2;
+	QTabWidget *m_tabs1,*m_tabs2;
 
 	Mda create_cross_correlograms_data();
 	Mda create_templates_data();
@@ -58,12 +60,16 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 	splitter1->addWidget(splitter2);
 
 
-	QTabWidget *TW=new QTabWidget;
-	TW->addTab(d->m_cross_correlograms_widget,"Cross-Correlograms");
-	TW->addTab(d->m_templates_widget,"Templates");
+	d->m_tabs1=new QTabWidget; //d->m_tabs1->setMovable(true);
+	d->m_tabs2=new QTabWidget; //d->m_tabs2->setMovable(true);
 
-	splitter2->addWidget(TW);
-	splitter2->addWidget(d->m_raw_view);
+
+	d->m_tabs1->addTab(d->m_templates_widget,"Templates");
+	d->m_tabs2->addTab(d->m_cross_correlograms_widget,"Cross-Correlograms");
+	d->m_tabs2->addTab(d->m_raw_view,"Raw");
+
+	splitter2->addWidget(d->m_tabs1);
+	splitter2->addWidget(d->m_tabs2);
 
 	QHBoxLayout *hlayout=new QHBoxLayout;
 	hlayout->addWidget(splitter1);
@@ -92,6 +98,7 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
 			d->m_firings.setValue(d->m_firings_original.value(i1,i2),i1,i2);
 		}
 	}
+	d->m_original_cluster_numbers.clear();
 	QList<double> times;
 	QList<double> labels;
 	for (int n=0; n<d->m_firings.N2(); n++) {
@@ -99,6 +106,13 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
 		labels << d->m_firings.value(2,n);
 	}
 	d->m_raw_view->setTimesLabels(times,labels);
+	int K=0;
+	for (int n=0; n<labels.count(); n++) {
+		if (labels[n]>K) K=labels[n];
+	}
+	for (int k=0; k<=K; k++) {
+		d->m_original_cluster_numbers << k;
+	}
 }
 
 void MVOverview2Widget::updateWidgets()
@@ -302,7 +316,20 @@ void MVOverview2WidgetPrivate::update_templates()
 	printf("Setting templates data...\n");
 	DiskArrayModel *MM=new DiskArrayModel;
 	MM->setFromMda(TD);
+	int KK=TD.N3();
+	QList<double> times,labels;
+	int last_k=-1;
+	for (int kk=1; kk<=KK; kk++) {
+		int k=m_original_cluster_numbers.value(kk);
+		if (k!=last_k) {
+			times << TD.N2()*(kk-1+0.5);
+			labels << k;
+		}
+		last_k=k;
+	}
 	m_templates_widget->setData(MM,true);
+	m_templates_widget->setTimesLabels(times,labels);
+	m_templates_widget->setMarkerLinesVisible(false);
 	printf(".\n");
 }
 
@@ -369,14 +396,17 @@ void MVOverview2WidgetPrivate::do_amplitude_split()
 		}
 	}
 
+	m_original_cluster_numbers.clear();
+	m_original_cluster_numbers << 0;
 	for (int kk=0; kk<KK; kk++) {
 		int k=nums[kk];
 		float min0=mins[kk];
 		float max0=maxs[kk];
+		m_original_cluster_numbers << k;
 		for (int n=0; n<times.count(); n++) {
 			if (labels[n]==k) {
 				if ((min0<=peaks[n])&&(peaks[n]<max0)) {
-					m_firings.setValue(kk,2,n);
+					m_firings.setValue(kk+1,2,n);
 				}
 			}
 		}
