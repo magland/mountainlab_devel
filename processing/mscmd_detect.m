@@ -22,18 +22,20 @@ function mscmd_detect(input_path,output_path,opts)
 %                           two detected events
 %    opts.detect_threshold - detect events where the absolute value of the
 %                            signal exceeds this threshold.
+%    opts.outer_window_width  ... to be documented.
 %
 % Other m-files required: mscmd_exe
 %
 % See also: mscmd_detect, ms_detect
 
 % Author: Jeremy Magland
-% Jan 2016; Last revision: 13-Feb-2106
+% Jan 2016; Last revision: 16-Feb-2016. AHB
 
 if (nargin<3) opts=struct; end;
 
 if ~isfield(opts,'individual_channels') opts.individual_channels=1; end;
 if ~isfield(opts,'normalize') opts.normalize=0; end;
+if ~isfield(opts,'inner_window_width') opts.inner_window_width=10; end;
 if isfield(opts,'detect_interval') opts.inner_window_width=opts.detect_interval; end;
 if isfield(opts,'detect_threshold') opts.threshold=opts.detect_threshold; end;
 if ~isfield(opts,'outer_window_width') opts.outer_window_width=1000; end;
