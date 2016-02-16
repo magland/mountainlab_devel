@@ -45,6 +45,7 @@ mscmd_extract_clips([path0,'/pre2.mda'],[path0,'/detect.mda'],[path0,'/clips.mda
 fprintf('Reading...\n');
 clips=readmda([path0,'/clips.mda']);
 [M,T,NC]=size(clips);
+clips=clips-repmat(mean(clips,2),1,T,1); %subtract mean over time
 
 %%%% Shell cluster
 fprintf('Shell cluster...\n');
@@ -119,19 +120,35 @@ end
 
 function inds0=find_spikes_that_do_not_fit_well(clips,template)
 [M,T,L]=size(clips);
+weights=get_template_weights(template,5);
 Vclips=reshape(clips,M*T,L);
 Vtemplate=reshape(template,M*T,1);
-Vclips=Vclips.*abs(repmat(Vtemplate,1,L));
-Vtemplate=Vtemplate.*abs(Vtemplate);
+Vweights=reshape(weights,M*T,1);
+Vclips=Vclips.*repmat(Vweights,1,L);
+Vtemplate=Vtemplate.*Vweights;
 Vresid=Vclips-repmat(Vtemplate,1,L);
 Vresid_norm=sqrt(sum(Vresid.^2,1));
-Vtemplate_norm=sqrt(Vtemplate'*Vtemplate);
+%Vtemplate_norm=sqrt(Vtemplate'*Vtemplate);
+Vweights_norm=sqrt(Vweights'*Vweights);
 
 sigma=1;
-expected_vresid_norm=Vtemplate_norm*sigma;
+expected_vresid_norm=Vweights_norm*sigma;
 score=Vresid_norm./expected_vresid_norm;
-inds0=find(score>1.2);
+inds0=find(score>1.5);
 end
+
+function Y=get_template_weights(template,num_pix)
+[M,T]=size(template);
+
+aa=ifftshift(-floor(T/2):-floor(T/2)+T-1);
+sig=num_pix;
+kernel=exp(-0.5*aa.^2/sig^2);
+
+fhat=fft(abs(template),[],2);
+fhat=fhat.*repmat(kernel,M,1);
+Y=real(ifft(fhat,[],2));
+end
+
 
 function template=compute_clips_template(clips)
 [M,T,NC]=size(clips);

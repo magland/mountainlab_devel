@@ -18,7 +18,7 @@
 #include "histogramview.h"
 #include "mvoverviewwidget.h"
 #include "mvlabelcomparewidget.h"
-#include "mvmergewidget.h"
+#include "mvoverview2widget.h"
 
 /*
  * TO DO:
@@ -85,8 +85,9 @@ int main(int argc, char *argv[]) {
     QString raw_path=CLP.named_parameters.value("raw");
     QString times_path=CLP.named_parameters.value("times");
     QString labels_path=CLP.named_parameters.value("labels");
-    QString clusters_path=CLP.named_parameters.value("clusters");
-    if (clusters_path.isEmpty()) clusters_path=CLP.named_parameters.value("cluster"); //historical compatibility
+	QString firings_path=CLP.named_parameters.value("firings");
+	if (firings_path.isEmpty()) firings_path=CLP.named_parameters.value("clusters"); //historical compatibility
+	if (firings_path.isEmpty()) firings_path=CLP.named_parameters.value("cluster"); //historical compatibility
     QString primary_channels_path=CLP.named_parameters.value("primary-channels");
     QString cross_correlograms_path=CLP.named_parameters.value("cross-correlograms");
 	if (cross_correlograms_path.isEmpty()) cross_correlograms_path=CLP.named_parameters.value("cross_correlograms");
@@ -94,10 +95,9 @@ int main(int argc, char *argv[]) {
 	QString clips_index_path=CLP.named_parameters.value("clips-index");
 	if (clips_index_path.isEmpty()) clips_index_path=CLP.named_parameters.value("clips_index");
 
-	QString clusters2_path=CLP.named_parameters.value("clusters2"); //for mode=compare_labels
-	if (clusters2_path.isEmpty()) clusters2_path=CLP.named_parameters.value("cluster2"); //historical compatibility
-
-	QString correlation_matrix_path=CLP.named_parameters.value("correlation_matrix"); //for mode=merge
+	QString firings2_path=CLP.named_parameters.value("firings2"); //for mode=compare_labels
+	if (firings2_path.isEmpty()) firings2_path=CLP.named_parameters.value("clusters2"); //historical compatibility
+	if (firings2_path.isEmpty()) firings2_path=CLP.named_parameters.value("cluster2"); //historical compatibility
 
     if (mode=="overview") {
         MVOverviewWidget *W=new MVOverviewWidget;
@@ -139,8 +139,8 @@ int main(int argc, char *argv[]) {
             }
             W->setTimesLabels(T,L);
         }
-        if (!clusters_path.isEmpty()) {
-            Mda CC; CC.read(clusters_path);
+		if (!firings_path.isEmpty()) {
+			Mda CC; CC.read(firings_path);
             int num_events=CC.N2();
             Mda T,L;
             T.allocate(1,num_events);
@@ -160,13 +160,12 @@ int main(int argc, char *argv[]) {
         }
         W->updateWidgets();
     }
-	else if (mode=="merge") {
+	else if (mode=="overview2") {
 		printf("merge...\n");
-		MVMergeWidget *W=new MVMergeWidget;
+		MVOverview2Widget *W=new MVOverview2Widget;
 		W->setRawPath(raw_path);
-		W->setClustersPath(clusters_path);
-		Mda CM; CM.read(correlation_matrix_path);
-		W->setCorrelationMatrix(CM);
+		W->setFiringsPath(firings_path);
+		W->updateWidgets();
 		W->show();
 		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
 		W->resize(1800,1200);
@@ -187,10 +186,10 @@ int main(int argc, char *argv[]) {
             X->setPath(raw_path);
             W->setRaw(X,true);
         }
-		if ((!clusters_path.isEmpty())&&(!clusters2_path.isEmpty())) {
+		if ((!firings_path.isEmpty())&&(!firings2_path.isEmpty())) {
             Mda T1,L1,T2,L2;
             {
-                Mda CC; CC.read(clusters_path);
+				Mda CC; CC.read(firings_path);
                 int num_events=CC.N2();
                 Mda T,L;
                 T.allocate(1,num_events);
@@ -202,7 +201,7 @@ int main(int argc, char *argv[]) {
                 T1=T; L1=L;
             }
             {
-				Mda CC; CC.read(clusters2_path);
+				Mda CC; CC.read(firings2_path);
                 int num_events=CC.N2();
                 Mda T,L;
                 T.allocate(1,num_events);

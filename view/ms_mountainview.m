@@ -9,6 +9,7 @@ function ms_mountainview(view_params)
 %
 % Inputs:
 %    (Most are optional)
+%    view_params.mode - 'overview' (default), 'overview2', or 'compare_labels'
 %    view_params.raw - MxN raw or preprocessed data
 %    view_params.clusters - RxL array of times/labels etc. according to
 %                           the docs. R is at least 3. The second row is 
@@ -35,6 +36,9 @@ exe_fname=sprintf('%s/../mountainview/bin/mountainview',mfile_path);
 cmd='';
 cmd=[cmd,sprintf('%s ',exe_fname)];
 
+if isfield(view_params,'mode')
+    cmd=[cmd,sprintf('--mode=%s ',view_params.mode)];
+end;
 if isfield(view_params,'raw')
     cmd=[cmd,sprintf('--raw=%s ',view_params.raw)];
 end;

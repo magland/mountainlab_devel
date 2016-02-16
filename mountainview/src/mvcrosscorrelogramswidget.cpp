@@ -20,8 +20,11 @@ public:
 	QList<int> m_unit_numbers;
 	DiskReadMda m_data;
 
+	QGridLayout *m_grid_layout;
 	QList<HistogramView *> m_histogram_views;
 	int m_num_columns;
+
+	QList<QWidget *> m_child_widgets;
 
 	void do_highlighting();
 };
@@ -34,6 +37,12 @@ MVCrossCorrelogramsWidget::MVCrossCorrelogramsWidget()
 	d->m_base_unit_num=0;
 	d->m_unit_numbers.clear();
 	d->m_num_columns=-1;
+
+	QGridLayout *GL=new QGridLayout;
+	GL->setHorizontalSpacing(20); GL->setVerticalSpacing(0);
+	GL->setMargin(0);
+	this->setLayout(GL);
+	d->m_grid_layout=GL;
 
 	this->setFocusPolicy(Qt::StrongFocus);
 }
@@ -160,6 +169,13 @@ float compute_max(const QList<FloatList> &data0) {
 
 void MVCrossCorrelogramsWidget::updateWidget()
 {
+	QGridLayout *GL=d->m_grid_layout;
+	qDeleteAll(d->m_histogram_views);
+	d->m_histogram_views.clear();
+
+	qDeleteAll(d->m_child_widgets);
+	d->m_child_widgets.clear();
+
 	QProgressDialog dlg;
 	dlg.show();
 	dlg.setLabelText("Loading cross correlograms...");
@@ -176,11 +192,6 @@ void MVCrossCorrelogramsWidget::updateWidget()
 	int num_rows=(int)sqrt(K); if (num_rows<1) num_rows=1;
 	int num_cols=(K+num_rows-1)/num_rows;
 	d->m_num_columns=num_cols;
-
-	QGridLayout *GL=new QGridLayout;
-	GL->setHorizontalSpacing(20); GL->setVerticalSpacing(0);
-	GL->setMargin(0);
-	this->setLayout(GL);
 
 	float sample_freq=30000; //FIX: this is hard-coded!!!
 	float bin_max=compute_max(data0);
@@ -215,9 +226,12 @@ void MVCrossCorrelogramsWidget::updateWidget()
 		connect(HV,SIGNAL(activated()),this,SLOT(slot_histogram_view_activated()));
 		d->m_histogram_views << HV;
 	}
+
 	TimeScaleWidget *TSW=new TimeScaleWidget;
 	TSW->m_time_width=time_width;
 	GL->addWidget(TSW,num_rows,0);
+
+	d->m_child_widgets << TSW;
 
 }
 

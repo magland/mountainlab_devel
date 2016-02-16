@@ -23,8 +23,9 @@ HEADERS += \
     mvcdfview.h \
     static_neuron_colors.h \
     mvutils.h \
-    mvmergewidget.h \
-    correlationmatrixview.h
+    mvoverview2widget.h \
+    correlationmatrixview.h \
+    mvoverview2widgetcontrolpanel.h
 SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
@@ -37,8 +38,9 @@ SOURCES += mountainviewmain.cpp \
     mvcdfview.cpp \
     static_neuron_colors.cpp \
     mvutils.cpp \
-    mvmergewidget.cpp \
-    correlationmatrixview.cpp
+    mvoverview2widget.cpp \
+    correlationmatrixview.cpp \
+    mvoverview2widgetcontrolpanel.cpp
 
 HEADERS += get_principal_components.h
 SOURCES += get_principal_components.cpp

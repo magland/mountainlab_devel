@@ -28,7 +28,8 @@ public:
     Mda m_memory_mda;
     bool m_using_memory_mda;
 
-	int get_index(int i1,int i2,int i3=0,int i4=0,int i5=0,int i6=0);
+	int get_index(int i1,int i2,int i3,int i4=0,int i5=0,int i6=0);
+	int get_index(int i1,int i2);
     double *load_chunk(int i);
 	void clear_chunks();
 	void load_header();
@@ -123,6 +124,21 @@ int DiskReadMda::size(int dim) const {
 	return d->m_size[dim];
 }
 
+double DiskReadMda::value(int i1, int i2)
+{
+	if (d->m_using_memory_mda) {
+		return d->m_memory_mda.value(i1,i2);
+	}
+	int ind=d->get_index(i1,i2);
+	if (ind<0) return 0;
+	double *X=d->load_chunk(ind/CHUNKSIZE);
+	if (!X) {
+		qWarning() << "chunk not loaded:" << ind << ind/CHUNKSIZE;
+		return 0;
+	}
+	return X[ind%CHUNKSIZE];
+}
+
 double DiskReadMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
 {
     if (d->m_using_memory_mda) {
@@ -192,6 +208,11 @@ int DiskReadMdaPrivate::get_index(int i1, int i2, int i3, int i4, int i5, int i6
 		factor*=m_size[j];
 	}
 	return ret;
+}
+
+int DiskReadMdaPrivate::get_index(int i1, int i2)
+{
+	return i1+m_size[0]*i2;
 }
 
 double *DiskReadMdaPrivate::load_chunk(int i)

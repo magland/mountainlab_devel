@@ -21,6 +21,13 @@ compile_isocut_if_needed;
 
 info.num_iterations=0;
 
+if N==0
+    labels=[];
+    return;
+end;
+
+
+
 labels_init=local_kmeans_sorber(X,opts.K_init);
 labels=labels_init;
 active_labels=ones(1,opts.K_init);

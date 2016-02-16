@@ -176,6 +176,13 @@ void Mda::reshape(int N1, int N2, int N3, int N4, int N5, int N6)
 double Mda::value1(int i) const {
 	return d->m_data_real[i];
 }
+
+double Mda::value(int i1, int i2) const
+{
+	if ((i1<0)||(i1>=size(0))) return 0;
+	if ((i2<0)||(i2>=size(1))) return 0;
+	return d->m_data_real[i1+size(0)*i2];
+}
 double Mda::value(int i1,int i2,int i3,int i4) const {
 	if ((i1<0)||(i1>=size(0))) return 0;
 	if ((i2<0)||(i2>=size(1))) return 0;
