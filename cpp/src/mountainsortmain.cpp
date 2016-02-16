@@ -14,14 +14,14 @@
 #include "features0.h"
 #include "cluster.h"
 #include "isobranch.h"
-#include "split_clusters.h"
+#include "split_firings.h"
 #include "templates.h"
 #include "consolidate.h"
 #include "extract_clips.h"
 #include "extract_channels.h"
 #include "remove_artifacts.h"
 #include "create_clips_file.h"
-#include "assemble_clusters_file.h"
+#include "assemble_firings_file.h"
 #include "get_principal_components.h"
 #include "fit.h"
 #include "cross_correlograms.h"
@@ -100,9 +100,9 @@ void register_processors(ProcessTracker &PT) {
     }
 	{
 		PTProcessor P;
-		P.command="split_clusters";
+		P.command="split_firings";
 		P.input_file_pnames << "input";
-        P.input_file_pnames << "clusters";
+		P.input_file_pnames << "firings";
 		P.output_file_pnames << "output";
 		P.version="0.15";
 		PT.registerProcessor(P);
@@ -111,7 +111,7 @@ void register_processors(ProcessTracker &PT) {
         PTProcessor P;
         P.command="templates";
         P.input_file_pnames << "input";
-        P.input_file_pnames << "clusters";
+		P.input_file_pnames << "firings";
         P.output_file_pnames << "output";
 		P.version="0.17";
         PT.registerProcessor(P);
@@ -119,7 +119,7 @@ void register_processors(ProcessTracker &PT) {
     {
         PTProcessor P;
         P.command="consolidate";
-        P.input_file_pnames << "clusters";
+		P.input_file_pnames << "firings";
         P.input_file_pnames << "templates";
         P.output_file_pnames << "cluster_out";
         P.output_file_pnames << "templates_out";
@@ -131,7 +131,7 @@ void register_processors(ProcessTracker &PT) {
         PTProcessor P;
         P.command="fit";
         P.input_file_pnames << "input";
-        P.input_file_pnames << "clusters";
+		P.input_file_pnames << "firings";
         P.output_file_pnames << "templates";
         P.output_file_pnames << "cluster_out";
 		P.version="0.14";
@@ -166,7 +166,7 @@ void register_processors(ProcessTracker &PT) {
         PTProcessor P;
         P.command="create_clips_file";
         P.input_file_pnames << "input";
-        P.input_file_pnames << "clusters";
+		P.input_file_pnames << "firings";
         P.output_file_pnames << "output";
         P.output_file_pnames << "index_out";
         P.version="0.1";
@@ -174,17 +174,17 @@ void register_processors(ProcessTracker &PT) {
     }
     {
         PTProcessor P;
-        P.command="assemble_clusters_file";
+		P.command="assemble_firings_file";
         P.input_file_pnames << "input_detect";
         P.input_file_pnames << "input_labels";
-        P.output_file_pnames << "output_clusters";
+		P.output_file_pnames << "output_firings";
         P.version="0.11";
         PT.registerProcessor(P);
     }
 	{
 		PTProcessor P;
 		P.command="cross_correlograms";
-		P.input_file_pnames << "clusters";
+		P.input_file_pnames << "firings";
 		P.output_file_pnames << "output";
 		P.version="0.11";
 		PT.registerProcessor(P);
@@ -192,7 +192,7 @@ void register_processors(ProcessTracker &PT) {
 	{
 		PTProcessor P;
 		P.command="confusion_matrix";
-		P.input_file_pnames << "clusters1" << "clusters2";
+		P.input_file_pnames << "firings1" << "firings2";
 		P.output_file_pnames << "output";
 		P.version="0.12";
 		PT.registerProcessor(P);
@@ -240,8 +240,8 @@ void isobranch_usage() {
     printf("mountainsort isobranch --input_clips=clips.mda --output_labels=labels.mda --branch_thresholds=2.5,3,3.5,4,5 --isocut_threshold=1.2 --K_init=30 --num_features=3 \n");
 }
 
-void split_clusters_usage() {
-	printf("mountainsort split_clusters --input=in.mda --cluster=cluster.mda --output=out.mda --num_features=3 --clip_size=100 --ks_threshold=1.4 --K_init \n");
+void split_firings_usage() {
+	printf("mountainsort split_firings --input=in.mda --cluster=cluster.mda --output=out.mda --num_features=3 --clip_size=100 --ks_threshold=1.4 --K_init \n");
 }
 
 void templates_usage() {
@@ -272,16 +272,16 @@ void create_clips_file_usage() {
     printf("mountainsort create_clips_file --input=raw.mda --cluster=cluster.mda --output=clips.mda --index_out=clips_index.mda --clip_size=100\n");
 }
 
-void assemble_clusters_file_usage() {
-    printf("mountainsort assemble_clusters_file --input_detect=detect.mda --input_labels=labels.mda --output_clusters=clusters.mda\n");
+void assemble_firings_file_usage() {
+	printf("mountainsort assemble_firings_file --input_detect=detect.mda --input_labels=labels.mda --output_firings=firings.mda\n");
 }
 
 void cross_correlograms_usage() {
-	printf("mountainsort cross_correlograms --clusters=clusters.mda --output=cross_correlograms.mda --max_dt=1500\n");
+	printf("mountainsort cross_correlograms --firings=firings.mda --output=cross_correlograms.mda --max_dt=1500\n");
 }
 
 void confusion_matrix_usage() {
-	printf("mountainsort confusion_matrix --clusters1=clusters1.mda --clusters2=clusters2.mda --output=confusion_matrix.mda --max_matching_offset=3\n");
+	printf("mountainsort confusion_matrix --firings1=firings1.mda --firings2=firings2.mda --output=confusion_matrix.mda --max_matching_offset=3\n");
 }
 
 void copy_usage() {
@@ -535,68 +535,68 @@ int main(int argc,char *argv[]) {
             return -1;
         }
     }
-	else if (command=="split_clusters") {
+	else if (command=="split_firings") {
 		QString input_path=CLP.named_parameters["input"];
-        QString cluster_path=CLP.named_parameters["clusters"];
+		QString firings_path=CLP.named_parameters["firings"];
 		QString output_path=CLP.named_parameters["output"];
 		int num_features=CLP.named_parameters["num_features"].toInt();
 		int clip_size=CLP.named_parameters["clip_size"].toInt();
 		float ks_threshold=CLP.named_parameters["ks_threshold"].toFloat();
 		int K_init=CLP.named_parameters["K_init"].toInt();
 
-		if ((input_path.isEmpty())||(cluster_path.isEmpty())||(output_path.isEmpty())) {cluster_usage(); return -1;}
+		if ((input_path.isEmpty())||(firings_path.isEmpty())||(output_path.isEmpty())) {cluster_usage(); return -1;}
 		if (num_features==0) {cluster_usage(); return -1;}
 		if (clip_size==0) {cluster_usage(); return -1;}
 		if (ks_threshold==0) ks_threshold=1.4;
 		if (K_init==0) K_init=25;
 
-		if (!split_clusters(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size,ks_threshold,K_init)) {
+		if (!split_firings(input_path.toLatin1().data(),firings_path.toLatin1().data(),output_path.toLatin1().data(),num_features,clip_size,ks_threshold,K_init)) {
 			printf("Error in cluster.\n");
 			return -1;
 		}
 	}
     else if (command=="templates") {
         QString input_path=CLP.named_parameters["input"];
-        QString cluster_path=CLP.named_parameters["clusters"];
+		QString firings_path=CLP.named_parameters["firings"];
         QString output_path=CLP.named_parameters["output"];
         int clip_size=CLP.named_parameters["clip_size"].toInt();
 
-        if ((input_path.isEmpty())||(cluster_path.isEmpty())||(output_path.isEmpty())) {templates_usage(); return -1;}
+		if ((input_path.isEmpty())||(firings_path.isEmpty())||(output_path.isEmpty())) {templates_usage(); return -1;}
         if (clip_size==0) {templates_usage(); return -1;}
 
-        if (!templates(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),clip_size)) {
+		if (!templates(input_path.toLatin1().data(),firings_path.toLatin1().data(),output_path.toLatin1().data(),clip_size)) {
             printf("Error in templates.\n");
             return -1;
         }
     }
     else if (command=="consolidate") {
-        QString cluster_path=CLP.named_parameters["clusters"];
+		QString firings_path=CLP.named_parameters["firings"];
         QString templates_path=CLP.named_parameters["templates"];
         QString cluster_out_path=CLP.named_parameters["cluster_out"];
         QString templates_out_path=CLP.named_parameters["templates_out"];
         QString load_channels_out_path=CLP.named_parameters["load_channels_out"];
 		float coincidence_threshold=CLP.named_parameters["coincidence_threshold"].toFloat();
 
-        if ((cluster_path.isEmpty())||(templates_path.isEmpty())) {consolidate_usage(); return -1;}
+		if ((firings_path.isEmpty())||(templates_path.isEmpty())) {consolidate_usage(); return -1;}
         if ((cluster_out_path.isEmpty())||(templates_out_path.isEmpty())) {consolidate_usage(); return -1;}
         if (load_channels_out_path.isEmpty()) {consolidate_usage(); return -1;}
 		if (coincidence_threshold==0) {consolidate_usage(); return -1;}
 
-		if (!consolidate(cluster_path.toLatin1().data(),templates_path.toLatin1().data(),cluster_out_path.toLatin1().data(),templates_out_path.toLatin1().data(),load_channels_out_path.toLatin1().data(),coincidence_threshold)) {
+		if (!consolidate(firings_path.toLatin1().data(),templates_path.toLatin1().data(),cluster_out_path.toLatin1().data(),templates_out_path.toLatin1().data(),load_channels_out_path.toLatin1().data(),coincidence_threshold)) {
             printf("Error in consolidate.\n");
             return -1;
         }
     }
     else if (command=="fit") {
         QString input_path=CLP.named_parameters["input"];
-        QString cluster_path=CLP.named_parameters["clusters"];
+		QString firings_path=CLP.named_parameters["firings"];
         QString templates_path=CLP.named_parameters["templates"];
         QString cluster_out_path=CLP.named_parameters["cluster_out"];
 
-        if ((input_path.isEmpty())||(cluster_path.isEmpty())||(templates_path.isEmpty())) {fit_usage(); return -1;}
+		if ((input_path.isEmpty())||(firings_path.isEmpty())||(templates_path.isEmpty())) {fit_usage(); return -1;}
         if ((cluster_out_path.isEmpty())) {fit_usage(); return -1;}
 
-        if (!fit(input_path.toLatin1().data(),templates_path.toLatin1().data(),cluster_path.toLatin1().data(),cluster_out_path.toLatin1().data())) {
+		if (!fit(input_path.toLatin1().data(),templates_path.toLatin1().data(),firings_path.toLatin1().data(),cluster_out_path.toLatin1().data())) {
             printf("Error in fit.\n");
             return -1;
         }
@@ -652,55 +652,55 @@ int main(int argc,char *argv[]) {
     }
     else if (command=="create_clips_file") {
         QString input_path=CLP.named_parameters["input"];
-        QString cluster_path=CLP.named_parameters["clusters"];
+		QString firings_path=CLP.named_parameters["firings"];
         QString output_path=CLP.named_parameters["output"];
         QString index_out_path=CLP.named_parameters["index_out"];
         int clip_size=CLP.named_parameters["clip_size"].toInt();
 
-        if ((input_path.isEmpty())||(cluster_path.isEmpty())) {create_clips_file_usage(); return -1;}
+		if ((input_path.isEmpty())||(firings_path.isEmpty())) {create_clips_file_usage(); return -1;}
         if ((output_path.isEmpty())||(index_out_path.isEmpty())) {create_clips_file_usage(); return -1;}
 
-        if (!create_clips_file(input_path.toLatin1().data(),cluster_path.toLatin1().data(),output_path.toLatin1().data(),index_out_path.toLatin1().data(),clip_size)) {
+		if (!create_clips_file(input_path.toLatin1().data(),firings_path.toLatin1().data(),output_path.toLatin1().data(),index_out_path.toLatin1().data(),clip_size)) {
             printf("Error in create_clips_file.\n");
             return -1;
         }
     }
-    else if (command=="assemble_clusters_file") {
+	else if (command=="assemble_firings_file") {
         QString input_detect_path=CLP.named_parameters["input_detect"];
         QString input_labels_path=CLP.named_parameters["input_labels"];
-        QString output_clusters_path=CLP.named_parameters["output_clusters"];
+		QString output_firings_path=CLP.named_parameters["output_firings"];
 
-        if ((input_detect_path.isEmpty())||(input_labels_path.isEmpty())) {assemble_clusters_file_usage(); return -1;}
-        if (output_clusters_path.isEmpty()) {assemble_clusters_file_usage(); return -1;}
+		if ((input_detect_path.isEmpty())||(input_labels_path.isEmpty())) {assemble_firings_file_usage(); return -1;}
+		if (output_firings_path.isEmpty()) {assemble_firings_file_usage(); return -1;}
 
-        if (!assemble_clusters_file(input_detect_path.toLatin1().data(),input_labels_path.toLatin1().data(),output_clusters_path.toLatin1().data())) {
-            printf("Error in assemble_clusters_file.\n");
+		if (!assemble_firings_file(input_detect_path.toLatin1().data(),input_labels_path.toLatin1().data(),output_firings_path.toLatin1().data())) {
+			printf("Error in assemble_firings_file.\n");
             return -1;
         }
     }
 	else if (command=="cross_correlograms") {
-		QString clusters_path=CLP.named_parameters["clusters"];
+		QString firings_path=CLP.named_parameters["firings"];
 		QString output_path=CLP.named_parameters["output"];
 		int max_dt=CLP.named_parameters["max_dt"].toInt();
 
-		if ((clusters_path.isEmpty())||(output_path.isEmpty())) {cross_correlograms_usage(); return -1;}
+		if ((firings_path.isEmpty())||(output_path.isEmpty())) {cross_correlograms_usage(); return -1;}
 		if (max_dt==0) {cross_correlograms_usage(); return -1;}
 
-		if (!cross_correlograms(clusters_path.toLatin1(),output_path.toLatin1(),max_dt)) {
+		if (!cross_correlograms(firings_path.toLatin1(),output_path.toLatin1(),max_dt)) {
 			printf("Error in cross_correlograms.\n");
 			return -1;
 		}
 	}
 	else if (command=="confusion_matrix") {
-		QString clusters1_path=CLP.named_parameters["clusters1"];
-		QString clusters2_path=CLP.named_parameters["clusters2"];
+		QString firings1_path=CLP.named_parameters["firings1"];
+		QString firings2_path=CLP.named_parameters["firings2"];
 		QString output_path=CLP.named_parameters["output"];
 		int max_matching_offset=CLP.named_parameters["max_matching_offset"].toInt();
 
-		if ((clusters1_path.isEmpty())||(clusters2_path.isEmpty())||(output_path.isEmpty())) {confusion_matrix_usage(); return -1;}
+		if ((firings1_path.isEmpty())||(firings2_path.isEmpty())||(output_path.isEmpty())) {confusion_matrix_usage(); return -1;}
 		if (max_matching_offset==0) {confusion_matrix_usage(); return -1;}
 
-		if (!confusion_matrix(clusters1_path.toLatin1(),clusters2_path.toLatin1(),output_path.toLatin1(),max_matching_offset)) {
+		if (!confusion_matrix(firings1_path.toLatin1(),firings2_path.toLatin1(),output_path.toLatin1(),max_matching_offset)) {
 			printf("Error in confusion_matrix.\n");
 			return -1;
 		}

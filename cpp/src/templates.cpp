@@ -5,11 +5,11 @@
 bool compute_template(int M,int T,float *ret,DiskReadMda &X,DiskReadMda &CC,int k);
 void extract_clip(int M,int T,float *ret,MDAIO_HEADER *H,FILE *input_file,int time0);
 
-bool templates(const char *input_path,const char *cluster_path,const char *output_path,int clip_size) {
+bool templates(const char *input_path,const char *firings_path,const char *output_path,int clip_size) {
 
-    printf("templates %s %s %s %d...\n",input_path,cluster_path,output_path,clip_size);
+	printf("templates %s %s %s %d...\n",input_path,firings_path,output_path,clip_size);
 
-    DiskReadMda CC; CC.setPath(cluster_path);
+	DiskReadMda CC; CC.setPath(firings_path);
     int NT=CC.N2();
 
 	DiskReadMda XX; XX.setPath(input_path);

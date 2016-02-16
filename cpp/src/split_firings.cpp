@@ -1,4 +1,4 @@
-#include "split_clusters.h"
+#include "split_firings.h"
 #include "diskreadmda.h"
 #include "mda.h"
 #include "get_principal_components.h"
@@ -12,9 +12,9 @@ void extract_clips(Mda &clips,DiskReadMda &X,QList<int> &times,int clip_size);
 void compute_features(Mda &features,Mda &clips,int num_features);
 int get_max_k(const QVector<int> &labels);
 
-bool split_clusters(const char *input_path,const char *cluster_path,const char *output_path,int num_features,int clip_size,float ks_threshold,int k_init) {
+bool split_firings(const char *input_path,const char *firings_path,const char *output_path,int num_features,int clip_size,float ks_threshold,int k_init) {
 
-	DiskReadMda C; C.setPath(cluster_path);
+	DiskReadMda C; C.setPath(firings_path);
     Mda C2;
     C2.allocate(C.N1(),C.N2());
     for (int i=0; i<C.N2(); i++) {
@@ -28,7 +28,7 @@ bool split_clusters(const char *input_path,const char *cluster_path,const char *
 	//#pragma omp parallel for (is this a good idea?)
     for (int k=1; k<=K; k++) {
 		DiskReadMda X; X.setPath(input_path);  //needed here for thread safety?
-		DiskReadMda C; C.setPath(cluster_path);
+		DiskReadMda C; C.setPath(firings_path);
 		printf("k=%d/%d... ",k,K);
         QList<int> times=get_times(C,k);
         Mda clips;

@@ -29,7 +29,7 @@ HEADERS += \
     templates.h \
     diskreadmda.h \
     consolidate.h \
-    split_clusters.h \
+    split_firings.h \
     extract_clips.h \
     fit.h \
     cross_correlograms.h \
@@ -38,7 +38,7 @@ HEADERS += \
     create_clips_file.h \
     process_msh.h \
     textfile.h \
-    assemble_clusters_file.h \
+    assemble_firings_file.h \
     extract_channels.h \
     remove_artifacts.h
 
@@ -59,7 +59,7 @@ mountainsortmain.cpp \
     templates.cpp \
     diskreadmda.cpp \
     consolidate.cpp \
-    split_clusters.cpp \
+    split_firings.cpp \
     extract_clips.cpp \
     fit.cpp \
     cross_correlograms.cpp \
@@ -68,7 +68,7 @@ mountainsortmain.cpp \
     create_clips_file.cpp \
     process_msh.cpp \
     textfile.cpp \
-    assemble_clusters_file.cpp \
+    assemble_firings_file.cpp \
     extract_channels.cpp \
     remove_artifacts.cpp
 

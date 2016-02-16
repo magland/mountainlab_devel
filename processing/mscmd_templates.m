@@ -1,15 +1,15 @@
-function mscmd_templates(input_clips_path,clusters_path,output_path,opts)
+function mscmd_templates(input_clips_path,firings_path,output_path,opts)
 %MSCMD_TEMPLATES - Compute templates (mean waveforms) corresponding to each
 %spike type.
 %
 %This is a wrapper to the command-line mountainsort call, with
 %functionality similar to ms_templates.
 %
-% Syntax:  mscmd_templates(input_clips_path,clusters_path,output_path,opts)
+% Syntax:  mscmd_templates(input_clips_path,firings_path,output_path,opts)
 %
 % Inputs:
 %    input_clips_path - path to MxTxNC array of clips
-%    clusters_path - path to array containing the times/labels.
+%    firings_path - path to array containing the times/labels.
 %                    See docs for format of this array
 %    output_path - path to MxTxK array of computed templates, K is the
 %                  number of spike types (max label)
@@ -23,7 +23,7 @@ function mscmd_templates(input_clips_path,clusters_path,output_path,opts)
 
 if (nargin<4) opts=struct; end;
 
-cmd=sprintf('%s templates --input=%s --clusters=%s --output=%s --clip_size=%d ',mscmd_exe,input_clips_path,clusters_path,output_path,opts.clip_size);
+cmd=sprintf('%s templates --input=%s --clusters=%s --output=%s --clip_size=%d ',mscmd_exe,input_clips_path,firings_path,output_path,opts.clip_size);
 
 fprintf('\n*** TEMPLATES ***\n');
 fprintf('%s\n',cmd);

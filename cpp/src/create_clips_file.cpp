@@ -4,16 +4,16 @@
 
 int compute_K(DiskReadMda &X);
 
-bool create_clips_file(const char *input_path,const char *cluster_path,const char *output_path,const char *index_out_path,int clip_size) {
+bool create_clips_file(const char *input_path,const char *firings_path,const char *output_path,const char *index_out_path,int clip_size) {
     DiskReadMda X(input_path);
-    DiskReadMda C(cluster_path);
+	DiskReadMda C(firings_path);
 
     if (X.totalSize()<=1) {
         printf("Problem reading input file: %s\n",input_path);
         return false;
     }
     if (C.totalSize()<=1) {
-        printf("Problem reading input file: %s\n",cluster_path);
+		printf("Problem reading input file: %s\n",firings_path);
         return false;
     }
 

@@ -61,8 +61,8 @@ float compute_overlap(const QSet<int> &S1,const QSet<int> &S2) {
 	else return ret2;
 }
 
-bool consolidate(const char *cluster_path,const char *templates_path,const char *cluster_out_path,const char *templates_out_path,const char *load_channels_out_path,float coincidence_threshold) {
-	DiskReadMda cluster; cluster.setPath(cluster_path);
+bool consolidate(const char *firings_path,const char *templates_path,const char *cluster_out_path,const char *templates_out_path,const char *load_channels_out_path,float coincidence_threshold) {
+	DiskReadMda cluster; cluster.setPath(firings_path);
 	Mda templates; templates.read(templates_path);
 
 	int M=templates.N1();

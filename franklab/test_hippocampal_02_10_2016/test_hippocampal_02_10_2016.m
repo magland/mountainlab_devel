@@ -51,14 +51,14 @@ clips=clips-repmat(mean(clips,2),1,T,1); %subtract mean over time
 fprintf('Shell cluster...\n');
 [labels,peaks]=shell_cluster(clips,shell_opts);
 K=max(labels);
-clusters=zeros(4,NC);
+firings=zeros(4,NC);
 detect=readmda([path0,'/detect.mda']);
 times=detect(2,:);
-clusters(1:2,:)=detect;
-clusters(3,:)=labels;
-clusters(4,:)=peaks;
-writemda(clusters,[path0,'/clusters.mda']);
-%mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],o_templates);
+firings(1:2,:)=detect;
+firings(3,:)=labels;
+firings(4,:)=peaks;
+writemda(firings,[path0,'/firings.mda']);
+%mscmd_templates([path0,'/pre2.mda'],[path0,'/firings.mda'],[path0,'/templates.mda'],o_templates);
 %templates=readmda([path0,'/templates.mda']);
 %figure; 
 %ms_view_templates(templates);
@@ -69,19 +69,19 @@ pre2=readmda([path0,'/pre2.mda']);
 [clips1,clips1_index]=ms_create_clips_index(ms_extract_clips(pre2,times,o_extract_clips.clip_size),labels);
 writemda(clips1,[path0,'/clips0.mda']);
 writemda(clips1_index,[path0,'/clips0_index.mda']);
-writemda(clusters,[path0,'/clusters.mda']);
+writemda(firings,[path0,'/firings.mda']);
 %writemda(corr_matrix,[path0,'/correlation_matrix.mda']);
 
 %%%% Cross correlograms and templates
-% mscmd_cross_correlograms([path0,'/clusters.mda'],[path0,'/cross_correlograms.mda'],cross_correlograms_max_dt);
-% mscmd_templates([path0,'/pre0_mild.mda'],[path0,'/clusters.mda'],[path0,'/templates_raw.mda'],struct('clip_size',200));
-% mscmd_templates([path0,'/pre2.mda'],[path0,'/clusters.mda'],[path0,'/templates.mda'],struct('clip_size',200));
+% mscmd_cross_correlograms([path0,'/firings.mda'],[path0,'/cross_correlograms.mda'],cross_correlograms_max_dt);
+% mscmd_templates([path0,'/pre0_mild.mda'],[path0,'/firings.mda'],[path0,'/templates_raw.mda'],struct('clip_size',200));
+% mscmd_templates([path0,'/pre2.mda'],[path0,'/firings.mda'],[path0,'/templates.mda'],struct('clip_size',200));
 % templates=readmda([path0,'/templates.mda']);
 % figure; ms_view_templates(templates);
 
 %%%% MountainView
 % view_params.raw=[path0,'/pre2.mda'];
-% view_params.clusters=[path0,'/clusters.mda'];
+% view_params.firings=[path0,'/firings.mda'];
 % view_params.cross_correlograms=[path0,'/cross_correlograms.mda'];
 % view_params.templates=[path0,'/templates.mda'];
 % view_params.clips=[path0,'/clips0.mda'];
@@ -99,17 +99,17 @@ for k=1:K_split
     fprintf('k=%d: Using %d/%d spikes (%d%%).\n',k,length(inds_k)-length(inds0),length(inds_k),floor((length(inds_k)-length(inds0))/length(inds_k)*100));
     labels_split(inds_k(inds0))=0;
 end;
-clusters_split=readmda([path0,'/clusters.mda']);
-clusters_split(3,:)=labels_split;
-writemda(clusters_split,[path0,'/clusters_split.mda']);
+firings_split=readmda([path0,'/firings.mda']);
+firings_split(3,:)=labels_split;
+writemda(firings_split,[path0,'/firings_split.mda']);
 figure; ms_view_templates(templates_split);
 writemda(templates_split,[path0,'/templates_split.mda']);
-mscmd_create_clips_file([path0,'/pre2.mda'],[path0,'/clusters_split.mda'],[path0,'/clips0_split.mda'],[path0,'/clips0_split_index.mda'],struct('clip_size',o_extract_clips.clip_size));
-mscmd_cross_correlograms([path0,'/clusters_split.mda'],[path0,'/cross_correlograms_split.mda'],cross_correlograms_max_dt);
+mscmd_create_clips_file([path0,'/pre2.mda'],[path0,'/firings_split.mda'],[path0,'/clips0_split.mda'],[path0,'/clips0_split_index.mda'],struct('clip_size',o_extract_clips.clip_size));
+mscmd_cross_correlograms([path0,'/firings_split.mda'],[path0,'/cross_correlograms_split.mda'],cross_correlograms_max_dt);
 
 %%%% MountainView
 view_params.raw=[path0,'/pre2.mda'];
-view_params.clusters=[path0,'/clusters_split.mda'];
+view_params.firings=[path0,'/firings_split.mda'];
 view_params.cross_correlograms=[path0,'/cross_correlograms_split.mda'];
 view_params.templates=[path0,'/templates_split.mda'];
 view_params.clips=[path0,'/clips0_split.mda'];

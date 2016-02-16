@@ -4,11 +4,11 @@
 #include <stdio.h>
 
 typedef QList<int> IntList;
-bool cross_correlograms(const char *clusters_path,const char *output_path,int max_dt) {
+bool cross_correlograms(const char *firings_path,const char *output_path,int max_dt) {
 	QList<int> times,labels;
 
     printf("Setting up times and labels...\n");
-	DiskReadMda C; C.setPath(clusters_path);
+	DiskReadMda C; C.setPath(firings_path);
 	int L=C.N2();
 	int K=1;
 	for (int ii=0; ii<L; ii++) {

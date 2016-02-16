@@ -4,13 +4,13 @@
 #include <QMap>
 
 QList<int> indexlist(const QList<int> &T2,int t1,int offset,int &ptr2);
-Mda confusion_matrix_2(const char *clusters1_path, const char *clusters2_path, int max_matching_offset,QMap<int,int> &map12);
+Mda confusion_matrix_2(const char *firings1_path, const char *firings2_path, int max_matching_offset,QMap<int,int> &map12);
 
-bool confusion_matrix(const char *clusters1_path, const char *clusters2_path, const char *output_path, int max_matching_offset)
+bool confusion_matrix(const char *firings1_path, const char *firings2_path, const char *output_path, int max_matching_offset)
 {
 	//first we get the confusion matrix with an empty map12
 	QMap<int,int> empty_map;
-	Mda CM=confusion_matrix_2(clusters1_path,clusters2_path,max_matching_offset,empty_map);
+	Mda CM=confusion_matrix_2(firings1_path,firings2_path,max_matching_offset,empty_map);
 
 	//next we estimate the map12 based on CM
 	QMap<int,int> map12;
@@ -30,7 +30,7 @@ bool confusion_matrix(const char *clusters1_path, const char *clusters2_path, co
 	}
 
 	//finally we get the confusion matrix again using this map12
-	Mda output=confusion_matrix_2(clusters1_path,clusters2_path,max_matching_offset,map12);
+	Mda output=confusion_matrix_2(firings1_path,firings2_path,max_matching_offset,map12);
 
 	//finally we write it
 	output.write(output_path);
@@ -38,9 +38,9 @@ bool confusion_matrix(const char *clusters1_path, const char *clusters2_path, co
 	return true;
 }
 
-Mda confusion_matrix_2(const char *clusters1_path, const char *clusters2_path, int max_matching_offset,QMap<int,int> &map12) {
-	DiskReadMda C1; C1.setPath(clusters1_path);
-	DiskReadMda C2; C2.setPath(clusters2_path);
+Mda confusion_matrix_2(const char *firings1_path, const char *firings2_path, int max_matching_offset,QMap<int,int> &map12) {
+	DiskReadMda C1; C1.setPath(firings1_path);
+	DiskReadMda C2; C2.setPath(firings2_path);
 
 	QList<int> T1,L1;
 	QList<int> T2,L2;

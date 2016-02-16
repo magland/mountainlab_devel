@@ -11,7 +11,7 @@ function ms_mountainview(view_params)
 %    (Most are optional)
 %    view_params.mode - 'overview' (default), 'overview2', or 'compare_labels'
 %    view_params.raw - MxN raw or preprocessed data
-%    view_params.clusters - RxL array of times/labels etc. according to
+%    view_params.firings - RxL array of times/labels etc. according to
 %                           the docs. R is at least 3. The second row is 
 %                           the times, the third row is the labels.
 %    view_params.templates - MxTxK array of spike type templates
@@ -42,8 +42,11 @@ end;
 if isfield(view_params,'raw')
     cmd=[cmd,sprintf('--raw=%s ',view_params.raw)];
 end;
-if isfield(view_params,'clusters')
-    cmd=[cmd,sprintf('--clusters=%s ',view_params.clusters)];
+if isfield(view_params,'clusters') %for historical compatibility
+    cmd=[cmd,sprintf('--firings=%s ',view_params.clusters)];
+end;
+if isfield(view_params,'firings')
+    cmd=[cmd,sprintf('--firings=%s ',view_params.firings)];
 end;
 if isfield(view_params,'templates')
     cmd=[cmd,sprintf('--templates=%s ',view_params.templates)];

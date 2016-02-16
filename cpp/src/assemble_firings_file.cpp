@@ -1,9 +1,9 @@
-#include "assemble_clusters_file.h"
+#include "assemble_firings_file.h"
 
 #include "mda.h"
 #include <QList>
 
-bool assemble_clusters_file(const char *input_detect_path,const char *input_labels_path,const char *output_clusters_path) {
+bool assemble_firings_file(const char *input_detect_path,const char *input_labels_path,const char *output_firings_path) {
     Mda D; D.read(input_detect_path);
     Mda L; L.read(input_labels_path);
 
@@ -19,6 +19,6 @@ bool assemble_clusters_file(const char *input_detect_path,const char *input_labe
         C.setValue(D.value(1,inds[i]),1,i);
         C.setValue(L.value(0,inds[i]),2,i);
     }
-    C.write(output_clusters_path);
+	C.write(output_firings_path);
     return true;
 }

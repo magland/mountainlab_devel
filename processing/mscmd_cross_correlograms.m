@@ -1,4 +1,4 @@
-function mscmd_cross_correlograms(clusters_path,output_path,max_dt)
+function mscmd_cross_correlograms(firings_path,output_path,max_dt)
 %MSCMD_CROSS_CORRELOGRAMS - Generate cross-correlogram data, which in
 %particular may be used for MountainView visualization.
 %
@@ -9,11 +9,11 @@ function mscmd_cross_correlograms(clusters_path,output_path,max_dt)
 %This is a fast implementation and is much preferred over
 %ms_cross_correlograms.
 %
-% Syntax:  mscmd_cross_correlograms(clusters_path,output_path,max_dt)
+% Syntax:  mscmd_cross_correlograms(firings_path,output_path,max_dt)
 %
 % Inputs:
-%    clusters_path - path of input array of times/labels. See docs for the
-%                    format of the clusters.mda file.
+%    firings_path - path of input array of times/labels. See docs for the
+%                    format of the firings.mda file.
 %    output_path - path of the output .mda file that will contain the array
 %                  of cross-correlogram data, to be read in by MountainView
 %    max_dt - the maximum integer timepoint interval to consider
@@ -30,7 +30,7 @@ if nargin==0, test_mscmd_cross_correlograms; return; end;
 
 if (nargin<3) max_dt=1500; end;
 
-cmd=sprintf('%s cross_correlograms --clusters=%s --output=%s --max_dt=%d ',mscmd_exe,clusters_path,output_path,max_dt);
+cmd=sprintf('%s cross_correlograms --firings=%s --output=%s --max_dt=%d ',mscmd_exe,firings_path,output_path,max_dt);
 
 fprintf('\n*** CROSS CORRELOGRAMS ***\n');
 fprintf('%s\n',cmd);
