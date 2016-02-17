@@ -248,7 +248,7 @@ void MVNeuronComparisonWidget::slot_compute_templates()
         d->set_status_text("Computing Templates...");
         Mda template0=compute_mean_waveform(d->m_clips[0]);
         Mda template1; template1.allocate(template0.N1(),template0.N2(),d->m_clips.count());
-		QList<double> times0,labels0;
+		QList<long> times0,labels0;
         int jj=0;
         for (int i=0; i<d->m_clips.count(); i++) {
             Mda tmp=compute_mean_waveform(d->m_clips[i]);
@@ -260,8 +260,8 @@ void MVNeuronComparisonWidget::slot_compute_templates()
                     jj++;
                 }
             }
-            times0 << (int)(template0.N2()*(i+0.5));
-            labels0 << d->m_unit_numbers.value(i);
+			times0 << (long)(template0.N2()*(i+0.5));
+			labels0 << d->m_unit_numbers.value(i);
         }
         d->set_status_text("Ready.");
         DiskArrayModel *template_data=new DiskArrayModel;

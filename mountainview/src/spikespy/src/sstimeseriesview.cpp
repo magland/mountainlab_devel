@@ -161,7 +161,7 @@ void SSTimeSeriesView::setUniformVerticalChannelSpacing(bool val)
     d->m_plot->setUniformVerticalChannelSpacing(val);
 }
 
-void SSTimeSeriesView::setTimesLabels(const QList<double> &times, const QList<double> &labels)
+void SSTimeSeriesView::setTimesLabels(const QList<long> &times, const QList<long> &labels)
 {
     Mda TL0;
     TL0.allocate(2,times.count());

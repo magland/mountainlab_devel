@@ -7,29 +7,50 @@
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QTabWidget>
+#include <QTime>
+#include <QTimer>
 
 class MVOverview2WidgetPrivate {
 public:
 	MVOverview2Widget *q;
+	QString m_raw_data_path;
 	DiskReadMda m_raw;
 	DiskReadMda m_firings_original;
 	Mda m_firings;
 	QList<int> m_original_cluster_numbers;
 
-	SSTimeSeriesView *m_raw_view;
-	MVCrossCorrelogramsWidget *m_cross_correlograms_widget;
-	SSTimeSeriesView *m_templates_widget;
 	MVOverview2WidgetControlPanel *m_control_panel;
 
 	QSplitter *m_splitter1,*m_splitter2;
-	QTabWidget *m_tabs1,*m_tabs2;
+	CustomTabWidget *m_tabs1,*m_tabs2;
+	CustomTabWidget *m_current_tab_widget;
 
-	Mda create_cross_correlograms_data();
-	Mda create_templates_data();
+	Mda m_cross_correlograms_data;
+	Mda m_templates_data;
+	QList<long> m_times,m_labels;
+
+	void create_cross_correlograms_data();
+	void create_templates_data();
+
 	void update_sizes();
-	void update_cross_correlograms();
 	void update_templates();
 	void do_amplitude_split();
+	void add_tab(QWidget *W,QString label);
+
+	void open_auto_correlograms();
+	void open_cross_correlograms(int k);
+	void open_templates();
+	void open_raw_data();
+
+	void update_cross_correlograms();
+	void update_raw_views();
+	void update_widget(QWidget *W);
+
+	QList<QWidget *> get_all_widgets();
+	CustomTabWidget *current_tab_widget();
+	CustomTabWidget *get_other_tab_widget(CustomTabWidget *W);
+
+	void remove_widgets_of_type(QString widget_type);
 };
 
 MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
@@ -37,16 +58,8 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 	d=new MVOverview2WidgetPrivate;
 	d->q=this;
 
-	d->m_raw_view=new SSTimeSeriesView;
-	d->m_raw_view->initialize();
-
-	d->m_cross_correlograms_widget=new MVCrossCorrelogramsWidget;
-
 	d->m_control_panel=new MVOverview2WidgetControlPanel;
 	connect(d->m_control_panel,SIGNAL(signalButtonClicked(QString)),this,SLOT(slot_control_panel_button_clicked(QString)));
-
-	d->m_templates_widget=new SSTimeSeriesView;
-	d->m_templates_widget->initialize();
 
 	QSplitter *splitter1=new QSplitter;
 	splitter1->setOrientation(Qt::Horizontal);
@@ -59,14 +72,14 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 	splitter1->addWidget(d->m_control_panel);
 	splitter1->addWidget(splitter2);
 
+	d->m_tabs1=new CustomTabWidget(this);
+	d->m_tabs2=new CustomTabWidget(this);
+	d->m_current_tab_widget=d->m_tabs1;
 
-	d->m_tabs1=new QTabWidget; //d->m_tabs1->setMovable(true);
-	d->m_tabs2=new QTabWidget; //d->m_tabs2->setMovable(true);
+	d->open_templates();
+	d->m_current_tab_widget=d->m_tabs2;
+	d->open_auto_correlograms();
 
-
-	d->m_tabs1->addTab(d->m_templates_widget,"Templates");
-	d->m_tabs2->addTab(d->m_cross_correlograms_widget,"Cross-Correlograms");
-	d->m_tabs2->addTab(d->m_raw_view,"Raw");
 
 	splitter2->addWidget(d->m_tabs1);
 	splitter2->addWidget(d->m_tabs2);
@@ -83,10 +96,9 @@ MVOverview2Widget::~MVOverview2Widget()
 
 void MVOverview2Widget::setRawPath(const QString &path)
 {
+	d->m_raw_data_path=path;
 	d->m_raw.setPath(path);
-	DiskArrayModel *X=new DiskArrayModel;
-	X->setPath(path);
-	d->m_raw_view->setData(X,true);
+	d->update_raw_views();
 }
 
 void MVOverview2Widget::setFiringsPath(const QString &firings)
@@ -99,13 +111,14 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
 		}
 	}
 	d->m_original_cluster_numbers.clear();
-	QList<double> times;
-	QList<double> labels;
+	QList<long> times;
+	QList<long> labels;
 	for (int n=0; n<d->m_firings.N2(); n++) {
-		times << d->m_firings.value(1,n);
-		labels << d->m_firings.value(2,n);
+		times << (long)d->m_firings.value(1,n);
+		labels << (long)d->m_firings.value(2,n);
 	}
-	d->m_raw_view->setTimesLabels(times,labels);
+	d->m_times=times;
+	d->m_labels=labels;
 	int K=0;
 	for (int n=0; n<labels.count(); n++) {
 		if (labels[n]>K) K=labels[n];
@@ -113,12 +126,9 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
 	for (int k=0; k<=K; k++) {
 		d->m_original_cluster_numbers << k;
 	}
-}
-
-void MVOverview2Widget::updateWidgets()
-{
 	d->update_cross_correlograms();
 	d->update_templates();
+	d->update_raw_views();
 }
 
 void MVOverview2Widget::resizeEvent(QResizeEvent *evt)
@@ -138,14 +148,27 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 	}
 	else if (str=="amplitude_split") {
 		d->do_amplitude_split();
+		d->remove_widgets_of_type("cross_correlograms");
 		d->update_cross_correlograms();
 		d->update_templates();
 	}
+	else if (str=="open_auto_correlograms") {
+		d->open_auto_correlograms();
+	}
+	else if (str=="open_raw_data") {
+		d->open_raw_data();
+	}
+}
+
+void MVOverview2Widget::slot_auto_correlogram_activated(int k)
+{
+	d->m_current_tab_widget=d->get_other_tab_widget(d->m_current_tab_widget);
+	d->open_cross_correlograms(k);
 }
 
 typedef QList<long> IntList;
 
-Mda MVOverview2WidgetPrivate::create_cross_correlograms_data()
+void MVOverview2WidgetPrivate::create_cross_correlograms_data()
 {
 	QList<long> times,labels;
 	long L=m_firings.N2();
@@ -215,10 +238,10 @@ Mda MVOverview2WidgetPrivate::create_cross_correlograms_data()
 	}
 	printf(".\n");
 
-	return ret;
+	m_cross_correlograms_data=ret;
 }
 
-Mda MVOverview2WidgetPrivate::create_templates_data()
+void MVOverview2WidgetPrivate::create_templates_data()
 {
 	QList<long> times,labels;
 	long L=m_firings.N2();
@@ -274,7 +297,7 @@ Mda MVOverview2WidgetPrivate::create_templates_data()
 	}
 
 	qDebug() << "Created templates data:" << ret.N1() << ret.N2() << ret.N3();
-	return ret;
+	m_templates_data=ret;
 }
 
 void MVOverview2WidgetPrivate::update_sizes()
@@ -300,37 +323,15 @@ void MVOverview2WidgetPrivate::update_sizes()
 
 }
 
-void MVOverview2WidgetPrivate::update_cross_correlograms()
-{
-	Mda CCD=create_cross_correlograms_data();
-	printf("Setting cross correlograms data...\n");
-	m_cross_correlograms_widget->setCrossCorrelogramsData(DiskReadMda(CCD));
-	printf("Updating CC widget...\n");
-	m_cross_correlograms_widget->updateWidget();
-	printf(".\n");
-}
-
 void MVOverview2WidgetPrivate::update_templates()
 {
-	Mda TD=create_templates_data();
-	printf("Setting templates data...\n");
-	DiskArrayModel *MM=new DiskArrayModel;
-	MM->setFromMda(TD);
-	int KK=TD.N3();
-	QList<double> times,labels;
-	int last_k=-1;
-	for (int kk=1; kk<=KK; kk++) {
-		int k=m_original_cluster_numbers.value(kk);
-		if (k!=last_k) {
-			times << TD.N2()*(kk-1+0.5);
-			labels << k;
+	create_templates_data();
+	QList<QWidget *> list=get_all_widgets();
+	foreach (QWidget *W,list) {
+		if (W->property("widget_type")=="templates") {
+			update_widget(W);
 		}
-		last_k=k;
 	}
-	m_templates_widget->setData(MM,true);
-	m_templates_widget->setTimesLabels(times,labels);
-	m_templates_widget->setMarkerLinesVisible(false);
-	printf(".\n");
 }
 
 void MVOverview2WidgetPrivate::do_amplitude_split()
@@ -412,4 +413,191 @@ void MVOverview2WidgetPrivate::do_amplitude_split()
 		}
 	}
 
+}
+
+void MVOverview2WidgetPrivate::add_tab(QWidget *W,QString label)
+{
+	W->setFocusPolicy(Qt::StrongFocus);
+	current_tab_widget()->addTab(W,label);
+	current_tab_widget()->setCurrentIndex(current_tab_widget()->count()-1);
+	W->setProperty("tab_label",label);
+}
+
+void MVOverview2WidgetPrivate::open_auto_correlograms()
+{
+	MVCrossCorrelogramsWidget *X=new MVCrossCorrelogramsWidget;
+	X->setProperty("widget_type","auto_correlograms");
+	add_tab(X,"Auto-Correlograms");
+	QObject::connect(X,SIGNAL(unitActivated(int)),q,SLOT(slot_auto_correlogram_activated(int)));
+	update_widget(X);
+}
+
+void MVOverview2WidgetPrivate::open_cross_correlograms(int k)
+{
+	MVCrossCorrelogramsWidget *X=new MVCrossCorrelogramsWidget;
+	X->setProperty("widget_type","cross_correlograms");
+	X->setProperty("cc_k",k);
+	add_tab(X,QString("CC for %1").arg(k));
+	update_widget(X);
+}
+
+void MVOverview2WidgetPrivate::open_templates()
+{
+	SSTimeSeriesView *X=new SSTimeSeriesView;
+	X->initialize();
+	X->setProperty("widget_type","templates");
+	add_tab(X,QString("Templates"));
+	update_widget(X);
+}
+
+void MVOverview2WidgetPrivate::open_raw_data()
+{
+	SSTimeSeriesView *X=new SSTimeSeriesView;
+	X->initialize();
+	X->setProperty("widget_type","raw_data");
+	add_tab(X,QString("Raw"));
+	update_widget(X);
+}
+
+void MVOverview2WidgetPrivate::update_cross_correlograms()
+{
+	create_cross_correlograms_data();
+	QList<QWidget *> widgets=get_all_widgets();
+	foreach (QWidget *W,widgets) {
+		QString widget_type=W->property("widget_type").toString();
+		if ((widget_type=="auto_correlograms")||(widget_type=="cross_correlograms")) {
+			update_widget(W);
+		}
+	}
+}
+
+void MVOverview2WidgetPrivate::update_raw_views()
+{
+	QList<QWidget *> widgets=get_all_widgets();
+	foreach (QWidget *W,widgets) {
+		QString widget_type=W->property("widget_type").toString();
+		if (widget_type=="raw_data") {
+			update_widget(W);
+		}
+	}
+}
+
+void MVOverview2WidgetPrivate::update_widget(QWidget *W)
+{
+	QString widget_type=W->property("widget_type").toString();
+	if (widget_type=="auto_correlograms") {
+		MVCrossCorrelogramsWidget *WW=(MVCrossCorrelogramsWidget *)W;
+		WW->setCrossCorrelogramsData(DiskReadMda(m_cross_correlograms_data));
+		WW->updateWidget();
+	}
+	else if (widget_type=="cross_correlograms") {
+		MVCrossCorrelogramsWidget *WW=(MVCrossCorrelogramsWidget *)W;
+		int k=W->property("cc_k").toInt();
+		WW->setCrossCorrelogramsData(DiskReadMda(m_cross_correlograms_data));
+		WW->setBaseUnit(k);
+		WW->updateWidget();
+	}
+	else if (widget_type=="templates") {
+		printf("Setting templates data...\n");
+		SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+		Mda TD=m_templates_data;
+		DiskArrayModel *MM=new DiskArrayModel;
+		MM->setFromMda(TD);
+		int KK=TD.N3();
+		QList<long> times,labels;
+		int last_k=-1;
+		for (int kk=1; kk<=KK; kk++) {
+			int k=m_original_cluster_numbers.value(kk);
+			if (k!=last_k) {
+				times << (long)(TD.N2()*(kk-1+0.5));
+				labels << k;
+			}
+			last_k=k;
+		}
+		WW->setData(MM,true);
+		WW->setTimesLabels(times,labels);
+		WW->setMarkerLinesVisible(false);
+		printf(".\n");
+	}
+	else if (widget_type=="raw_data") {
+		SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+		DiskArrayModel *X=new DiskArrayModel;
+		X->setPath(m_raw_data_path);
+		WW->setData(X,true);
+		WW->setTimesLabels(m_times,m_labels);
+	}
+}
+
+QList<QWidget *> MVOverview2WidgetPrivate::get_all_widgets()
+{
+	QList<QWidget *> ret;
+	for (int i=0; i<m_tabs1->count(); i++) {
+		ret << m_tabs1->widget(i);
+	}
+	for (int i=0; i<m_tabs2->count(); i++) {
+		ret << m_tabs2->widget(i);
+	}
+	return ret;
+}
+
+CustomTabWidget *MVOverview2WidgetPrivate::current_tab_widget()
+{
+	return m_current_tab_widget;
+}
+
+CustomTabWidget *MVOverview2WidgetPrivate::get_other_tab_widget(CustomTabWidget *W)
+{
+	if (W==m_tabs1) return m_tabs2;
+	else return m_tabs1;
+}
+
+void MVOverview2WidgetPrivate::remove_widgets_of_type(QString widget_type)
+{
+	QList<QWidget *> list=get_all_widgets();
+	foreach (QWidget *W,list) {
+		if (W->property("widget_type")==widget_type) {
+			delete W;
+		}
+	}
+}
+
+CustomTabWidget::CustomTabWidget(MVOverview2Widget *q) {
+	this->setTabsClosable(true);
+	this->setMovable(true);
+	this->q=q;
+
+	this->setFocusPolicy(Qt::StrongFocus);
+
+	QObject::connect(this,SIGNAL(tabCloseRequested(int)),this,SLOT(slot_tab_close_requested(int)));
+	QObject::connect(this,SIGNAL(tabBarClicked(int)),this,SLOT(slot_tab_bar_clicked()));
+	QObject::connect(this,SIGNAL(tabBarDoubleClicked(int)),this,SLOT(slot_tab_bar_double_clicked()));
+}
+
+void CustomTabWidget::mousePressEvent(QMouseEvent *evt)
+{
+	q->d->m_current_tab_widget=this;
+	QTabWidget::mousePressEvent(evt);
+}
+
+void CustomTabWidget::slot_tab_close_requested(int num)
+{
+	delete this->widget(num);
+}
+
+void CustomTabWidget::slot_tab_bar_clicked()
+{
+	q->d->m_current_tab_widget=this;
+}
+
+void CustomTabWidget::slot_tab_bar_double_clicked()
+{
+	q->d->m_current_tab_widget=q->d->get_other_tab_widget(this);
+	q->d->add_tab(this->currentWidget(),this->currentWidget()->property("tab_label").toString());
+	//the following is necessary because the slot_tab_bar_clicked is always called after this function!
+	QTimer::singleShot(100,this,SLOT(slot_switch_to_other_tab_widget()));
+}
+
+void CustomTabWidget::slot_switch_to_other_tab_widget()
+{
+	q->d->m_current_tab_widget=q->d->get_other_tab_widget(this);
 }

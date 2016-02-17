@@ -97,6 +97,14 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
 		d->add_button(G,"amplitude_split","Split");
 	}
 
+	{ // Actions
+		QGridLayout *G=new QGridLayout;
+		layout->addLayout(G);
+
+		d->add_button(G,"open_auto_correlograms","Open Auto-Correlograms");
+		d->add_button(G,"open_raw_data","Open Raw Data");
+	}
+
 	layout->addStretch(0);
 
 	this->setLayout(layout);

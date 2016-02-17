@@ -131,11 +131,11 @@ void SSAbstractViewUnderlayPainter::paint(QPainter *painter) {
             QPainterPath path2;
             path2.moveTo(p0.x,p0.y+10);
             path2.lineTo(p1.x,p1.y-10);
-            painter->setPen(QPen(QBrush(QColor(50,50,220,60)),5));
+			painter->setPen(QPen(QBrush(QColor(50,50,220,60)),0));
             painter->drawPath(path2);
 
-            painter->setPen(QPen(QBrush(QColor(50,50,220,180)),1));
-            painter->drawPath(path2);
+			//painter->setPen(QPen(QBrush(QColor(50,50,220,180)),1));
+			//painter->drawPath(path2);
 
 		} else {
 		}

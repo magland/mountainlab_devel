@@ -165,7 +165,6 @@ int main(int argc, char *argv[]) {
 		MVOverview2Widget *W=new MVOverview2Widget;
 		W->setRawPath(raw_path);
 		W->setFiringsPath(firings_path);
-		W->updateWidgets();
 		W->show();
 		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
 		W->resize(1800,1200);

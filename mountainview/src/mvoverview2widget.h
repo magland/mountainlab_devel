@@ -3,18 +3,20 @@
 
 #include <QWidget>
 #include "mda.h"
+#include <QTabWidget>
 
 class MVOverview2WidgetPrivate;
+class CustomTabWidget;
 class MVOverview2Widget : public QWidget
 {
 	Q_OBJECT
 public:
 	friend class MVOverview2WidgetPrivate;
+	friend class CustomTabWidget;
 	MVOverview2Widget(QWidget *parent=0);
 	virtual ~MVOverview2Widget();
 	void setRawPath(const QString &path);
 	void setFiringsPath(const QString &firings);
-	void updateWidgets();
 
 protected:
 	void resizeEvent(QResizeEvent *evt);
@@ -25,9 +27,24 @@ public slots:
 
 private slots:
 	void slot_control_panel_button_clicked(QString str);
+	void slot_auto_correlogram_activated(int k);
 
 private:
 	MVOverview2WidgetPrivate *d;
+};
+
+class CustomTabWidget : public QTabWidget {
+	Q_OBJECT
+public:
+	MVOverview2Widget *q;
+	CustomTabWidget(MVOverview2Widget *q);
+protected:
+	void mousePressEvent(QMouseEvent *evt);
+private slots:
+	void slot_tab_close_requested(int num);
+	void slot_tab_bar_clicked();
+	void slot_tab_bar_double_clicked();
+	void slot_switch_to_other_tab_widget();
 };
 
 #endif // MVOVERVIEW2WIDGET_H
