@@ -204,13 +204,13 @@ void HistogramView::paintEvent(QPaintEvent *evt)
     }
 
 	if (!d->m_title.isEmpty()) {
-		int text_height=12;
+        int text_height=14;
 		QRect R(d->m_margin_left,5,this->width()-d->m_margin_left-d->m_margin_right,text_height);
 		QFont font=painter.font();
 		font.setFamily("Arial");
 		font.setPixelSize(text_height);
 		painter.setFont(font);
-		painter.setPen(QColor(150,60,60));
+        painter.setPen(QColor(100,60,60));
 		painter.drawText(R,d->m_title,Qt::AlignLeft|Qt::AlignTop);
 	}
 }

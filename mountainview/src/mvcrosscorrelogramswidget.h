@@ -15,6 +15,7 @@ public:
 
 	void setCrossCorrelogramsPath(const QString &path);
 	void setCrossCorrelogramsData(const DiskReadMda &X);
+    void setLabels(const QStringList &labels);
 	void updateWidget();
 
 	int currentUnit();

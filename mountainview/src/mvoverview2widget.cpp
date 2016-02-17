@@ -9,6 +9,7 @@
 #include <QTabWidget>
 #include <QTime>
 #include <QTimer>
+#include <math.h>
 
 class MVOverview2WidgetPrivate {
 public:
@@ -18,6 +19,7 @@ public:
 	DiskReadMda m_firings_original;
 	Mda m_firings;
 	QList<int> m_original_cluster_numbers;
+    QList<int> m_original_cluster_offsets;
 
 	MVOverview2WidgetControlPanel *m_control_panel;
 
@@ -46,11 +48,16 @@ public:
 	void update_raw_views();
 	void update_widget(QWidget *W);
 
+    void set_cross_correlograms_current_number(int kk);
+    void set_templates_current_number(int kk);
+
 	QList<QWidget *> get_all_widgets();
 	CustomTabWidget *current_tab_widget();
 	CustomTabWidget *get_other_tab_widget(CustomTabWidget *W);
+    CustomTabWidget *tab_widget_of(QWidget *W);
 
 	void remove_widgets_of_type(QString widget_type);
+
 };
 
 MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
@@ -103,29 +110,16 @@ void MVOverview2Widget::setRawPath(const QString &path)
 
 void MVOverview2Widget::setFiringsPath(const QString &firings)
 {
+    QList<long> times;
+    QList<long> labels;
+    for (int n=0; n<d->m_firings.N2(); n++) {
+        times << (long)d->m_firings.value(1,n);
+        labels << (long)d->m_firings.value(2,n);
+    }
 	d->m_firings_original.setPath(firings);
-	d->m_firings.allocate(d->m_firings_original.N1(),d->m_firings_original.N2());
-	for (int i2=0; i2<d->m_firings.N2(); i2++) {
-		for (int i1=0; i1<d->m_firings.N1(); i1++) {
-			d->m_firings.setValue(d->m_firings_original.value(i1,i2),i1,i2);
-		}
-	}
-	d->m_original_cluster_numbers.clear();
-	QList<long> times;
-	QList<long> labels;
-	for (int n=0; n<d->m_firings.N2(); n++) {
-		times << (long)d->m_firings.value(1,n);
-		labels << (long)d->m_firings.value(2,n);
-	}
+    d->do_amplitude_split();
 	d->m_times=times;
 	d->m_labels=labels;
-	int K=0;
-	for (int n=0; n<labels.count(); n++) {
-		if (labels[n]>K) K=labels[n];
-	}
-	for (int k=0; k<=K; k++) {
-		d->m_original_cluster_numbers << k;
-	}
 	d->update_cross_correlograms();
 	d->update_templates();
 	d->update_raw_views();
@@ -146,7 +140,7 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 	else if (str=="update_templates") {
 		d->update_templates();
 	}
-	else if (str=="amplitude_split") {
+    else if ((str=="update_amplitude_split")||(str=="use_amplitude_split")) {
 		d->do_amplitude_split();
 		d->remove_widgets_of_type("cross_correlograms");
 		d->update_cross_correlograms();
@@ -155,6 +149,9 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 	else if (str=="open_auto_correlograms") {
 		d->open_auto_correlograms();
 	}
+    else if (str=="open_templates") {
+        d->open_templates();
+    }
 	else if (str=="open_raw_data") {
 		d->open_raw_data();
 	}
@@ -162,8 +159,24 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 
 void MVOverview2Widget::slot_auto_correlogram_activated(int k)
 {
-	d->m_current_tab_widget=d->get_other_tab_widget(d->m_current_tab_widget);
-	d->open_cross_correlograms(k);
+    d->m_current_tab_widget=d->get_other_tab_widget(d->tab_widget_of((QWidget *)sender()));
+    d->open_cross_correlograms(k);
+}
+
+void MVOverview2Widget::slot_templates_clicked()
+{
+    SSTimeSeriesView *X=(SSTimeSeriesView *)sender();
+    int clip_size=d->m_control_panel->getParameterValue("clip_size").toInt();
+    int x=X->currentX();
+    int clip_num=(x/clip_size)+1;
+    d->set_cross_correlograms_current_number(clip_num);
+}
+
+void MVOverview2Widget::slot_cross_correlogram_current_unit_changed()
+{
+    MVCrossCorrelogramsWidget *X=(MVCrossCorrelogramsWidget *)sender();
+    d->set_cross_correlograms_current_number(X->currentUnit());
+    d->set_templates_current_number(X->currentUnit());
 }
 
 typedef QList<long> IntList;
@@ -336,15 +349,37 @@ void MVOverview2WidgetPrivate::update_templates()
 
 void MVOverview2WidgetPrivate::do_amplitude_split()
 {
+    if (!m_control_panel->getParameterValue("use_amplitude_split").toBool()) {
+        m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
+        for (int i2=0; i2<m_firings.N2(); i2++) {
+            for (int i1=0; i1<m_firings.N1(); i1++) {
+                m_firings.setValue(m_firings_original.value(i1,i2),i1,i2);
+            }
+        }
+        m_original_cluster_numbers.clear();
+        m_original_cluster_offsets.clear();
+        int K=0;
+        for (int n=0; n<m_firings.N2(); n++) {
+            if (m_firings.value(2,n)>K) K=(int)m_firings.value(2,n);
+        }
+        for (int k=0; k<=K; k++) {
+            m_original_cluster_numbers << k;
+            m_original_cluster_offsets << 0;
+        }
+
+        return;
+    }
 	float shell_width=m_control_panel->getParameterValue("shell_width").toFloat();
 	int min_per_shell=m_control_panel->getParameterValue("min_per_shell").toInt();
+    float min_amplitude=m_control_panel->getParameterValue("min_amplitude").toInt();
 	QList<long> times;
 	QList<long> labels;
 	QList<double> peaks;
 	for (int n=0; n<m_firings.N2(); n++) {
-		times << (long)m_firings_original.value(1,n);
-		labels << (long)m_firings_original.value(2,n);
-		peaks << m_firings_original.value(3,n);
+        float peak=m_firings_original.value(3,n);
+        times << (long)m_firings_original.value(1,n);
+        labels << (long)m_firings_original.value(2,n);
+        peaks << peak;
 	}
 	int K=0;
 	for (int n=0; n<times.count(); n++) {
@@ -362,7 +397,7 @@ void MVOverview2WidgetPrivate::do_amplitude_split()
 		for (int n=0; n<times.count(); n++) {
 			if (labels[n]==k) {
 				int ind=(int)((peaks[n]-(-MAXAMP))/shell_width);
-				if ((0<=ind)&&(ind<BINS_SIZE)) {
+                if ((0<=ind)&&(ind<BINS_SIZE)&&(fabs(peaks[n])>=min_amplitude)) {
 					bins[ind]++;
 					tot_count++;
 				}
@@ -398,21 +433,26 @@ void MVOverview2WidgetPrivate::do_amplitude_split()
 	}
 
 	m_original_cluster_numbers.clear();
+    m_original_cluster_offsets.clear();
 	m_original_cluster_numbers << 0;
+    m_original_cluster_offsets << 0;
+    int offset=0;
 	for (int kk=0; kk<KK; kk++) {
+        if ((kk==0)||(nums[kk]!=nums[kk-1])) offset=0;
 		int k=nums[kk];
 		float min0=mins[kk];
 		float max0=maxs[kk];
 		m_original_cluster_numbers << k;
+        m_original_cluster_offsets << offset;
+        offset++;
 		for (int n=0; n<times.count(); n++) {
 			if (labels[n]==k) {
-				if ((min0<=peaks[n])&&(peaks[n]<max0)) {
+                if ((min0<=peaks[n])&&(peaks[n]<max0)&&(fabs(peaks[n])>=min_amplitude)) {
 					m_firings.setValue(kk+1,2,n);
 				}
 			}
 		}
 	}
-
 }
 
 void MVOverview2WidgetPrivate::add_tab(QWidget *W,QString label)
@@ -429,6 +469,7 @@ void MVOverview2WidgetPrivate::open_auto_correlograms()
 	X->setProperty("widget_type","auto_correlograms");
 	add_tab(X,"Auto-Correlograms");
 	QObject::connect(X,SIGNAL(unitActivated(int)),q,SLOT(slot_auto_correlogram_activated(int)));
+    QObject::connect(X,SIGNAL(currentUnitChanged()),q,SLOT(slot_cross_correlogram_current_unit_changed()));
 	update_widget(X);
 }
 
@@ -437,7 +478,8 @@ void MVOverview2WidgetPrivate::open_cross_correlograms(int k)
 	MVCrossCorrelogramsWidget *X=new MVCrossCorrelogramsWidget;
 	X->setProperty("widget_type","cross_correlograms");
 	X->setProperty("cc_k",k);
-	add_tab(X,QString("CC for %1").arg(k));
+    add_tab(X,QString("CC for %1(%2)").arg(m_original_cluster_numbers.value(k)).arg(m_original_cluster_offsets.value(k)+1));
+    QObject::connect(X,SIGNAL(currentUnitChanged()),q,SLOT(slot_cross_correlogram_current_unit_changed()));
 	update_widget(X);
 }
 
@@ -447,6 +489,7 @@ void MVOverview2WidgetPrivate::open_templates()
 	X->initialize();
 	X->setProperty("widget_type","templates");
 	add_tab(X,QString("Templates"));
+    QObject::connect(X,SIGNAL(currentXChanged()),q,SLOT(slot_templates_clicked()));
 	update_widget(X);
 }
 
@@ -488,6 +531,14 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 	if (widget_type=="auto_correlograms") {
 		MVCrossCorrelogramsWidget *WW=(MVCrossCorrelogramsWidget *)W;
 		WW->setCrossCorrelogramsData(DiskReadMda(m_cross_correlograms_data));
+        QStringList labels;
+        for (int i=0; i<m_original_cluster_numbers.count(); i++) {
+            if ((i==0)||(m_original_cluster_numbers[i]!=m_original_cluster_numbers[i-1])) {
+                labels << QString("Auto %1").arg(m_original_cluster_numbers[i]);
+            }
+            else labels << "";
+        }
+        WW->setLabels(labels);
 		WW->updateWidget();
 	}
 	else if (widget_type=="cross_correlograms") {
@@ -495,6 +546,14 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		int k=W->property("cc_k").toInt();
 		WW->setCrossCorrelogramsData(DiskReadMda(m_cross_correlograms_data));
 		WW->setBaseUnit(k);
+        QStringList labels;
+        for (int i=0; i<m_original_cluster_numbers.count(); i++) {
+            if ((i==0)||(m_original_cluster_numbers[i]!=m_original_cluster_numbers[i-1])) {
+                labels << QString("Cross %1").arg(m_original_cluster_numbers[i]);
+            }
+            else labels << "";
+        }
+        WW->setLabels(labels);
 		WW->updateWidget();
 	}
 	else if (widget_type=="templates") {
@@ -525,7 +584,32 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		X->setPath(m_raw_data_path);
 		WW->setData(X,true);
 		WW->setTimesLabels(m_times,m_labels);
-	}
+    }
+}
+
+void MVOverview2WidgetPrivate::set_cross_correlograms_current_number(int kk)
+{
+    QList<QWidget *> widgets=get_all_widgets();
+    foreach (QWidget *W,widgets) {
+        QString widget_type=W->property("widget_type").toString();
+        if ((widget_type=="auto_correlograms")||(widget_type=="cross_correlograms")) {
+            MVCrossCorrelogramsWidget *WW=(MVCrossCorrelogramsWidget *)W;
+            WW->setCurrentUnit(kk);
+        }
+    }
+}
+
+void MVOverview2WidgetPrivate::set_templates_current_number(int kk)
+{
+    QList<QWidget *> widgets=get_all_widgets();
+    foreach (QWidget *W,widgets) {
+        QString widget_type=W->property("widget_type").toString();
+        if (widget_type=="templates") {
+            int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
+            SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+            WW->setCurrentX((int)(clip_size*(kk-1+0.5)));
+        }
+    }
 }
 
 QList<QWidget *> MVOverview2WidgetPrivate::get_all_widgets()
@@ -548,7 +632,18 @@ CustomTabWidget *MVOverview2WidgetPrivate::current_tab_widget()
 CustomTabWidget *MVOverview2WidgetPrivate::get_other_tab_widget(CustomTabWidget *W)
 {
 	if (W==m_tabs1) return m_tabs2;
-	else return m_tabs1;
+    else return m_tabs1;
+}
+
+CustomTabWidget *MVOverview2WidgetPrivate::tab_widget_of(QWidget *W)
+{
+    for (int i=0; i<m_tabs1->count(); i++) {
+        if (m_tabs1->widget(i)==W) return m_tabs1;
+    }
+    for (int i=0; i<m_tabs2->count(); i++) {
+        if (m_tabs2->widget(i)==W) return m_tabs2;
+    }
+    return m_tabs1;
 }
 
 void MVOverview2WidgetPrivate::remove_widgets_of_type(QString widget_type)

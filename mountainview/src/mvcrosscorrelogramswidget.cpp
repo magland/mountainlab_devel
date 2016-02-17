@@ -25,6 +25,7 @@ public:
 	int m_num_columns;
 
 	QList<QWidget *> m_child_widgets;
+    QStringList m_labels;
 
 	void do_highlighting();
 };
@@ -59,7 +60,12 @@ void MVCrossCorrelogramsWidget::setCrossCorrelogramsPath(const QString &path)
 
 void MVCrossCorrelogramsWidget::setCrossCorrelogramsData(const DiskReadMda &X)
 {
-	d->m_data=X;
+    d->m_data=X;
+}
+
+void MVCrossCorrelogramsWidget::setLabels(const QStringList &labels)
+{
+    d->m_labels=labels;
 }
 
 typedef QList<float> FloatList;
@@ -169,6 +175,7 @@ float compute_max(const QList<FloatList> &data0) {
 
 void MVCrossCorrelogramsWidget::updateWidget()
 {
+    qDebug() << "LABELS:" << d->m_labels;
 	QGridLayout *GL=d->m_grid_layout;
 	qDeleteAll(d->m_histogram_views);
 	d->m_histogram_views.clear();
@@ -210,12 +217,17 @@ void MVCrossCorrelogramsWidget::updateWidget()
 		HV->setBins(bin_min,bin_max,num_bins);
 		int k2=k1; if (d->m_base_unit_num>=1) k2=d->m_base_unit_num;
 		QString title0;
-		if (!d->m_unit_numbers.isEmpty()) {
-			title0=QString("%1/%2").arg(d->m_unit_numbers.value((k1-1)/num_cols)).arg(d->m_unit_numbers.value((k1-1)%num_cols));
-		}
-		else {
-			title0=QString("%1/%2").arg(k1).arg(k2);
-		}
+        if (!d->m_labels.isEmpty()) {
+            title0=d->m_labels.value(k1);
+        }
+        else {
+            if (!d->m_unit_numbers.isEmpty()) {
+                title0=QString("%1/%2").arg(d->m_unit_numbers.value((k1-1)/num_cols)).arg(d->m_unit_numbers.value((k1-1)%num_cols));
+            }
+            else {
+                title0=QString("%1/%2").arg(k1).arg(k2);
+            }
+        }
 		HV->setTitle(title0);
 		GL->addWidget(HV,(k1-1)/num_cols,(k1-1)%num_cols);
 		if (d->m_unit_numbers.isEmpty()) {

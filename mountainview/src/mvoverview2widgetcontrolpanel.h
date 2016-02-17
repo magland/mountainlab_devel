@@ -14,10 +14,13 @@ public:
 	virtual ~MVOverview2WidgetControlPanel();
 
 	QVariant getParameterValue(QString name);
+    void setParameterValue(QString name,QVariant val);
+    void setParameterLabel(QString name,QString text);
 signals:
 	void signalButtonClicked(QString str);
 private slots:
 	void slot_button_clicked();
+    void slot_checkbox_clicked(bool val);
 private:
 	MVOverview2WidgetControlPanelPrivate *d;
 };

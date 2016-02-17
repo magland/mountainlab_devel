@@ -167,6 +167,7 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
                 if (l0<m_marker_labels.count()) {
                     int x0=pix.x;
                     int offset=0;
+                    Q_UNUSED(offset)
                     //don't do the offsets for now, because it disrupts the comparison markers
                     /*
                     for (int dx=-6; dx<=0; dx++) {
