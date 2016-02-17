@@ -5,6 +5,7 @@
 #include "mvoverview2widgetcontrolpanel.h"
 
 #include <QHBoxLayout>
+#include <QMessageBox>
 #include <QSplitter>
 #include <QTabWidget>
 #include <QTime>
@@ -20,6 +21,7 @@ public:
 	Mda m_firings;
 	QList<int> m_original_cluster_numbers;
     QList<int> m_original_cluster_offsets;
+    int m_current_kk;
 
 	MVOverview2WidgetControlPanel *m_control_panel;
 
@@ -29,7 +31,6 @@ public:
 
 	Mda m_cross_correlograms_data;
 	Mda m_templates_data;
-	QList<long> m_times,m_labels;
 
 	void create_cross_correlograms_data();
 	void create_templates_data();
@@ -43,6 +44,7 @@ public:
 	void open_cross_correlograms(int k);
 	void open_templates();
 	void open_raw_data();
+    void open_clips();
 
 	void update_cross_correlograms();
 	void update_raw_views();
@@ -51,10 +53,14 @@ public:
     void set_cross_correlograms_current_number(int kk);
     void set_templates_current_number(int kk);
 
+    void set_times_labels();
+
 	QList<QWidget *> get_all_widgets();
 	CustomTabWidget *current_tab_widget();
 	CustomTabWidget *get_other_tab_widget(CustomTabWidget *W);
     CustomTabWidget *tab_widget_of(QWidget *W);
+
+    Mda extract_clips(DiskReadMda &X,const QList<long> &times);
 
 	void remove_widgets_of_type(QString widget_type);
 
@@ -64,6 +70,8 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 {
 	d=new MVOverview2WidgetPrivate;
 	d->q=this;
+
+    d->m_current_kk=0;
 
 	d->m_control_panel=new MVOverview2WidgetControlPanel;
 	connect(d->m_control_panel,SIGNAL(signalButtonClicked(QString)),this,SLOT(slot_control_panel_button_clicked(QString)));
@@ -118,8 +126,6 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
     }
 	d->m_firings_original.setPath(firings);
     d->do_amplitude_split();
-	d->m_times=times;
-	d->m_labels=labels;
 	d->update_cross_correlograms();
 	d->update_templates();
 	d->update_raw_views();
@@ -155,6 +161,9 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 	else if (str=="open_raw_data") {
 		d->open_raw_data();
 	}
+    else if (str=="open_clips") {
+        d->open_clips();
+    }
 }
 
 void MVOverview2Widget::slot_auto_correlogram_activated(int k)
@@ -169,12 +178,14 @@ void MVOverview2Widget::slot_templates_clicked()
     int clip_size=d->m_control_panel->getParameterValue("clip_size").toInt();
     int x=X->currentX();
     int clip_num=(x/clip_size)+1;
+    d->m_current_kk=clip_num;
     d->set_cross_correlograms_current_number(clip_num);
 }
 
 void MVOverview2Widget::slot_cross_correlogram_current_unit_changed()
 {
     MVCrossCorrelogramsWidget *X=(MVCrossCorrelogramsWidget *)sender();
+    d->m_current_kk=X->currentUnit();
     d->set_cross_correlograms_current_number(X->currentUnit());
     d->set_templates_current_number(X->currentUnit());
 }
@@ -349,6 +360,7 @@ void MVOverview2WidgetPrivate::update_templates()
 
 void MVOverview2WidgetPrivate::do_amplitude_split()
 {
+    m_current_kk=0;
     if (!m_control_panel->getParameterValue("use_amplitude_split").toBool()) {
         m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
         for (int i2=0; i2<m_firings.N2(); i2++) {
@@ -477,7 +489,7 @@ void MVOverview2WidgetPrivate::open_cross_correlograms(int k)
 {
 	MVCrossCorrelogramsWidget *X=new MVCrossCorrelogramsWidget;
 	X->setProperty("widget_type","cross_correlograms");
-	X->setProperty("cc_k",k);
+    X->setProperty("kk",k);
     add_tab(X,QString("CC for %1(%2)").arg(m_original_cluster_numbers.value(k)).arg(m_original_cluster_offsets.value(k)+1));
     QObject::connect(X,SIGNAL(currentUnitChanged()),q,SLOT(slot_cross_correlogram_current_unit_changed()));
 	update_widget(X);
@@ -499,7 +511,21 @@ void MVOverview2WidgetPrivate::open_raw_data()
 	X->initialize();
 	X->setProperty("widget_type","raw_data");
 	add_tab(X,QString("Raw"));
-	update_widget(X);
+    update_widget(X);
+}
+
+void MVOverview2WidgetPrivate::open_clips()
+{
+    int kk=m_current_kk;
+    if (kk<=0) {
+        QMessageBox::information(q,"Unable to open clips","You must first select a neuron.");
+        return;
+    }
+    SSTimeSeriesView *X=new SSTimeSeriesView;
+    X->setProperty("widget_type","clips");
+    X->setProperty("kk",kk);
+    add_tab(X,QString("Clips %1(%2)").arg(m_original_cluster_numbers.value(kk)).arg(m_original_cluster_offsets.value(kk)+1));
+    update_widget(X);
 }
 
 void MVOverview2WidgetPrivate::update_cross_correlograms()
@@ -543,7 +569,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 	}
 	else if (widget_type=="cross_correlograms") {
 		MVCrossCorrelogramsWidget *WW=(MVCrossCorrelogramsWidget *)W;
-		int k=W->property("cc_k").toInt();
+        int k=W->property("kk").toInt();
 		WW->setCrossCorrelogramsData(DiskReadMda(m_cross_correlograms_data));
 		WW->setBaseUnit(k);
         QStringList labels;
@@ -578,12 +604,29 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		WW->setMarkerLinesVisible(false);
 		printf(".\n");
 	}
+    else if (widget_type=="clips") {
+        printf("Extracting clips...\n");
+        SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+        int kk=WW->property("kk").toInt();
+
+        QList<long> times,labels;
+        for (int n=0; n<m_firings.N2(); n++) {
+            times << (long)m_firings.value(1,n);
+            labels << (long)m_firings.value(2,n);
+        }
+
+        QList<long> times_kk;
+        for (int n=0; n<labels.count(); n++) {
+            if (labels[n]==kk) times_kk << times[n];
+        }
+        Mda clips=extract_clips(m_raw,times_kk);
+    }
 	else if (widget_type=="raw_data") {
 		SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
 		DiskArrayModel *X=new DiskArrayModel;
 		X->setPath(m_raw_data_path);
 		WW->setData(X,true);
-		WW->setTimesLabels(m_times,m_labels);
+        set_times_labels();
     }
 }
 
@@ -608,6 +651,23 @@ void MVOverview2WidgetPrivate::set_templates_current_number(int kk)
             int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
             SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
             WW->setCurrentX((int)(clip_size*(kk-1+0.5)));
+        }
+    }
+}
+
+void MVOverview2WidgetPrivate::set_times_labels()
+{
+    QList<long> times,labels;
+    for (int n=0; n<m_firings_original.N2(); n++) {
+        times << (long)m_firings_original.value(1,n);
+        labels << (long)m_firings_original.value(2,n);
+    }
+    QList<QWidget *> widgets=get_all_widgets();
+    foreach (QWidget *W,widgets) {
+        QString widget_type=W->property("widget_type").toString();
+        if (widget_type=="raw_data") {
+            SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+            WW->setTimesLabels(times,labels);
         }
     }
 }
@@ -644,6 +704,11 @@ CustomTabWidget *MVOverview2WidgetPrivate::tab_widget_of(QWidget *W)
         if (m_tabs2->widget(i)==W) return m_tabs2;
     }
     return m_tabs1;
+}
+
+Mda MVOverview2WidgetPrivate::extract_clips(DiskReadMda &X, const QList<long> &times)
+{
+
 }
 
 void MVOverview2WidgetPrivate::remove_widgets_of_type(QString widget_type)
