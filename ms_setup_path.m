@@ -3,3 +3,4 @@ addpath mountainview/src/spikespy/matlab
 addpath msutils
 addpath processing
 addpath view
+addpath unit_tests
