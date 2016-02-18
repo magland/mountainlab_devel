@@ -1,5 +1,17 @@
 function H=spikespy01(varargin) 
 
+%first loop through the arguments and get the options
+opts=struct;
+for j=1:length(varargin)
+    arg=varargin{j};
+    if (isstruct(arg))
+        opts=arg;
+    end;
+end;
+%default options
+if (~isfield(opts,'sampling_freq')) opts.sampling_freq=0; end;
+if (isfield(opts,'sampfreq')) opts.sampling_freq=opts.sampfreq; end;
+
 script={};
 script{end+1}='var W=SPIKESPY.createTimeSeriesWidget();';
 
@@ -10,12 +22,14 @@ for j=1:length(varargin)
 	if (isnumeric(arg))
 		Xvar=sprintf('X%d',j); data.(Xvar)=arg;
 		script{end+1}='var V=SPIKESPY.createTimeSeriesView();';
+        script{end+1}=sprintf('V.setSamplingFrequency(%f);',opts.sampling_freq);
 		script{end+1}=sprintf('var X=SPIKESPY.loadArray($%s$);',Xvar);
 		script{end+1}='V.setData(X);';
 		script{end+1}='W.addView(V);';	
 	elseif (iscell(arg))&&(length(arg)==1)
 		Xvar=sprintf('X%d',j); data.(Xvar)=arg{1};
 		script{end+1}='var V=SPIKESPY.createTimeSeriesView();';
+        script{end+1}=sprintf('V.setSamplingFrequency(%f);',opts.sampling_freq);
 		script{end+1}=sprintf('var X=SPIKESPY.loadArray($%s$);',Xvar);
 		script{end+1}='V.setData(X);';
 		script{end+1}='W.addView(V);';	
@@ -23,6 +37,7 @@ for j=1:length(varargin)
 		if (isstr(arg{2}))
 			Xvar=sprintf('X%d',j); data.(Xvar)=arg{1};
 			script{end+1}='var V=SPIKESPY.createTimeSeriesView();';
+            script{end+1}=sprintf('V.setSamplingFrequency(%f);',opts.sampling_freq);
 			script{end+1}=sprintf('var X=SPIKESPY.loadArray($%s$);',Xvar);
 			script{end+1}='V.setData(X);';
 			script{end+1}='W.addView(V);';	
@@ -45,6 +60,7 @@ for j=1:length(varargin)
 		TLvar=sprintf('T%d',j); data.(TLvar)=[arg{2};arg{3}];
 		%Lvar=sprintf('L%d',j); data.(Lvar)=arg{3};
 		script{end+1}='var V=SPIKESPY.createTimeSeriesView();';
+        script{end+1}=sprintf('V.setSamplingFrequency(%f);',opts.sampling_freq);
 		script{end+1}=sprintf('var X=SPIKESPY.loadArray($%s$);',Xvar);
 		script{end+1}=sprintf('var TL=SPIKESPY.readArray($%s$);',TLvar);
 		%script{end+1}=sprintf('var L=SPIKESPY.readArray($%s$);',Lvar);

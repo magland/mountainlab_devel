@@ -161,6 +161,13 @@ void SSTimeSeriesWidget::hideMenu()
     d->m_menubar->hide();
 }
 
+SSAbstractView *SSTimeSeriesWidget::view(int index)
+{
+    if (index>=d->m_views.count()) return 0;
+    if (index<0) return 0;
+    return d->m_views[index];
+}
+
 void SSTimeSeriesWidgetPrivate::set_info(QString txt) {
 	m_info.setText(txt);
 }

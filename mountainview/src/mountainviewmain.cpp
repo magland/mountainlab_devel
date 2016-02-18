@@ -173,6 +173,7 @@ int main(int argc, char *argv[]) {
 		W->setSamplingFrequency(sampling_freq);
 		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
 		W->resize(1800,1200);
+        W->setDefaultInitialization();
 	}
 	else if (mode=="spikespy") {
 		printf("spikespy...\n");

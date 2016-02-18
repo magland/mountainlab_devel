@@ -1,6 +1,7 @@
 #include "mvoverview2widget.h"
 #include "diskreadmda.h"
 #include "sstimeseriesview.h"
+#include "sstimeserieswidget.h"
 #include "mvcrosscorrelogramswidget.h"
 #include "mvoverview2widgetcontrolpanel.h"
 #include "get_principal_components.h"
@@ -527,10 +528,13 @@ void MVOverview2WidgetPrivate::open_templates()
 
 void MVOverview2WidgetPrivate::open_raw_data()
 {
-	SSTimeSeriesView *X=new SSTimeSeriesView;
-	X->initialize();
-	X->setSamplingFrequency(m_sampling_frequency);
-	X->setProperty("widget_type","raw_data");
+    SSTimeSeriesWidget *X=new SSTimeSeriesWidget;
+    X->hideMenu();
+    SSTimeSeriesView *V=new SSTimeSeriesView;
+    V->initialize();
+    V->setSamplingFrequency(m_sampling_frequency);
+    X->addView(V);
+    X->setProperty("widget_type","raw_data");
 	add_tab(X,QString("Raw"));
     update_widget(X);
 }
@@ -650,10 +654,10 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		printf(".\n");
     }
 	else if (widget_type=="raw_data") {
-		SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+        SSTimeSeriesWidget *WW=(SSTimeSeriesWidget *)W;
 		DiskArrayModel *X=new DiskArrayModel;
-		X->setPath(m_raw_data_path);
-		WW->setData(X,true);
+        X->setPath(m_raw_data_path);
+        ((SSTimeSeriesView *)(WW->view()))->setData(X,true);
         set_times_labels();
     }
 }
@@ -694,8 +698,9 @@ void MVOverview2WidgetPrivate::set_times_labels()
     foreach (QWidget *W,widgets) {
         QString widget_type=W->property("widget_type").toString();
         if (widget_type=="raw_data") {
-            SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
-            WW->setTimesLabels(times,labels);
+            SSTimeSeriesWidget *WW=(SSTimeSeriesWidget *)W;
+            SSTimeSeriesView *V=(SSTimeSeriesView *)WW->view();
+            V->setTimesLabels(times,labels);
         }
     }
 }

@@ -1,14 +1,20 @@
 function H=spikespy(varargin)
-% SPIKESPY  View spike sorting data with labels
+%SPIKESPY - Launch the SpikeSpy viewer (needs to be compiled
+%separately)
 %
-% (REQUIRES spikespy executable in ../bin/spikespy)
+%The SpikeSpy program allows interactive visualization of a
+%raw/preprocessed dataset with a collection of times/labels.
 %
+% Syntax:  
 % H=spikespy(X) -- X is the raw timeseries data (2D raw, #channels x #timepoints)
 % H=spikespy(X,{tj,lj}) -- X is the raw timeseries data, tj are the spike times, and lj
 %                    are the corresponding labels. (tj and lj are vectors of length #labels)
 % H=spikespy({X,tj,l},{tj,lj}) -- same as previous, but shows label markers on top plot
 %
 % H=spikespy(X,Y,Z,{t1,l1},{X2,t2,l2},...) -- see you can use any number of arguments
+%
+% H=spikespy(...,opts) -- options structure can be added at the end
+%      opts.sampling_freq - the sampling frequency in Hz, eg 20000
 %
 % spikespy() -- show usage information, shortcut keys, etc.
 %
@@ -17,6 +23,13 @@ function H=spikespy(varargin)
 % spikespy('closeall'); -- close all views
 % ::::::::::::::::::::::::::::::::::::::::::::::::::::
 %
+% Other m-files required: spikespy01, requires compilation of spikespy
+%
+% See also: ms_mountainview
+
+% Author: Jeremy Magland
+% Jan 2015; Last revision: 15-Feb-2106
+
 
 if nargin<1
 fprintf('------ SPIKESPY ------\n');
@@ -29,7 +42,7 @@ fprintf('-- Ctrl + left/right arrow keys move cursor left/right\n');
 fprintf('-- Right-click and drag to select a time interval\n');
 fprintf('-- ENTER to zoom in to the selected time interval\n');
 fprintf('-- up/down arrow keys do vertical zoom (on all views together)\n');
-fprintf('-- F (when clicked on a view) flips the channel ordering\n');
+%fprintf('-- F (when clicked on a view) flips the channel ordering\n');
 return;
 end;
 

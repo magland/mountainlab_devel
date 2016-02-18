@@ -14,7 +14,8 @@ end;
 tj=randsample(size(X,2),num_labels)';
 lj=ceil(rand(size(tj))*size(X,1));
 
-Htmp=spikespy({X,tj,lj,'This is the title.'},{X,tj,lj,'This is the title2.'});
+opts.sampling_freq=20000;
+Htmp=spikespy({X,tj,lj,'This is the title.'},{X,tj,lj,'This is the title2.'},opts);
 
 if (nargout>0) H=Htmp; end;
 

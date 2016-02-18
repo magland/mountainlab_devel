@@ -88,33 +88,39 @@ writemda(firings,[path0,'/firings.mda']);
 % view_params.clips_index=[path0,'/clips0_index.mda'];
 % ms_mountainview(view_params);
 
-%%%% Split clusters by peak amplitudes
-labels_split=split_clusters_by_peak_amplitudes(clips,labels);
-K_split=max(labels_split);
-templates_split=zeros(M,T,K_split);
-for k=1:K_split
-    inds_k=find(labels_split==k);
-    templates_split(:,:,k)=compute_clips_template(clips(:,:,inds_k));
-    inds0=find_spikes_that_do_not_fit_well(clips(:,:,inds_k),templates_split(:,:,k));
-    fprintf('k=%d: Using %d/%d spikes (%d%%).\n',k,length(inds_k)-length(inds0),length(inds_k),floor((length(inds_k)-length(inds0))/length(inds_k)*100));
-    labels_split(inds_k(inds0))=0;
-end;
-firings_split=readmda([path0,'/firings.mda']);
-firings_split(3,:)=labels_split;
-writemda(firings_split,[path0,'/firings_split.mda']);
-figure; ms_view_templates(templates_split);
-writemda(templates_split,[path0,'/templates_split.mda']);
-mscmd_create_clips_file([path0,'/pre2.mda'],[path0,'/firings_split.mda'],[path0,'/clips0_split.mda'],[path0,'/clips0_split_index.mda'],struct('clip_size',o_extract_clips.clip_size));
-mscmd_cross_correlograms([path0,'/firings_split.mda'],[path0,'/cross_correlograms_split.mda'],cross_correlograms_max_dt);
-
-%%%% MountainView
+view_params.mode='overview2';
 view_params.raw=[path0,'/pre2.mda'];
-view_params.firings=[path0,'/firings_split.mda'];
-view_params.cross_correlograms=[path0,'/cross_correlograms_split.mda'];
-view_params.templates=[path0,'/templates_split.mda'];
-view_params.clips=[path0,'/clips0_split.mda'];
-view_params.clips_index=[path0,'/clips0_split_index.mda'];
+view_params.firings=[path0,'/firings.mda'];
+view_params.sampling_freq=o_filter.samplefreq;
 ms_mountainview(view_params);
+
+%%%% Split clusters by peak amplitudes
+% labels_split=split_clusters_by_peak_amplitudes(clips,labels);
+% K_split=max(labels_split);
+% templates_split=zeros(M,T,K_split);
+% for k=1:K_split
+%     inds_k=find(labels_split==k);
+%     templates_split(:,:,k)=compute_clips_template(clips(:,:,inds_k));
+%     inds0=find_spikes_that_do_not_fit_well(clips(:,:,inds_k),templates_split(:,:,k));
+%     fprintf('k=%d: Using %d/%d spikes (%d%%).\n',k,length(inds_k)-length(inds0),length(inds_k),floor((length(inds_k)-length(inds0))/length(inds_k)*100));
+%     labels_split(inds_k(inds0))=0;
+% end;
+% firings_split=readmda([path0,'/firings.mda']);
+% firings_split(3,:)=labels_split;
+% writemda(firings_split,[path0,'/firings_split.mda']);
+% figure; ms_view_templates(templates_split);
+% writemda(templates_split,[path0,'/templates_split.mda']);
+% mscmd_create_clips_file([path0,'/pre2.mda'],[path0,'/firings_split.mda'],[path0,'/clips0_split.mda'],[path0,'/clips0_split_index.mda'],struct('clip_size',o_extract_clips.clip_size));
+% mscmd_cross_correlograms([path0,'/firings_split.mda'],[path0,'/cross_correlograms_split.mda'],cross_correlograms_max_dt);
+% 
+% %%%% MountainView
+% view_params.raw=[path0,'/pre2.mda'];
+% view_params.firings=[path0,'/firings_split.mda'];
+% view_params.cross_correlograms=[path0,'/cross_correlograms_split.mda'];
+% view_params.templates=[path0,'/templates_split.mda'];
+% view_params.clips=[path0,'/clips0_split.mda'];
+% view_params.clips_index=[path0,'/clips0_split_index.mda'];
+% ms_mountainview(view_params);
 
 end
 
