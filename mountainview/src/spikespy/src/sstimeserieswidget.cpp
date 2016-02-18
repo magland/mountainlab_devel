@@ -57,7 +57,7 @@ SSTimeSeriesWidget::SSTimeSeriesWidget(QWidget *parent) : QWidget(parent) {
 	d->q=this;
 
 	d->m_current_view=0;
-	d->m_sampling_frequency=20000;
+	d->m_sampling_frequency=0; //eg 20000
 	d->m_widget_type="raw";
 
 	d->m_splitter.setStyleSheet("QSplitter {background: gray;}");

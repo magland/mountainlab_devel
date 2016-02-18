@@ -21,6 +21,7 @@ signals:
 private slots:
 	void slot_button_clicked();
     void slot_checkbox_clicked(bool val);
+	void slot_radio_button_clicked();
 private:
 	MVOverview2WidgetControlPanelPrivate *d;
 };

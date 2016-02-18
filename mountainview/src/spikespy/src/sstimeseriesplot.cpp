@@ -153,7 +153,6 @@ void SSTimeSeriesPlot::updateSize()
 }
 
 void SSTimeSeriesPlot::paintPlot(QPainter *painter) {
-
 	updateSize();
 
 	if ((width()!=d->m_image.width())||(height()!=d->m_image.height())) {
@@ -223,6 +222,7 @@ void SSTimeSeriesPlot::setData(SSARRAY *data) {
 	d->set_data2();
 
 	d->m_image_needs_update=true;
+	emit this->replotNeeded();
 	update();
 }
 

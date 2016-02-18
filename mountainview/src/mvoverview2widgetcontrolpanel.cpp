@@ -7,6 +7,8 @@
 #include <QPushButton>
 #include <QMap>
 #include <QCheckBox>
+#include <QRadioButton>
+#include <QGroupBox>
 
 class MVOverview2WidgetControlPanelPrivate {
 public:
@@ -14,12 +16,14 @@ public:
 
 	QMap<QString,QLineEdit *> m_lineedit_parameters;
     QMap<QString,QCheckBox *> m_checkbox_parameters;
+	QMap<QString,QGroupBox *> m_groupbox_parameters;
     QMap<QString,QPushButton *> m_buttons;
 
 	void add_group_label(QGridLayout *G,QString label);
     QCheckBox *add_check_box(QGridLayout *G,QString name,QString label,bool val);
 	QLineEdit *add_int_box(QGridLayout *G,QString name,QString label,int val,int minval,int maxval);
 	QLineEdit *add_float_box(QGridLayout *G,QString name,QString label,float val,float minval,float maxval);
+	QGroupBox *add_radio_button_group(QGridLayout *G,QString name,QStringList options,QString val);
 	QPushButton *add_button(QGridLayout *G,QString name,QString label);
     void add_horizontal_divider(QVBoxLayout *layout);
 };
@@ -71,6 +75,26 @@ QLineEdit *MVOverview2WidgetControlPanelPrivate::add_float_box(QGridLayout *G, Q
 	return X;
 }
 
+QGroupBox *MVOverview2WidgetControlPanelPrivate::add_radio_button_group(QGridLayout *G, QString name, QStringList options, QString val)
+{
+	int r=G->rowCount();
+	QGroupBox *box=new QGroupBox;
+	QHBoxLayout *hlayout=new QHBoxLayout;
+	foreach (QString option,options) {
+		QRadioButton *B=new QRadioButton(option);
+		if (option==val) B->setChecked(true);
+		else B->setChecked(false);
+		B->setProperty("signal",name);
+		hlayout->addWidget(B);
+	}
+	hlayout->addStretch();
+	box->setLayout(hlayout);
+	m_groupbox_parameters[name]=box;
+	G->addWidget(box,r,0,1,2);
+	QObject::connect(box,SIGNAL(clicked(bool)),q,SLOT(slot_radio_button_clicked()));
+	return box;
+}
+
 QPushButton *MVOverview2WidgetControlPanelPrivate::add_button(QGridLayout *G,QString name,QString label) {
 	int r=G->rowCount();
 	QPushButton *X=new QPushButton(label);
@@ -114,6 +138,8 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
 
 		d->add_group_label(G,"Templates");
         d->add_int_box(G,"clip_size","Clip Size",100,20,10000)->setToolTip("Number of time points in clips");
+		QStringList options; options << "centroids" << "geometric medians";
+		d->add_radio_button_group(G,"template_method",options,"centroids");
 		d->add_button(G,"update_templates","Update");
         d->add_horizontal_divider(layout);
 	}
@@ -123,7 +149,7 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
         layout->addLayout(G);
 
 		d->add_group_label(G,"Amplitude Splitting");
-        d->add_check_box(G,"use_amplitude_split","Use amplitude split",false)->setToolTip("Split into peak amplitude shells.");
+		d->add_check_box(G,"use_amplitude_split","Use amplitude split",true)->setToolTip("Split into peak amplitude shells.");
         d->add_float_box(G,"shell_width","Shell Width",1.5,0.1,20)->setToolTip("The width (in amplitude) of each shell");
         d->add_int_box(G,"min_per_shell","Min per shell",150,0,1500)->setToolTip("The minimum number of points in each shell");
         d->add_int_box(G,"min_amplitude","Min amplitude",0,0,100)->setToolTip("The minimum peak amplitude to include");
@@ -157,6 +183,16 @@ QVariant MVOverview2WidgetControlPanel::getParameterValue(QString name)
 {
 	if (d->m_lineedit_parameters.contains(name)) return d->m_lineedit_parameters[name]->text();
     if (d->m_checkbox_parameters.contains(name)) return d->m_checkbox_parameters[name]->isChecked();
+	if (d->m_groupbox_parameters.contains(name)) {
+		QGroupBox *G=d->m_groupbox_parameters[name];
+		QList<QObject *> ch=G->children();
+		foreach (QObject *obj,ch) {
+			QRadioButton *R=dynamic_cast<QRadioButton *>(obj);
+			if (R) {
+				if (R->isChecked()) return R->text();
+			}
+		}
+	}
     return "";
 }
 
@@ -164,6 +200,18 @@ void MVOverview2WidgetControlPanel::setParameterValue(QString name, QVariant val
 {
     if (d->m_lineedit_parameters.contains(name)) return d->m_lineedit_parameters[name]->setText(val.toString());
     if (d->m_checkbox_parameters.contains(name)) return d->m_checkbox_parameters[name]->setChecked(val.toBool());
+	if (d->m_groupbox_parameters.contains(name)) {
+		QGroupBox *G=d->m_groupbox_parameters[name];
+		QList<QObject *> ch=G->children();
+		foreach (QObject *obj,ch) {
+			QRadioButton *R=dynamic_cast<QRadioButton *>(obj);
+			if (R) {
+				if (R->text()==val) {
+					R->setChecked(true);
+				}
+			}
+		}
+	}
 }
 
 void MVOverview2WidgetControlPanel::setParameterLabel(QString name, QString text)
@@ -180,6 +228,11 @@ void MVOverview2WidgetControlPanel::slot_button_clicked()
 void MVOverview2WidgetControlPanel::slot_checkbox_clicked(bool val)
 {
     ((QCheckBox *)sender())->setChecked(val); //make sure this is set before we emit the signal
-    emit signalButtonClicked(sender()->property("signal").toString());
+	emit signalButtonClicked(sender()->property("signal").toString());
+}
+
+void MVOverview2WidgetControlPanel::slot_radio_button_clicked()
+{
+	emit signalButtonClicked(sender()->property("signal").toString());
 }
 

@@ -133,7 +133,7 @@ double DiskReadMda::value(int i1, int i2)
 	if (ind<0) return 0;
 	double *X=d->load_chunk(ind/CHUNKSIZE);
 	if (!X) {
-		qWarning() << "chunk not loaded:" << ind << ind/CHUNKSIZE;
+		//qWarning() << "chunk not loaded:" << ind << ind/CHUNKSIZE;
 		return 0;
 	}
 	return X[ind%CHUNKSIZE];
@@ -148,7 +148,7 @@ double DiskReadMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
     if (ind<0) return 0;
     double *X=d->load_chunk(ind/CHUNKSIZE);
 	if (!X) {
-		qWarning() << "chunk not loaded:" << ind << ind/CHUNKSIZE;
+		//qWarning() << "chunk not loaded:" << ind << ind/CHUNKSIZE;
 		return 0;
 	}
 	return X[ind%CHUNKSIZE];
@@ -218,7 +218,7 @@ int DiskReadMdaPrivate::get_index(int i1, int i2)
 double *DiskReadMdaPrivate::load_chunk(int i)
 {
 	if (i>=m_chunks.count()) {
-		qWarning() << "i>=m_chunks.count()\n";
+		//qWarning() << "i>=m_chunks.count()" << this->m_size[0] << this->m_size[1] << this->m_size[2] << this->m_size[3];
 		return 0;
 	}
 	if (!m_chunks[i].data) {

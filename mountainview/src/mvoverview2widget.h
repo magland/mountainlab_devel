@@ -17,6 +17,8 @@ public:
 	virtual ~MVOverview2Widget();
 	void setRawPath(const QString &path);
 	void setFiringsPath(const QString &firings);
+	void setSamplingFrequency(float freq);
+	void setDefaultInitialization();
 
 protected:
 	void resizeEvent(QResizeEvent *evt);

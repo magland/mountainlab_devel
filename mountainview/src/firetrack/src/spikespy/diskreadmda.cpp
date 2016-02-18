@@ -155,7 +155,7 @@ int DiskReadMdaPrivate::get_index(int i1, int i2, int i3, int i4, int i5, int i6
 float *DiskReadMdaPrivate::load_chunk(int i)
 {
 	if (i>=m_chunks.count()) {
-		qWarning() << "i>=m_chunks.count()\n";
+		qWarning() << "i>=m_chunks.count()\n" << this->m_size[0] << this->m_size[1] << this->m_size[2] << this->m_size[3];
 		return 0;
 	}
 	if (!m_chunks[i].data) {

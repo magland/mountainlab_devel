@@ -54,7 +54,7 @@ SSAbstractView::SSAbstractView(QWidget *parent) : QWidget(parent) {
 	d=new SSAbstractViewPrivate;
 	d->q=this;
 
-	d->m_sampling_freq=20000;
+	d->m_sampling_freq=0;
 	d->m_signals_enabled=true;
 	d->m_current_x=-1;
 	d->m_selected_xmin=-1;
@@ -511,8 +511,13 @@ void SSAbstractViewUnderlayPainter::draw_time_axis(QPainter *painter) {
 
 	//now convert to milliseconds
 	double sampling_freq=d->m_sampling_freq;
-	x1*=1000/sampling_freq;
-	x2*=1000/sampling_freq;
+	if (sampling_freq) {
+	    x1*=1000/sampling_freq;
+	    x2*=1000/sampling_freq;
+	}
+	else {
+	    x1=x2=0;
+	}
 
 	TickLocations locations=get_time_tick_locations(x1,x2);
 
@@ -534,7 +539,8 @@ void SSAbstractViewUnderlayPainter::draw_time_axis(QPainter *painter) {
 			ticklen=2;
 		}
 		for (int i=0; i<locations0.count(); i++) {
-			double xloc=locations0[i]*sampling_freq/1000; //in timepoints
+			double xloc=0;
+			if (sampling_freq) xloc=locations0[i]*sampling_freq/1000; //in timepoints
 			QString label=labels0[i];
 
 			Vec2 pix3=q->plot()->coordToPix(vec2(xloc,0));
@@ -594,7 +600,8 @@ float SSAbstractView::currentValue()
 }
 
 QString SSAbstractView::getTimeLabelForX(double x) {
-	return make_time_tick_label(getTimepointForX(x)*1000/d->m_sampling_freq);
+    if (!d->m_sampling_freq) return "";
+    return make_time_tick_label(getTimepointForX(x)*1000/d->m_sampling_freq);
 }
 
 long SSAbstractView::getTimepointForX(int x)

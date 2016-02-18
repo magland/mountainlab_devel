@@ -19,6 +19,8 @@
 #include "mvoverviewwidget.h"
 #include "mvlabelcomparewidget.h"
 #include "mvoverview2widget.h"
+#include "sstimeserieswidget.h"
+#include "sstimeseriesview.h"
 
 /*
  * TO DO:
@@ -99,6 +101,8 @@ int main(int argc, char *argv[]) {
 	if (firings2_path.isEmpty()) firings2_path=CLP.named_parameters.value("clusters2"); //historical compatibility
 	if (firings2_path.isEmpty()) firings2_path=CLP.named_parameters.value("cluster2"); //historical compatibility
 
+	float sampling_freq=CLP.named_parameters.value("sampling_freq","0").toFloat();
+
     if (mode=="overview") {
         MVOverviewWidget *W=new MVOverviewWidget;
         W->setWindowTitle(CLP.named_parameters.value("window_title","MountainView"));
@@ -161,10 +165,31 @@ int main(int argc, char *argv[]) {
         W->updateWidgets();
     }
 	else if (mode=="overview2") {
-		printf("merge...\n");
+		printf("overview2...\n");
 		MVOverview2Widget *W=new MVOverview2Widget;
 		W->setRawPath(raw_path);
 		W->setFiringsPath(firings_path);
+		W->show();
+		W->setSamplingFrequency(sampling_freq);
+		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
+		W->resize(1800,1200);
+	}
+	else if (mode=="spikespy") {
+		printf("spikespy...\n");
+		SSTimeSeriesWidget *W=new SSTimeSeriesWidget;
+		SSTimeSeriesView *V=new SSTimeSeriesView;
+		V->setSamplingFrequency(sampling_freq);
+		DiskArrayModel *DAM=new DiskArrayModel;
+		DAM->setPath(raw_path);
+		V->setData(DAM,true);
+		Mda firings; firings.read(firings_path);
+		QList<long> times,labels;
+		for (int i=0; i<firings.N2(); i++) {
+			times << (long)firings.value(1,i);
+			labels << (long)firings.value(2,i);
+		}
+		V->setTimesLabels(times,labels);
+		W->addView(V);
 		W->show();
 		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
 		W->resize(1800,1200);

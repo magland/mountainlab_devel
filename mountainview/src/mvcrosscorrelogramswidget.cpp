@@ -175,7 +175,6 @@ float compute_max(const QList<FloatList> &data0) {
 
 void MVCrossCorrelogramsWidget::updateWidget()
 {
-    qDebug() << "LABELS:" << d->m_labels;
 	QGridLayout *GL=d->m_grid_layout;
 	qDeleteAll(d->m_histogram_views);
 	d->m_histogram_views.clear();

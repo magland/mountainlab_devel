@@ -3,6 +3,7 @@
 #include "sstimeseriesview.h"
 #include "mvcrosscorrelogramswidget.h"
 #include "mvoverview2widgetcontrolpanel.h"
+#include "get_principal_components.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -11,6 +12,7 @@
 #include <QTime>
 #include <QTimer>
 #include <math.h>
+#include <QProgressDialog>
 
 class MVOverview2WidgetPrivate {
 public:
@@ -22,12 +24,14 @@ public:
 	QList<int> m_original_cluster_numbers;
     QList<int> m_original_cluster_offsets;
     int m_current_kk;
+	float m_sampling_frequency;
 
 	MVOverview2WidgetControlPanel *m_control_panel;
 
 	QSplitter *m_splitter1,*m_splitter2;
 	CustomTabWidget *m_tabs1,*m_tabs2;
 	CustomTabWidget *m_current_tab_widget;
+	QProgressDialog *m_progress_dialog;
 
 	Mda m_cross_correlograms_data;
 	Mda m_templates_data;
@@ -60,10 +64,15 @@ public:
 	CustomTabWidget *get_other_tab_widget(CustomTabWidget *W);
     CustomTabWidget *tab_widget_of(QWidget *W);
 
-    Mda extract_clips(DiskReadMda &X,const QList<long> &times);
+	Mda extract_clips(DiskReadMda &X,const QList<long> &times,int clip_size);
 
 	void remove_widgets_of_type(QString widget_type);
 
+	Mda compute_centroid(Mda &clips);
+	Mda compute_geometric_median(Mda &clips,int num_iterations);
+	void compute_geometric_median(int M,int N,double *output,double *input,int num_iterations);
+
+	void set_progress(QString title,QString text,float frac);
 };
 
 MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
@@ -72,6 +81,9 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 	d->q=this;
 
     d->m_current_kk=0;
+	d->m_sampling_frequency=0;
+
+	d->m_progress_dialog=0;
 
 	d->m_control_panel=new MVOverview2WidgetControlPanel;
 	connect(d->m_control_panel,SIGNAL(signalButtonClicked(QString)),this,SLOT(slot_control_panel_button_clicked(QString)));
@@ -90,11 +102,6 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 	d->m_tabs1=new CustomTabWidget(this);
 	d->m_tabs2=new CustomTabWidget(this);
 	d->m_current_tab_widget=d->m_tabs1;
-
-	d->open_templates();
-	d->m_current_tab_widget=d->m_tabs2;
-	d->open_auto_correlograms();
-
 
 	splitter2->addWidget(d->m_tabs1);
 	splitter2->addWidget(d->m_tabs2);
@@ -131,6 +138,18 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
 	d->update_raw_views();
 }
 
+void MVOverview2Widget::setSamplingFrequency(float freq)
+{
+	d->m_sampling_frequency=freq;
+}
+
+void MVOverview2Widget::setDefaultInitialization()
+{
+	d->open_templates();
+	d->m_current_tab_widget=d->m_tabs2;
+	d->open_auto_correlograms();
+}
+
 void MVOverview2Widget::resizeEvent(QResizeEvent *evt)
 {
 	Q_UNUSED(evt)
@@ -139,7 +158,6 @@ void MVOverview2Widget::resizeEvent(QResizeEvent *evt)
 
 void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 {
-	qDebug() << "slot_control_panel_button_clicked" << str;
 	if (str=="update_cross_correlograms") {
 		d->update_cross_correlograms();
 	}
@@ -149,6 +167,7 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
     else if ((str=="update_amplitude_split")||(str=="use_amplitude_split")) {
 		d->do_amplitude_split();
 		d->remove_widgets_of_type("cross_correlograms");
+		d->remove_widgets_of_type("clips");
 		d->update_cross_correlograms();
 		d->update_templates();
 	}
@@ -164,6 +183,9 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
     else if (str=="open_clips") {
         d->open_clips();
     }
+	else if (str=="template_method") {
+		d->update_templates();
+	}
 }
 
 void MVOverview2Widget::slot_auto_correlogram_activated(int k)
@@ -194,11 +216,11 @@ typedef QList<long> IntList;
 
 void MVOverview2WidgetPrivate::create_cross_correlograms_data()
 {
+	set_progress("Computing","Creating cross correlograms data",0);
 	QList<long> times,labels;
 	long L=m_firings.N2();
 	float samplefreq=30000;
 	int max_dt=(int)(m_control_panel->getParameterValue("max_dt").toInt()*samplefreq/1000);
-	qDebug() << "Using max_dt = " << max_dt;
 
 	printf("Setting up times and labels...\n");
 	for (int n=0; n<L; n++) {
@@ -222,6 +244,9 @@ void MVOverview2WidgetPrivate::create_cross_correlograms_data()
 	printf("Setting time differences...\n");
 	int i1=0;
 	for (int i2=0; i2<L; i2++) {
+		if (i2%100==0) {
+			set_progress("Computing","Creating cross correlograms data",i2*1.0/L);
+		}
 		while ((i1+1<L)&&(times[i1]<times[i2]-max_dt)) i1++;
 		int k2=labels[i2];
 		int t2=times[i2];
@@ -263,10 +288,13 @@ void MVOverview2WidgetPrivate::create_cross_correlograms_data()
 	printf(".\n");
 
 	m_cross_correlograms_data=ret;
+
+	set_progress("Computing","Creating cross correlograms data",1);
 }
 
 void MVOverview2WidgetPrivate::create_templates_data()
 {
+	set_progress("Computing","Creating templates",0);
 	QList<long> times,labels;
 	long L=m_firings.N2();
 	int M=m_raw.N1();
@@ -282,46 +310,35 @@ void MVOverview2WidgetPrivate::create_templates_data()
 		if (labels[n]>K) K=labels[n];
 	}
 
-	int dt1=-T/2;
-	int dt2=dt1+T-1;
-
 	printf("Creating mda...\n");
 	Mda ret; ret.allocate(M,T,K);
-	double *retptr=ret.dataPtr();
-	QList<long> counts;
-	for (int k=0; k<=K; k++) counts << k;
-	for (int ii=0; ii<times.count(); ii++) {
-		int t=times[ii];
-		int k=labels[ii];
-		if (k>0) {
-			if ((t-1+dt1>=0)&&(t-1+dt2<m_raw.N2())) {
-				counts[k]++;
-				long iii=M*T*(k-1);
-				long jjj=(t-1+dt1)*M;
-				for (int dt=dt1; dt<=dt2; dt++) {
-					for (int m=0; m<M; m++) {
-						double val=m_raw.value1(jjj);
-						retptr[iii]+=val;
-						iii++;
-						jjj++;
-					}
-				}
-			}
-		}
-	}
 	for (int k=1; k<=K; k++) {
-		if (counts[k]>0) {
-			for (int t=0; t<T; t++) {
-				for (int m=0; m<M; m++) {
-					double val=ret.value(m,t,k-1)/counts[k];
-					ret.setValue(val,m,t,k-1);
-				}
+		set_progress("Computing","Creating templates",k*1.0/(K+1));
+		QList<long> times_k;
+		for (int ii=0; ii<times.count(); ii++) {
+			if (labels[ii]==k) times_k << times[ii];
+		}
+		Mda clips_k=extract_clips(m_raw,times_k,T);
+		Mda template_k;
+		if (m_control_panel->getParameterValue("template_method").toString()=="centroids") {
+			template_k=compute_centroid(clips_k);
+		}
+		else if (m_control_panel->getParameterValue("template_method").toString()=="geometric medians") {
+			int num_iterations=10;
+			template_k=compute_geometric_median(clips_k,num_iterations);
+		}
+		for (int t=0; t<T; t++) {
+			for (int m=0; m<M; m++) {
+				double val=template_k.value(m,t);
+				ret.setValue(val,m,t,k-1);
 			}
 		}
 	}
+	printf(".\n");
 
-	qDebug() << "Created templates data:" << ret.N1() << ret.N2() << ret.N3();
 	m_templates_data=ret;
+
+	set_progress("Computing","Creating templates closing",1);
 }
 
 void MVOverview2WidgetPrivate::update_sizes()
@@ -353,6 +370,9 @@ void MVOverview2WidgetPrivate::update_templates()
 	QList<QWidget *> list=get_all_widgets();
 	foreach (QWidget *W,list) {
 		if (W->property("widget_type")=="templates") {
+			update_widget(W);
+		}
+		if (W->property("widget_type")=="clips") {
 			update_widget(W);
 		}
 	}
@@ -387,7 +407,7 @@ void MVOverview2WidgetPrivate::do_amplitude_split()
 	QList<long> times;
 	QList<long> labels;
 	QList<double> peaks;
-	for (int n=0; n<m_firings.N2(); n++) {
+	for (int n=0; n<m_firings_original.N2(); n++) {
         float peak=m_firings_original.value(3,n);
         times << (long)m_firings_original.value(1,n);
         labels << (long)m_firings_original.value(2,n);
@@ -509,6 +529,7 @@ void MVOverview2WidgetPrivate::open_raw_data()
 {
 	SSTimeSeriesView *X=new SSTimeSeriesView;
 	X->initialize();
+	X->setSamplingFrequency(m_sampling_frequency);
 	X->setProperty("widget_type","raw_data");
 	add_tab(X,QString("Raw"));
     update_widget(X);
@@ -522,6 +543,7 @@ void MVOverview2WidgetPrivate::open_clips()
         return;
     }
     SSTimeSeriesView *X=new SSTimeSeriesView;
+	X->initialize();
     X->setProperty("widget_type","clips");
     X->setProperty("kk",kk);
     add_tab(X,QString("Clips %1(%2)").arg(m_original_cluster_numbers.value(kk)).arg(m_original_cluster_offsets.value(kk)+1));
@@ -612,14 +634,20 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
         QList<long> times,labels;
         for (int n=0; n<m_firings.N2(); n++) {
             times << (long)m_firings.value(1,n);
-            labels << (long)m_firings.value(2,n);
+			labels << (long)m_firings.value(2,n);
         }
 
         QList<long> times_kk;
-        for (int n=0; n<labels.count(); n++) {
+		for (int n=0; n<labels.count(); n++) {
             if (labels[n]==kk) times_kk << times[n];
         }
-        Mda clips=extract_clips(m_raw,times_kk);
+		int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
+		Mda clips=extract_clips(m_raw,times_kk,clip_size);
+		printf("Setting data...\n");
+		DiskArrayModel *DAM=new DiskArrayModel;
+		DAM->setFromMda(clips);
+		WW->setData(DAM,true);
+		printf(".\n");
     }
 	else if (widget_type=="raw_data") {
 		SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
@@ -706,9 +734,24 @@ CustomTabWidget *MVOverview2WidgetPrivate::tab_widget_of(QWidget *W)
     return m_tabs1;
 }
 
-Mda MVOverview2WidgetPrivate::extract_clips(DiskReadMda &X, const QList<long> &times)
+Mda MVOverview2WidgetPrivate::extract_clips(DiskReadMda &X, const QList<long> &times,int clip_size)
 {
-
+	int M=X.N1();
+	int T=clip_size;
+	int NC=times.count();
+	Mda ret; ret.allocate(M,T,NC);
+	double *retptr=ret.dataPtr();
+	int dt1=-T/2;
+	for (int i=0; i<NC; i++) {
+		int jjj=i*M*T;
+		for (int t=0; t<T; t++) {
+			for (int m=0; m<M; m++) {
+				retptr[jjj]=X.value(m,times[i]-1+t+dt1);
+				jjj++;
+			}
+		}
+	}
+	return ret;
 }
 
 void MVOverview2WidgetPrivate::remove_widgets_of_type(QString widget_type)
@@ -718,6 +761,170 @@ void MVOverview2WidgetPrivate::remove_widgets_of_type(QString widget_type)
 		if (W->property("widget_type")==widget_type) {
 			delete W;
 		}
+	}
+}
+
+Mda MVOverview2WidgetPrivate::compute_centroid(Mda &clips)
+{
+	int M=clips.N1();
+	int T=clips.N2();
+	int NC=clips.N3();
+	Mda ret; ret.allocate(M,T);
+	double *retptr=ret.dataPtr();
+	double *clipsptr=clips.dataPtr();
+	for (int i=0; i<NC; i++) {
+		int iii=i*M*T;
+		int jjj=0;
+		for (int t=0; t<T; t++) {
+			for (int m=0; m<M; m++) {
+				retptr[jjj]+=clipsptr[iii];
+				iii++;
+				jjj++;
+			}
+		}
+	}
+	if (NC) {
+		for (int t=0; t<T; t++) {
+			for (int m=0; m<M; m++) {
+				double val=ret.value(m,t)/NC;
+				ret.setValue(val,m,t);
+			}
+		}
+	}
+	return ret;
+}
+
+Mda MVOverview2WidgetPrivate::compute_geometric_median(Mda &clips, int num_iterations)
+{
+	int M=clips.N1();
+	int T=clips.N2();
+	int L=clips.N3();
+	double *clipsptr=clips.dataPtr();
+	Mda ret; ret.allocate(M,T);
+	if (L==0) return ret;
+
+	int num_features=6;
+	Mda features; features.allocate(num_features,L);
+	double *featuresptr=features.dataPtr();
+	get_pca_features(M*T,L,num_features,featuresptr,clipsptr);
+
+	Mda geomedian; geomedian.allocate(num_features,1);
+	double *geomedianptr=geomedian.dataPtr();
+	compute_geometric_median(num_features,L,geomedianptr,featuresptr,num_iterations);
+
+	QList<double> dists;
+	{
+		int kkk=0;
+		for (int j=0; j<L; j++) {
+			double sumsqr=0;
+			for (int a=0; a<num_features; a++) {
+				double diff=featuresptr[kkk]-geomedianptr[a];
+				sumsqr+=diff*diff;
+				kkk++;
+			}
+			dists << sqrt(sumsqr);
+		}
+	}
+
+	QList<double> dists_sorted=dists;
+	qSort(dists_sorted);
+	double cutoff=dists_sorted[(int)(L*0.3)];
+	QList<int> inds_to_use;
+	for (int j=0; j<L; j++) {
+		if (dists[j]<=cutoff) inds_to_use << j;
+	}
+
+	Mda clips2;
+	clips2.allocate(M,T,inds_to_use.count());
+	for (int j=0; j<inds_to_use.count(); j++) {
+		int jj=inds_to_use[j];
+		for (int t=0; t<T; t++) {
+			for (int m=0; m<M; m++) {
+				clips2.setValue(clips.value(m,t,jj),m,t,j);
+			}
+		}
+	}
+
+	ret=compute_centroid(clips2);
+	return ret;
+}
+
+
+void MVOverview2WidgetPrivate::compute_geometric_median(int M, int N, double *output, double *input, int num_iterations)
+{
+	double *weights=(double *)malloc(sizeof(double)*N);
+	double *dists=(double *)malloc(sizeof(double)*N);
+	for (int j=0; j<N; j++) weights[j]=1;
+	for (int it=1; it<=num_iterations; it++) {
+		float sumweights=0;
+		for (int j=0; j<N; j++) sumweights+=weights[j];
+		if (sumweights) for (int j=0; j<N; j++) weights[j]/=sumweights;
+		for (int i=0; i<M; i++) output[i]=0;
+		{
+			//compute output
+			int kkk=0;
+			for (int j=0; j<N; j++) {
+				int i=0;
+				for (int m=0; m<M; m++) {
+					output[i]+=weights[j]*input[kkk];
+					i++;
+					kkk++;
+				}
+			}
+		}
+		{
+			//compute dists
+			int kkk=0;
+			for (int j=0; j<N; j++) {
+				int i=0;
+				double sumsqr=0;
+				for (int m=0; m<M; m++) {
+					double diff=output[i]-input[kkk];
+					i++;
+					kkk++;
+					sumsqr+=diff*diff;
+				}
+				dists[j]=sqrt(sumsqr);
+			}
+		}
+		{
+			//compute weights
+			for (int j=0; j<N; j++) {
+				if (dists[j]) weights[j]=1/dists[j];
+				else weights[j]=0;
+			}
+		}
+	}
+	free(dists);
+	free(weights);
+}
+
+void MVOverview2WidgetPrivate::set_progress(QString title, QString text, float frac)
+{
+	if (!m_progress_dialog) {
+		m_progress_dialog=new QProgressDialog;
+		m_progress_dialog->setCancelButton(0);
+	}
+	static QTime *timer=0;
+	if (!timer) {
+		timer=new QTime;
+		timer->start();
+		m_progress_dialog->show();
+		m_progress_dialog->repaint();
+	}
+	if (timer->elapsed()>500) {
+		timer->restart();
+		if (!m_progress_dialog->isVisible()) {
+			m_progress_dialog->show();
+		}
+		m_progress_dialog->setLabelText(text);
+		m_progress_dialog->setWindowTitle(title);
+		m_progress_dialog->setValue((int)(frac*100));
+		m_progress_dialog->repaint();
+	}
+	if (frac>=1) {
+		delete m_progress_dialog;
+		m_progress_dialog=0;
 	}
 }
 

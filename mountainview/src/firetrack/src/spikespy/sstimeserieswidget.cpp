@@ -37,7 +37,6 @@ public:
 	SSAbstractView *m_current_view;
 	QSplitter m_splitter;
 	QLabel m_info;
-	double m_sampling_frequency; //Hz
 	QString m_widget_type;
 	ExtractClipsDialog m_extract_clips_dlg;
 	QMenuBar *m_menubar;
@@ -55,7 +54,6 @@ SSTimeSeriesWidget::SSTimeSeriesWidget(QWidget *parent) : QWidget(parent) {
 	d->q=this;
 
 	d->m_current_view=0;
-	d->m_sampling_frequency=20000;
 	d->m_widget_type="raw";
 
 	d->m_splitter.setStyleSheet("QSplitter {background: gray;}");
