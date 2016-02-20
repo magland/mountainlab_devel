@@ -172,11 +172,17 @@ Y=cat(2,Y1,Y2);
 N=N1+N2;
 
 % Obtain the whitening matrix using svd
-[U,D,V] = svd(Y,'econ');
-D(D~=0)=1./D(D~=0);
-% Amd apply it to the original (non-mean subtracted) data
-X1b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X1);
-X2b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X2);
+if (N>=M)
+    [U,D,V] = svd(Y,'econ');
+    D(D~=0)=1./D(D~=0);
+    % Amd apply it to the original (non-mean subtracted) data
+    X1b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X1);
+    X2b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X2);
+else
+    %two few points to whiten
+    X1b=X1;
+    X2b=X2;
+end;
 
 % The best direction is now the one connecting the centroids.
 centroid1b=mean(X1b,2);
