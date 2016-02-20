@@ -27,3 +27,12 @@ Open MATLAB
 
 ****************************************************
 
+= Examples =
+
+test_sort (in progress): sorts demo data derived from waveforms in unit_tests/demo_data/
+
+= Unit tests =
+
+All commands ms_*.m do self-test when called without arguments
+test_filter: compares MATLAB and C filter pipelines
+
