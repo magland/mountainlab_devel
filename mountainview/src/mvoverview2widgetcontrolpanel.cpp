@@ -149,7 +149,7 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
         layout->addLayout(G);
 
 		d->add_group_label(G,"Amplitude Splitting");
-		d->add_check_box(G,"use_amplitude_split","Use amplitude split",true)->setToolTip("Split into peak amplitude shells.");
+		d->add_check_box(G,"use_amplitude_split","Use amplitude split",false)->setToolTip("Split into peak amplitude shells.");
         d->add_float_box(G,"shell_width","Shell Width",1.5,0.1,20)->setToolTip("The width (in amplitude) of each shell");
         d->add_int_box(G,"min_per_shell","Min per shell",150,0,1500)->setToolTip("The minimum number of points in each shell");
         d->add_int_box(G,"min_amplitude","Min amplitude",0,0,100)->setToolTip("The minimum peak amplitude to include");

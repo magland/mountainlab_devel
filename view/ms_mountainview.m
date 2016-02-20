@@ -9,7 +9,7 @@ function ms_mountainview(view_params)
 %
 % Inputs:
 %    (Most are optional)
-%    view_params.mode - 'overview' (default), 'overview2', or 'compare_labels'
+%    view_params.mode - 'overview' , 'overview2' (default), or 'compare_labels'
 %    view_params.raw - MxN raw or preprocessed data
 %    view_params.firings - RxL array of times/labels etc. according to
 %                           the docs. R is at least 3. The second row is 
@@ -37,16 +37,22 @@ exe_fname=sprintf('%s/../mountainview/bin/mountainview',mfile_path);
 cmd='';
 cmd=[cmd,sprintf('%s ',exe_fname)];
 
+if ~isfield(view_params,'mode')
+    view_params.mode='overview2';
+end;
+
 if isfield(view_params,'mode')
     cmd=[cmd,sprintf('--mode=%s ',view_params.mode)];
 end;
 if isfield(view_params,'raw')
+    view_params.raw=create_temporary_path_if_array(view_params.raw);
     cmd=[cmd,sprintf('--raw=%s ',view_params.raw)];
 end;
 if isfield(view_params,'clusters') %for historical compatibility
     cmd=[cmd,sprintf('--firings=%s ',view_params.clusters)];
 end;
 if isfield(view_params,'firings')
+    view_params.firings=create_temporary_path_if_array(view_params.firings);
     cmd=[cmd,sprintf('--firings=%s ',view_params.firings)];
 end;
 if isfield(view_params,'templates')
@@ -63,10 +69,25 @@ if isfield(view_params,'sampling_freq')
     cmd=[cmd,sprintf('--sampling_freq=%f ',view_params.sampling_freq)];
 end;
 if isfield(view_params,'locations')
+    view_params.locations=create_temporary_path_if_array(view_params.locations);
     cmd=[cmd,sprintf('--locations=%s ',view_params.locations)];
 end;
 
 fprintf('%s\n',cmd);
 system(sprintf('%s &',cmd));
 
+end
+
+function path=create_temporary_path_if_array(X)
+if (isstr(X)) path=X; end;
+path=create_temporary_mda_path;
+writemda(X,path);
+end
+
+function path=create_temporary_mda_path
+path=[tempdir,'/mountainsort'];
+if ~exist(path)
+    mkdir(path);
+end;
+path=sprintf('%s/ms_mountainview_tmp_%d_%d.mda',path,randi(1e7),randi(1e7));
 end

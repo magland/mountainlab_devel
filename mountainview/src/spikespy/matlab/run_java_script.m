@@ -63,7 +63,9 @@ else
 	H.id=the_handle.id;
 end;
 
-system(sprintf('%s %s %s &',exec_string,js_path,other_params));
+cmd=sprintf('%s %s %s &',exec_string,js_path,other_params);
+disp(cmd);
+system(cmd);
 
 pause(0.3); %give it some time to open so windows (almost) always open in right order
 

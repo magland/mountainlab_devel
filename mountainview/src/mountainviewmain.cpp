@@ -56,6 +56,7 @@ void test_histogramview() {
 
 int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);
+	printf("MountainView main\n");
 	//MainWindow w;
 	//w.show();
 
