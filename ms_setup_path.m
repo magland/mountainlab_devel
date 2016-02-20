@@ -4,3 +4,4 @@ addpath msutils
 addpath processing
 addpath view
 addpath unit_tests
+addpath examples
