@@ -16,6 +16,7 @@ if (~isfield(opts,'verbose')) opts.verbose=0; end;
 if (~isfield(opts,'verbose3')) opts.verbose3=0; end;
 if (~isfield(opts,'whiten_at_each_comparison')) opts.whiten_at_each_comparison=1; end;
 
+if numel(size(X))~=2, error('X must be a 2D array'); end
 [M,N]=size(X);
 compile_isocut_if_needed;
 
