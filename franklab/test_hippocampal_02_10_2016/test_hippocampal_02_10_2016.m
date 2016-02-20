@@ -4,10 +4,11 @@ close all; drawnow;
 
 %%%% Parameters and settings
 tetrode_num=1;
-shell_opts.min_shell_count=2000;
-shell_opts.shell_increment=1;
+shell_opts.min_section_count=200;
+shell_opts.num_sections_per_shell=4;
+shell_opts.section_increment=0.5;
 shell_opts.num_features=12;
-shell_opts.merge_threshold=0.8;
+shell_opts.merge_threshold=0.6;
 o_mild_filter.samplefreq=30000;
 o_mild_filter.freq_min=50;
 o_mild_filter.freq_max=10000;
@@ -173,6 +174,94 @@ inds=find(dists<=dist_cutoff);
 template=mean(clips(:,:,inds),3);
 end
 
+function [peak_mins,peak_maxs]=define_shells_for_alg(clip_peaks,opts)
+
+% do the negatives
+section_mins_neg=[];
+section_maxs_neg=[];
+if (min(clip_peaks)<0)
+    max0=0;
+    min0=max0-opts.section_increment;
+    while 1
+        if (max0<min(clip_peaks)) break; end;
+        if (length(find((min0<=clip_peaks)&(clip_peaks<max0)))>=opts.min_section_count)
+            if (length(find(clip_peaks<min0))>=opts.min_section_count)
+                section_mins_neg=[section_mins_neg,min0];
+                section_maxs_neg=[section_maxs_neg,max0];
+                max0=min0;
+                min0=max0-opts.section_increment;
+            else
+                section_mins_neg=[section_mins_neg,-inf];
+                section_maxs_neg=[section_maxs_neg,max0];
+                max0=-inf; min0=-inf;
+            end;
+        else
+            min0=min0-opts.section_increment;
+            if (min0<min(clip_peaks))
+                section_mins_neg=[section_mins_neg,-inf];
+                section_maxs_neg=[section_maxs_neg,max0];
+                max0=-inf; min0=-inf;
+            end;
+        end;
+    end;
+end;
+% do the overlap
+for j=1:length(section_maxs_neg)-1
+    section_mins_neg(j)=section_mins_neg(j+1);
+end;
+
+% do the positives
+section_mins_pos=[];
+section_maxs_pos=[];
+if (max(clip_peaks)>0)
+    min0=0;
+    max0=min0+opts.section_increment;
+    while 1
+        if (min0>max(clip_peaks)) break; end;
+        if (length(find((min0<=clip_peaks)&(clip_peaks<max0)))>=opts.min_section_count)
+            if (length(find(clip_peaks>=max0))>=opts.min_section_count)
+                section_mins_pos=[section_mins_pos,min0];
+                section_maxs_pos=[section_maxs_pos,max0];
+                min0=max0;
+                max0=min0+opts.section_increment;
+            else
+                section_mins_pos=[section_mins_pos,min0];
+                section_maxs_pos=[section_maxs_pos,inf];
+                min0=inf; max0=inf;
+            end;
+        else
+            max0=max0+opts.section_increment;
+            if (max0>max(clip_peaks))
+                section_mins_pos=[section_mins_pos,min0];
+                section_maxs_pos=[section_maxs_pos,inf];
+                min0=inf; max0=inf;
+            end;
+        end;
+    end;
+end;
+% do the overlap
+for j=1:length(section_mins_pos)-1
+    section_maxs_pos(j)=section_maxs_pos(j+1);
+end;
+
+% combine and sort
+section_mins=[section_mins_neg,section_mins_pos];
+section_maxs=[section_maxs_neg,section_maxs_pos];
+[~,inds]=sort(section_mins);
+section_mins=section_mins(inds);
+section_maxs=section_maxs(inds);
+
+peak_mins=section_mins;
+for j=2:opts.num_sections_per_shell
+    peak_mins=[-inf,peak_mins];
+end;
+peak_maxs=section_maxs;
+for j=2:opts.num_sections_per_shell
+    peak_maxs=[peak_maxs,inf];
+end;
+
+end
+
 function [peak_mins,peak_maxs]=define_shells(clip_peaks,opts)
 
 % do the negatives
@@ -260,7 +349,7 @@ clip_peaks_pos=squeeze(max(clips(:,T/2+1,:),[],1))';
 clip_peaks_neg=-squeeze(max(-clips(:,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
 
-[peak_mins,peak_maxs]=define_shells(clip_peaks,opts);
+[peak_mins,peak_maxs]=define_shells_for_alg(clip_peaks,opts);
 
 clusterings={};
 for ii=1:length(peak_mins)
