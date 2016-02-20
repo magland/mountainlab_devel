@@ -1,10 +1,10 @@
-function mscmd_confusion_matrix(clusters1_path,clusters2_path,output_path,max_matching_offset)
+function mscmd_confusion_matrix(firings1_path,firings2_path,output_path,max_matching_offset)
 
 if (nargin==0) test_mscmd_confusion_matrix; return; end;
 
 if (nargin<3) max_matching_offset=3; end;
 
-cmd=sprintf('%s confusion_matrix --clusters1=%s --clusters2=%s --output=%s --max_matching_offset=%d ',mscmd_exe,clusters1_path,clusters2_path,output_path,max_matching_offset);
+cmd=sprintf('%s confusion_matrix --firings1=%s --firings2=%s --output=%s --max_matching_offset=%d ',mscmd_exe,firings1_path,firings2_path,output_path,max_matching_offset);
 
 fprintf('\n*** CONFUSION MATRIX ***\n');
 fprintf('%s\n',cmd);
