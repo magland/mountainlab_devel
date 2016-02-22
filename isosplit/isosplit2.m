@@ -204,6 +204,11 @@ else
 end;
 XX=V'*cat(2,X1,X2); %Project onto the line connecting the centroids
 N=length(XX);
+if (N<=5) %avoid a crash - 2/22/2016 jfm
+    do_merge=1;
+    labels=ones(1,N);
+    return;
+end;
 XXs=sort(XX);
 cutpoint=isocut(XXs,opts.isocut_threshold); %This is the core procedure -- split based on isotonic regression
 if (cutpoint~=0)
