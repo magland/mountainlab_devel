@@ -20,12 +20,12 @@ sort_opts.detect.detect_interval=50;
 sort_opts.detectibility_threshold=3;
 sort_opts.isosplit.isocut_threshold=1.5;
 sort_opts.isosplit.K_init=50;
-sort_001(raw_path,output_path,sort_opts);
+[firings_path,pre_path]=sort_001(raw_path,output_path,sort_opts);
 
 %%%% View output
 mv.mode='overview2';
-mv.raw=[output_path,'/pre2.mda'];
-mv.firings=[output_path,'/firings.mda'];
+mv.raw=pre_path;
+mv.firings=firings_path;
 ms_mountainview(mv);
 
 

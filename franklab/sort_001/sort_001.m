@@ -1,16 +1,17 @@
-function [firings_path]=sort_001(raw_path,output_path,sort_opts)
+function [firings_path,pre_path]=sort_001(raw_path,output_path,sort_opts)
 %SORT_001 - Version 001 of sorting based on shell method and isosplit2
 %
 % Syntax:  firings_path=sort_001(raw_path,output_path,sort_opts)
 %
 % Inputs:
 %    raw_path - path to .mda of MxN raw signal data
-%    output_path - path to directory where all output will be written
+%    output_path - path to existing DIRECTORY where all output will be written
 %    sort_opts - (optional) sorting options, see def_sort_opts in this
 %                   script
 %
 % Outputs:
 %    firings_path - path to the firings.mda output file
+%    pre_path - path to the preprocessed raw data file
 %
 % Other m-files required: isosplit2, mscmd_*, ms_*
 
@@ -135,6 +136,7 @@ firings(3,:)=labels_new;
 writemda(firings,[path0,'/firings.mda']);
 
 firings_path=[path0,'/firings.mda'];
+pre_path=[path0,'/pre2.mda'];
 
 fprintf('.\n');
 
