@@ -4,6 +4,7 @@ close all;
 
 clip_size=100;
 
+% Load data
 path0='franklab/test_hippocampal_02_10_2016/output_tetrode1';
 pre2=readmda([path0,'/pre2.mda']);
 firings=readmda([path0,'/firings.mda']);
@@ -15,16 +16,14 @@ inds=find(abs(peaks)>0);
 times=times(inds); labels=labels(inds); peaks=peaks(inds);
 labels=split_clusters_by_peak_amplitudes(peaks,labels,struct('section_increment',1,'min_section_count',200,'num_sections_per_shell',1));
 clips=ms_extract_clips(pre2,times,clip_size);
-[M,T,NC]=size(clips);
+[M,T,L]=size(clips);
 clips=clips-repmat(mean(clips,2),1,T,1);
 %templates=ms_templates(clips,labels);
 templates=geometric_median_templates(clips,labels);
 figure; ms_view_templates(templates);
 K=size(templates,3);
 
-detectibility_scores=zeros(1,K);
-template_norms=zeros(1,K);
-
+%Define rclips
 ttt=ms_detect(pre2,struct('detect_threshold',3,'detect_interval',15,'clip_size',clip_size));
 interval=ceil(length(ttt)/5000);
 ttt=ttt(1:interval:end);
@@ -32,23 +31,53 @@ rclips=ms_extract_clips(pre2,ttt,clip_size);
 num_rclips=size(rclips,3);
 fprintf('%d reference clips\n',num_rclips);
 
+% Compute detectibility scores
+detectibility_scores=zeros(1,K);
+template_norms=zeros(1,K);
 for k=1:K
-template0=templates(:,:,k);
-%figure; ms_view_templates(template0);
-
-inner_products=squeeze(sum(sum(repmat(template0,1,1,num_rclips).*rclips,1),2));
-mu=mean(inner_products);
-sigma=sqrt(var(inner_products));
-ip_template0=sum(template0(:).^2);
-%normsqr_template0=sum(template0(:).^2);
-%figure; hist(inner_products,1000);
-%hold on;
-%plot([normsqr_template0,normsqr_template0],ylim,'r','linewidth',7);
-detectibility_scores(k)=(ip_template0-mu)/sigma
-template_norms(k)=sqrt(ip_template0);
+    template_k=templates(:,:,k);
+    %figure; ms_view_templates(template0);
+    inner_products=squeeze(sum(sum(repmat(template_k,1,1,num_rclips).*rclips,1),2));
+    mu=mean(inner_products);
+    sigma=sqrt(var(inner_products));
+    ip_template0=sum(template_k(:).^2);
+    detectibility_scores(k)=(ip_template0-mu)/sigma;
+    template_norms(k)=sqrt(ip_template0);
 end;
 
-plausibilities=zeros(
+% Compute plausibility scores
+plausibility_scores=zeros(K,L);
+for k=1:K
+    if (~isnan(detectibility_scores(k)))
+        fprintf('.');
+        template=templates(:,:,k);
+        weights=get_template_weights(template,5);
+        rclips_weighted=rclips.*repmat(weights,1,1,num_rclips);
+        [FF_rclips_weighted,subspace]=ms_event_features(rclips_weighted,6);
+        for j=1:size(FF_rclips_weighted,1)
+            factor=sqrt(var(FF_rclips_weighted(j,:)));
+            subspace(:,:,j)=subspace(:,:,j)/factor;
+        end
+        subspace_vecs=templates_to_vecs(subspace);
+        clips_weighted=clips.*repmat(weights,1,1,size(clips,3));
+        template_weighted=template.*weights;
+        diffs=clips_weighted-repmat(template_weighted,1,1,L);
+        FF_rclips_weighted=subspace_vecs'*templates_to_vecs(rclips_weighted);
+        FF_diffs=subspace_vecs'*templates_to_vecs(diffs);
+        plausibility_scores(k,:)=sqrt(sum(FF_diffs.^2,1));
+    else
+        plausibility_scores(k,:)=inf;
+    end;
+    %figure; ms_view_clusters(cat(2,FF_rclips_weighted,FF_diffs),cat(2,ones(1,num_rclips),ones(1,L)*2));
+%     inds=find(labels==k);
+%     inds_not=find(labels~=k);
+%     %figure; ms_view_clusters(cat(2,FF_diffs(:,inds_not),FF_diffs(:,inds)),cat(2,ones(1,length(inds_not)),ones(1,length(inds))*2));
+%     figure; ms_view_clusters(FF_diffs(:,inds));
+%     hold on; [xx,yy,zz]=sphere; h=surfl(xx,yy,zz); set(h, 'FaceAlpha', 0.1);
+%     title(sprintf('k=%d, detectibility=%g',k,detectibility_scores(k)));
+end;
+fprintf('\n');
+
 detectibility_threshold=2;
 k0=1;
 for k=1:K
@@ -72,10 +101,21 @@ ms_mountainview(mv);
 
 end
 
-function clips=extract_random_clips(X,clip_size,num_clips)
-[M,N]=size(X);
-times=randi([clip_size+1,N-clip_size-1],1,num_clips);
-clips=ms_extract_clips(X,times,clip_size);
+function V=templates_to_vecs(templates)
+[M,T,K]=size(templates);
+V=reshape(templates,M*T,K);
+end
+
+function Y=get_template_weights(template,num_pix)
+[M,T]=size(template);
+
+aa=ifftshift(-floor(T/2):-floor(T/2)+T-1);
+sig=num_pix;
+kernel=exp(-0.5*aa.^2/sig^2);
+
+fhat=fft(abs(template),[],2);
+fhat=fhat.*repmat(kernel,M,1);
+Y=real(ifft(fhat,[],2));
 end
 
 function [peak_mins,peak_maxs]=define_shells(clip_peaks,opts)

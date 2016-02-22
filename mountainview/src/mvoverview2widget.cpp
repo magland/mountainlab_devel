@@ -379,7 +379,224 @@ void MVOverview2WidgetPrivate::update_templates()
 	}
 }
 
-void MVOverview2WidgetPrivate::do_amplitude_split()
+double get_max(QList<double> &list) {
+	double ret=list.value(0);
+	for (int i=0; i<list.count(); i++) {
+		if (list[i]>ret) ret=list[i];
+	}
+	return ret;
+}
+
+double get_min(QList<double> &list) {
+	double ret=list.value(0);
+	for (int i=0; i<list.count(); i++) {
+		if (list[i]<ret) ret=list[i];
+	}
+	return ret;
+}
+
+void define_shells(QList<double> &shell_mins,QList<double> &shell_maxs,QList<double> &clip_peaks,double shell_increment,int min_shell_count) {
+	//positives
+	double max_clip_peaks=get_max(clip_peaks);
+	QList<double> shell_mins_pos;
+	QList<double> shell_maxs_pos;
+	{
+		int num_bins=1;
+		while (shell_increment*num_bins<=max_clip_peaks) num_bins++;
+		num_bins++;
+		long counts[num_bins];
+		for (int b=0; b<num_bins; b++) counts[b]=0;
+		long tot=0;
+		for (int i=0; i<clip_peaks.count(); i++) {
+			if (clip_peaks[i]>0) {
+				int b=(int)(clip_peaks[i]/shell_increment);
+				if (b<num_bins) counts[b]++;
+				else qWarning() << "Unexpected problem" << __FILE__ << __LINE__;
+				tot++;
+			}
+		}
+		int min_b=0;
+		int max_b=0;
+		int count_in=counts[0];
+		while (min_b<num_bins) {
+			if ((count_in>=min_shell_count)&&(tot-count_in>=min_shell_count)) {
+				shell_mins_pos << min_b*shell_increment;
+				shell_maxs_pos << (max_b+1)*shell_increment;
+				min_b=max_b+1;
+				max_b=max_b+1;
+				tot-=count_in;
+				if (min_b<num_bins) count_in=counts[min_b];
+				else count_in=0;
+			}
+			else {
+				max_b++;
+				if (max_b<num_bins) {
+					count_in+=counts[max_b];
+				}
+				else {
+					if (count_in>0) {
+						shell_mins_pos << min_b*shell_increment;
+						shell_maxs_pos << (max_b+1)*shell_increment;
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	//negatives
+	double min_clip_peaks=get_min(clip_peaks);
+	QList<double> shell_mins_neg;
+	QList<double> shell_maxs_neg;
+	{
+		int num_bins=1;
+		while (shell_increment*num_bins<=-min_clip_peaks) num_bins++;
+		num_bins++;
+		long counts[num_bins];
+		for (int b=0; b<num_bins; b++) counts[b]=0;
+		long tot=0;
+		for (int i=0; i<clip_peaks.count(); i++) {
+			if (clip_peaks[i]<0) {
+				int b=(int)(-clip_peaks[i]/shell_increment);
+				if (b<num_bins) counts[b]++;
+				else qWarning() << "Unexpected problem" << __FILE__ << __LINE__;
+				tot++;
+			}
+		}
+		int min_b=0;
+		int max_b=0;
+		int count_in=counts[0];
+		while (min_b<num_bins) {
+			if ((count_in>=min_shell_count)&&(tot-count_in>=min_shell_count)) {
+				shell_mins_neg << min_b*shell_increment;
+				shell_maxs_neg << (max_b+1)*shell_increment;
+				min_b=max_b+1;
+				max_b=max_b+1;
+				tot-=count_in;
+				if (min_b<num_bins) count_in=counts[min_b];
+				else count_in=0;
+			}
+			else {
+				max_b++;
+				if (max_b<num_bins) {
+					count_in+=counts[max_b];
+				}
+				else {
+					if (count_in>0) {
+						shell_mins_neg << min_b*shell_increment;
+						shell_maxs_neg << (max_b+1)*shell_increment;
+					}
+					break;
+				}
+			}
+		}
+	}
+
+	//combine
+	for (int i=shell_mins_neg.count()-1; i>=0; i--) {
+		shell_maxs << -shell_mins_neg[i];
+		shell_mins << -shell_maxs_neg[i];
+	}
+	for (int i=0; i<shell_mins_pos.count(); i++) {
+		shell_mins << shell_mins_pos[i];
+		shell_maxs << shell_maxs_pos[i];
+	}
+}
+
+void MVOverview2WidgetPrivate::do_amplitude_split() {
+	m_current_kk=0;
+	if (!m_control_panel->getParameterValue("use_amplitude_split").toBool()) {
+		m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
+		for (int i2=0; i2<m_firings.N2(); i2++) {
+			for (int i1=0; i1<m_firings.N1(); i1++) {
+				m_firings.setValue(m_firings_original.value(i1,i2),i1,i2);
+			}
+		}
+		m_original_cluster_numbers.clear();
+		m_original_cluster_offsets.clear();
+		int K=0;
+		for (int n=0; n<m_firings.N2(); n++) {
+			if (m_firings.value(2,n)>K) K=(int)m_firings.value(2,n);
+		}
+		for (int k=0; k<=K; k++) {
+			m_original_cluster_numbers << k;
+			m_original_cluster_offsets << 0;
+		}
+
+		return;
+	}
+
+	float shell_width=m_control_panel->getParameterValue("shell_width").toFloat();
+	int min_per_shell=m_control_panel->getParameterValue("min_per_shell").toInt();
+	float min_amplitude=m_control_panel->getParameterValue("min_amplitude").toInt();
+
+	QList<long> labels;
+	QList<double> peaks;
+	for (int n=0; n<m_firings_original.N2(); n++) {
+		float peak=m_firings_original.value(3,n);
+		labels << (long)m_firings_original.value(2,n);
+		peaks << peak;
+	}
+
+	int K=0;
+	for (int n=0; n<labels.count(); n++) {
+		if (labels[n]>K) K=labels[n];
+	}
+
+	QList<int> nums;
+	QList<float> mins;
+	QList<float> maxs;
+	for (int k=1; k<=K; k++) {
+		QList<double> peaks_k;
+		for (int n=0; n<labels.count(); n++) {
+			if (labels[n]==k) {
+				peaks_k << peaks[n];
+			}
+		}
+		QList<double> shell_mins,shell_maxs; shell_mins.clear(); shell_maxs.clear();
+		define_shells(shell_mins,shell_maxs,peaks_k,shell_width,min_per_shell);
+		for (int ii=0; ii<shell_mins.count(); ii++) {
+			nums << k;
+			mins << shell_mins[ii];
+			maxs << shell_maxs[ii];
+		}
+	}
+
+	int KK=nums.count();
+	m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
+	for (int i2=0; i2<m_firings.N2(); i2++) {
+		for (int i1=0; i1<m_firings.N1(); i1++) {
+			if (i1!=2) { //don't set the labels!
+				m_firings.setValue(m_firings_original.value(i1,i2),i1,i2);
+			}
+		}
+	}
+
+	m_original_cluster_numbers.clear();
+	m_original_cluster_offsets.clear();
+	m_original_cluster_numbers << 0;
+	m_original_cluster_offsets << 0;
+	int offset=0;
+	for (int kk=0; kk<KK; kk++) {
+		if ((kk==0)||(nums[kk]!=nums[kk-1])) offset=0;
+		int k=nums[kk];
+		float min0=mins[kk];
+		float max0=maxs[kk];
+		m_original_cluster_numbers << k;
+		m_original_cluster_offsets << offset;
+		offset++;
+		for (int n=0; n<labels.count(); n++) {
+			if (labels[n]==k) {
+				if ((min0<=peaks[n])&&(peaks[n]<max0)&&(fabs(peaks[n])>=min_amplitude)) {
+					m_firings.setValue(kk+1,2,n);
+				}
+			}
+		}
+	}
+}
+
+/*
+void MVOverview2WidgetPrivate::do_amplitude_split_old()
 {
     m_current_kk=0;
     if (!m_control_panel->getParameterValue("use_amplitude_split").toBool()) {
@@ -487,6 +704,7 @@ void MVOverview2WidgetPrivate::do_amplitude_split()
 		}
 	}
 }
+*/
 
 void MVOverview2WidgetPrivate::add_tab(QWidget *W,QString label)
 {

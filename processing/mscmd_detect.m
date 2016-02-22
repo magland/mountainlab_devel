@@ -33,7 +33,7 @@ function mscmd_detect(input_path,output_path,opts)
 
 if (nargin<3) opts=struct; end;
 
-if ~isfield(opts,'individual_channels') opts.individual_channels=1; end;
+if ~isfield(opts,'individual_channels') opts.individual_channels=0; end;
 if ~isfield(opts,'normalize') opts.normalize=0; end;
 if ~isfield(opts,'inner_window_width') opts.inner_window_width=10; end;
 if isfield(opts,'detect_interval') opts.inner_window_width=opts.detect_interval; end;
