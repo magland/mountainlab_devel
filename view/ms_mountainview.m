@@ -79,7 +79,7 @@ system(sprintf('%s &',cmd));
 end
 
 function path=create_temporary_path_if_array(X)
-if (isstr(X)) path=X; end;
+if (isstr(X)) path=X; return; end;
 path=create_temporary_mda_path;
 writemda(X,path);
 end
