@@ -13,32 +13,62 @@ peaks=firings(4,:);
 %inds=find((abs(peaks)<6)&(abs(peaks)>5));
 inds=find(abs(peaks)>0);
 times=times(inds); labels=labels(inds); peaks=peaks(inds);
+labels=split_clusters_by_peak_amplitudes(peaks,labels,struct('section_increment',1,'min_section_count',200,'num_sections_per_shell',1));
 clips=ms_extract_clips(pre2,times,clip_size);
-templates=ms_templates(clips,labels);
+[M,T,NC]=size(clips);
+clips=clips-repmat(mean(clips,2),1,T,1);
+%templates=ms_templates(clips,labels);
+templates=geometric_median_templates(clips,labels);
 figure; ms_view_templates(templates);
 K=size(templates,3);
 
 detectibility_scores=zeros(1,K);
 template_norms=zeros(1,K);
 
-for k=2
+ttt=ms_detect(pre2,struct('detect_threshold',3,'detect_interval',15,'clip_size',clip_size));
+interval=ceil(length(ttt)/5000);
+ttt=ttt(1:interval:end);
+rclips=ms_extract_clips(pre2,ttt,clip_size);
+num_rclips=size(rclips,3);
+fprintf('%d reference clips\n',num_rclips);
+
+for k=1:K
 template0=templates(:,:,k);
 %figure; ms_view_templates(template0);
 
-num_rclips=5000;
-rclips=extract_random_clips(pre2,clip_size,num_rclips);
 inner_products=squeeze(sum(sum(repmat(template0,1,1,num_rclips).*rclips,1),2));
+mu=mean(inner_products);
 sigma=sqrt(var(inner_products));
-normsqr_template0=sum(template0(:).^2);
-figure; hist(inner_products,1000);
-hold on;
-plot([normsqr_template0,normsqr_template0],ylim,'r','linewidth',15);
-detectibility_scores(k)=normsqr_template0/sigma
-template_norms(k)=sqrt(normsqr_template0)
+ip_template0=sum(template0(:).^2);
+%normsqr_template0=sum(template0(:).^2);
+%figure; hist(inner_products,1000);
+%hold on;
+%plot([normsqr_template0,normsqr_template0],ylim,'r','linewidth',7);
+detectibility_scores(k)=(ip_template0-mu)/sigma
+template_norms(k)=sqrt(ip_template0);
 end;
+
+plausibilities=zeros(
+detectibility_threshold=2;
+k0=1;
+for k=1:K
+    if (detectibility_scores(k)>=detectibility_threshold)&&(~isnan(detectibility_scores(k)))
+        labels(find(labels==k))=k0;
+        k0=k0+1;
+    else
+        labels(find(labels==k))=0;
+    end;
+end;
+
+templates=geometric_median_templates(clips,labels);
+figure; ms_view_templates(templates);
 
 figure; plot(1:K,template_norms,'b.',1:K,detectibility_scores,'r.','markersize',8);
 figure; plot(template_norms,detectibility_scores,'k.','markersize',8);
+
+mv.raw=pre2;
+mv.firings=TL2F(times,labels);
+ms_mountainview(mv);
 
 end
 
@@ -47,3 +77,144 @@ function clips=extract_random_clips(X,clip_size,num_clips)
 times=randi([clip_size+1,N-clip_size-1],1,num_clips);
 clips=ms_extract_clips(X,times,clip_size);
 end
+
+function [peak_mins,peak_maxs]=define_shells(clip_peaks,opts)
+
+% do the negatives
+section_mins_neg=[];
+section_maxs_neg=[];
+if (min(clip_peaks)<0)
+    max0=0;
+    min0=max0-opts.section_increment;
+    while 1
+        if (max0<min(clip_peaks)) break; end;
+        if (length(find((min0<=clip_peaks)&(clip_peaks<max0)))>=opts.min_section_count)
+            if (length(find(clip_peaks<min0))>=opts.min_section_count)
+                section_mins_neg=[section_mins_neg,min0];
+                section_maxs_neg=[section_maxs_neg,max0];
+                max0=min0;
+                min0=max0-opts.section_increment;
+            else
+                section_mins_neg=[section_mins_neg,-inf];
+                section_maxs_neg=[section_maxs_neg,max0];
+                max0=-inf; min0=-inf;
+            end;
+        else
+            min0=min0-opts.section_increment;
+            if (min0<min(clip_peaks))
+                section_mins_neg=[section_mins_neg,-inf];
+                section_maxs_neg=[section_maxs_neg,max0];
+                max0=-inf; min0=-inf;
+            end;
+        end;
+    end;
+end;
+% do the overlap
+for j=1:length(section_maxs_neg)-1
+    section_mins_neg(j)=section_mins_neg(j+1);
+end;
+
+% do the positives
+section_mins_pos=[];
+section_maxs_pos=[];
+if (max(clip_peaks)>0)
+    min0=0;
+    max0=min0+opts.section_increment;
+    while 1
+        if (min0>max(clip_peaks)) break; end;
+        if (length(find((min0<=clip_peaks)&(clip_peaks<max0)))>=opts.min_section_count)
+            if (length(find(clip_peaks>=max0))>=opts.min_section_count)
+                section_mins_pos=[section_mins_pos,min0];
+                section_maxs_pos=[section_maxs_pos,max0];
+                min0=max0;
+                max0=min0+opts.section_increment;
+            else
+                section_mins_pos=[section_mins_pos,min0];
+                section_maxs_pos=[section_maxs_pos,inf];
+                min0=inf; max0=inf;
+            end;
+        else
+            max0=max0+opts.section_increment;
+            if (max0>max(clip_peaks))
+                section_mins_pos=[section_mins_pos,min0];
+                section_maxs_pos=[section_maxs_pos,inf];
+                min0=inf; max0=inf;
+            end;
+        end;
+    end;
+end;
+% do the overlap
+for j=1:length(section_mins_pos)-1
+    section_maxs_pos(j)=section_maxs_pos(j+1);
+end;
+
+% combine and sort
+section_mins=[section_mins_neg,section_mins_pos];
+section_maxs=[section_maxs_neg,section_maxs_pos];
+[~,inds]=sort(section_mins);
+section_mins=section_mins(inds);
+section_maxs=section_maxs(inds);
+
+peak_mins=section_mins;
+for j=2:opts.num_sections_per_shell
+    peak_mins=[-inf,peak_mins];
+end;
+peak_maxs=section_maxs;
+for j=2:opts.num_sections_per_shell
+    peak_maxs=[peak_maxs,inf];
+end;
+
+end
+
+function [labels_out]=split_clusters_by_peak_amplitudes(clip_peaks,labels,opts)
+NC=length(clip_peaks);
+K=max(labels);
+labels_out=zeros(1,NC);
+for k=1:K
+    inds=find(labels==k);
+    labels0=split_cluster_by_peak_amplitudes(clip_peaks(inds),opts);
+    labels_out(inds)=labels0+max(labels_out);
+end;
+end
+
+function [labels]=split_cluster_by_peak_amplitudes(clip_peaks,opts)
+NC=length(clip_peaks);
+[peak_mins,peak_maxs]=define_shells(clip_peaks,opts);
+
+labels=zeros(1,NC);
+for ii=1:length(peak_mins)
+    inds=find((clip_peaks>=peak_mins(ii))&(clip_peaks<peak_maxs(ii)));
+    labels(inds)=max(labels)+1;
+end;
+
+end
+
+function templates=geometric_median_templates(clips,labels)
+K=max(labels);
+[M,T,NC]=size(clips);
+templates=zeros(M,T,K);
+for k=1:K
+    inds_kk=find(labels==k);
+    clips_kk=clips(:,:,inds_kk);
+    templates(:,:,k)=compute_clips_template(clips_kk);
+end;
+end
+
+function template=compute_clips_template(clips)
+[M,T,NC]=size(clips);
+if (length(clips(:))==0)
+    template=zeros(M,T);
+    return;
+end;
+[M,T,NC]=size(clips);
+num_features=18;
+FF=ms_event_features(clips,num_features);
+FFmm=ms_geometric_median(FF);
+diffs=FF-repmat(FFmm,1,NC);
+dists=sqrt(sum(diffs.^2,1));
+sorted_dists=sort(dists);
+dist_cutoff=sorted_dists(ceil(length(sorted_dists)*0.3));
+inds=find(dists<=dist_cutoff);
+template=mean(clips(:,:,inds),3);
+end
+
