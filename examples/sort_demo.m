@@ -16,7 +16,7 @@ CT = readmda([path0,'/detect.mda']); times=CT(2,:); clear CT
 fprintf('detect found %d events\n',numel(times))
 %Y = readmda(raw); spikespy({Y,times,0*times,'Y & detect'});  % 0 = no labels
 
-clip_opts.clip_size=40;
+clip_opts.clip_size=40;    % 2 ms, enough
 mscmd_extract_clips(raw,[path0,'/detect.mda'],[path0,'/clips.mda'],clip_opts);
 %X = readmda([path0,'/clips.mda']); spikespy({X,'clips X'});
 
@@ -25,20 +25,20 @@ fprintf('read clips...\n'); clips=readmda([path0,'/clips.mda']);
 [M,T,L]=size(clips);
 clus_opts.num_features=12;
 iso_opts.whiten_at_each_comparison = 0;   % iso2 fails if 1  ***
-clus = 0;   % clustering style - todo: should be opts via a cluster func!
+X = ms_event_features(clips,clus_opts.num_features);  % for viz or clustering
+clus = 2;   % clustering style - todo: should be opts via a cluster func!
 if clus==0  % plain isosplit on *raw* clips
-  X = reshape(clips,[M*T,L]); [labels,info] = isosplit2(X,iso_opts); 
+  fullX = reshape(clips,[M*T,L]); [labels,info] = isosplit2(fullX,iso_opts); 
   peaks = 0*labels;    % dummy peak ampls
 elseif clus==1   % dimension reduction via PCA, then isosplit
-  X = ms_event_features(clips,clus_opts.num_features);
   [labels,info] = isosplit2(X,iso_opts); 
   peaks = 0*labels;    % dummy peak ampls
-else   % .. or shell stuff
-  shell_opts.min_shell_count=2000;
-  shell_opts.shell_increment=1;
-  shell_opts.merge_threshold=0.8;
+elseif clus==2   % .. or shell stuff.   Can still crash
+  clus_opts.min_shell_count=2000;
+  clus_opts.shell_increment=1;
+  clus_opts.merge_threshold=0.8;
   fprintf('--- jfm shell cluster ---\n');
-  [labels,peaks]=jfm_shell_cluster(clips,shell_opts);  % isosplit2 fails ***
+  [labels,peaks]=jfm_shell_cluster(clips,clus_opts);  % isosplit2 fails ***
 end
 % write out firings... (for MV and for conf-mat)
 K=max(labels);
@@ -50,6 +50,7 @@ firings(1:2,:)=detect; firings(3,:)=labels; firings(4,:)=peaks;
 writemda(firings,[path0,'/firings.mda']);
 
 % view...
+plot_labeled_pts(X,labels);  % visualize with feature space even if not used
 Y = readmda(raw); spikespy({Y,times,labels,'Y sorted'});  % Ctrl-E fails ***
 % how do I now best look at labeled clips? try MV  *** needs pops below W's
 view_params.mode='overview2';
