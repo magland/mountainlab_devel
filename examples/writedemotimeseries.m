@@ -2,7 +2,7 @@
 % Note: this script is used by examples/sort_demo.m
 % Barnett 2/19/16
 
-clear
+%clear %removed by jfm because interfering with scripts!
 [W samplerate] = loaddemowaveforms;
 K = size(W,3);
 T = 120;         % desired length in seconds

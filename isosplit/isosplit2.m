@@ -15,6 +15,7 @@ if (isfield(opts,'K')) opts.K_init=opts.K; end;
 if (~isfield(opts,'verbose')) opts.verbose=0; end;
 if (~isfield(opts,'verbose3')) opts.verbose3=0; end;
 if (~isfield(opts,'whiten_at_each_comparison')) opts.whiten_at_each_comparison=1; end;
+if (~isfield(opts,'repeat_tolerance')) opts.repeat_tolerance=0.2; end;
 
 if numel(size(X))~=2, error('X must be a 2D array'); end
 [M,N]=size(X);
@@ -48,7 +49,7 @@ attempted_comparisons.counts2=[];
 
 while 1
     info.num_iterations=info.num_iterations+1;
-    [k1,k2]=find_next_comparison(active_labels,centers,counts,attempted_comparisons);
+    [k1,k2]=find_next_comparison(active_labels,centers,counts,attempted_comparisons,opts.repeat_tolerance);
     if (k1<0) break; end;
     if (opts.verbose')
         fprintf('Comparing %d (%d) with %d (%d)\n',k1,counts(k1),k2,counts(k2));
@@ -104,7 +105,7 @@ end;
 dists=sqrt(dists);
 end
 
-function [k1,k2]=find_next_comparison(active_labels,centers,counts,attempted_comparisons)
+function [k1,k2]=find_next_comparison(active_labels,centers,counts,attempted_comparisons,repeat_tolerance)
 active_inds=find(active_labels);
 centers_active=centers(:,active_inds);
 counts_active=counts(active_inds);
@@ -120,7 +121,7 @@ for j=1:length(ii)
        return;
     end;
     [k1,k2]=ind2sub(size(dists),ii(j));
-    if (~was_already_attempted(attempted_comparisons,centers_active(:,k1),centers_active(:,k2),counts_active(k1),counts_active(k2)))
+    if (~was_already_attempted(attempted_comparisons,centers_active(:,k1),centers_active(:,k2),counts_active(k1),counts_active(k2),repeat_tolerance))
         k1=active_inds(k1);
         k2=active_inds(k2);
         return;
@@ -129,11 +130,12 @@ end;
 k1=-1; k2=-1;
 end
 
-function ret=was_already_attempted(attempted_comparisons,center1,center2,count1,count2)
+function ret=was_already_attempted(attempted_comparisons,center1,center2,count1,count2,repeat_tolerance)
 AC=attempted_comparisons;
+tol=repeat_tolerance;
 ii=find( ...
-    (abs(AC.counts1-count1)<sqrt((AC.counts1+count1)/2)) & ...
-    (abs(AC.counts2-count2)<sqrt((AC.counts2+count2)/2)) ...
+    (abs(AC.counts1-count1)<tol*sqrt((AC.counts1+count1)/2)) & ...
+    (abs(AC.counts2-count2)<tol*sqrt((AC.counts2+count2)/2)) ...
     );
 
 AC_centers1=AC.centers1(:,ii);
@@ -147,8 +149,6 @@ dists0=dists0(aa); dists1=dists1(aa); dists2=dists2(aa);
 
 fracs1=dists1./dists0;
 fracs2=dists2./dists0;
-
-tol=1;
 
 jj=find( (fracs1<tol*1/sqrt(count1)) & (fracs2<tol*1/sqrt(count2)) );
 

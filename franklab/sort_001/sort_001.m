@@ -2,23 +2,29 @@ function sort_001(raw_path,output_path,sort_opts)
 
 if nargin<1 test_sort_001; return; end;
 
-if nargin<3
-sort_opts.clip_size=120;
-sort_opts.shell.min_section_count=200;
-sort_opts.shell.num_sections_per_shell=4;
-sort_opts.shell.section_increment=0.5;
-sort_opts.shell.merge_threshold=0.6;
-sort_opts.shell.num_features=12;
-sort_opts.filter.samplefreq=30000;
-sort_opts.filter.freq_min=100;
-sort_opts.filter.freq_max=10000;
-sort_opts.outlier_threshold=500;
-sort_opts.detect.detect_threshold=4;
-sort_opts.detect.detect_interval=15;
-sort_opts.plausibility_threshold=2.5;
-sort_opts.detectibility_threshold=1.8;
-sort_opts.min_cluster_size=10;
-end;
+def_sort_opts.clip_size=120;
+def_sort_opts.shell.min_section_count=200;
+def_sort_opts.shell.num_sections_per_shell=4;
+def_sort_opts.shell.section_increment=0.5;
+def_sort_opts.shell.merge_threshold=0.6;
+def_sort_opts.shell.num_features=12;
+def_sort_opts.isosplit.isocut_threshold=1.5;
+def_sort_opts.filter.samplefreq=30000;
+def_sort_opts.filter.freq_min=100;
+def_sort_opts.filter.freq_max=10000;
+def_sort_opts.filter.outlier_threshold=500;
+def_sort_opts.detect.detect_threshold=4;
+def_sort_opts.detect.detect_interval=15;
+def_sort_opts.plausibility_threshold=2.5;
+def_sort_opts.detectibility_threshold=1.8;
+def_sort_opts.min_cluster_size=10;
+
+if nargin<3 sort_opts=struct; end;
+sort_opts=use_default_opts(sort_opts,def_sort_opts);
+sort_opts.shell=use_default_opts(sort_opts.shell,def_sort_opts.shell);
+sort_opts.isosplit=use_default_opts(sort_opts.isosplit,def_sort_opts.isosplit);
+sort_opts.filter=use_default_opts(sort_opts.filter,def_sort_opts.filter);
+sort_opts.detect=use_default_opts(sort_opts.detect,def_sort_opts.detect);
 
 path0=output_path;
 
@@ -36,6 +42,7 @@ clips=clips-repmat(mean(clips,2),1,T,1); %subtract mean over time
 
 %%%% Shell cluster
 fprintf('Shell cluster...\n');
+sort_opts.shell.isosplit=sort_opts.isosplit;
 [labels1,peaks]=shell_cluster(clips,sort_opts.shell);
 K=max(labels1);
 firings1=zeros(4,NC);
@@ -274,7 +281,7 @@ for ii=1:length(peak_mins)
         fprintf('features... ');
         FF_shell=ms_event_features(clips_shell,opts.num_features);
         fprintf('isosplit... ');
-        labels_shell=isosplit2(FF_shell,struct('whiten_at_each_comparison',1));
+        labels_shell=isosplit2(FF_shell,opts.isosplit);
         K=max(labels_shell);
         fprintf('K=%d\n',K);
         CC.labels=labels_shell;
@@ -357,7 +364,8 @@ if (min(clip_peaks)<0)
     min0=max0-opts.section_increment;
     while 1
         if (max0<min(clip_peaks)) break; end;
-        if (length(find((min0<=clip_peaks)&(clip_peaks<max0)))>=opts.min_section_count)
+        count0=length(find((min0<=clip_peaks)&(clip_peaks<max0)));
+        if (count0>=opts.min_section_count)
             if (length(find(clip_peaks<min0))>=opts.min_section_count)
                 section_mins_neg=[section_mins_neg,min0];
                 section_maxs_neg=[section_maxs_neg,max0];
@@ -371,8 +379,11 @@ if (min(clip_peaks)<0)
         else
             min0=min0-opts.section_increment;
             if (min0<min(clip_peaks))
-                section_mins_neg=[section_mins_neg,-inf];
-                section_maxs_neg=[section_maxs_neg,max0];
+                count0=length(find((min0<=clip_peaks)&(clip_peaks<max0)));
+                if (count0>0)
+                    section_mins_neg=[section_mins_neg,-inf];
+                    section_maxs_neg=[section_maxs_neg,max0];
+                end;
                 max0=-inf; min0=-inf;
             end;
         end;
@@ -387,7 +398,8 @@ if (max(clip_peaks)>0)
     max0=min0+opts.section_increment;
     while 1
         if (min0>max(clip_peaks)) break; end;
-        if (length(find((min0<=clip_peaks)&(clip_peaks<max0)))>=opts.min_section_count)
+        count0=length(find((min0<=clip_peaks)&(clip_peaks<max0)));
+        if (count0>=opts.min_section_count)
             if (length(find(clip_peaks>=max0))>=opts.min_section_count)
                 section_mins_pos=[section_mins_pos,min0];
                 section_maxs_pos=[section_maxs_pos,max0];
@@ -401,29 +413,44 @@ if (max(clip_peaks)>0)
         else
             max0=max0+opts.section_increment;
             if (max0>max(clip_peaks))
-                section_mins_pos=[section_mins_pos,min0];
-                section_maxs_pos=[section_maxs_pos,inf];
+                count0=length(find((min0<=clip_peaks)&(clip_peaks<max0)));
+                if (count0>0)
+                    section_mins_pos=[section_mins_pos,min0];
+                    section_maxs_pos=[section_maxs_pos,inf];
+                end;
                 min0=inf; max0=inf;
             end;
         end;
     end;
 end;
 
-% combine and sort
-section_mins=[section_mins_neg,section_mins_pos];
-section_maxs=[section_maxs_neg,section_maxs_pos];
-[~,inds]=sort(section_mins);
-section_mins=section_mins(inds);
-section_maxs=section_maxs(inds);
+peak_mins=[];
+peak_maxs=[];
+%the positives
+for j=1:length(section_mins_pos)
+    peak_mins(end+1)=section_mins_pos(j);
+    ii=j+opts.num_sections_per_shell-1;
+    if (ii<=length(section_maxs_pos))
+        peak_maxs(end+1)=section_maxs_pos(ii);
+    else
+        peak_maxs(end+1)=inf;
+    end;
+end;
+%the negatives
+for j=1:length(section_mins_neg)
+    peak_maxs(end+1)=section_maxs_neg(j);
+    ii=j+opts.num_sections_per_shell-1;
+    if (ii<=length(section_mins_neg))
+        peak_mins(end+1)=section_mins_neg(ii);
+    else
+        peak_mins(end+1)=-inf;
+    end;
+end;
 
-peak_mins=section_mins;
-for j=2:opts.num_sections_per_shell
-    peak_mins=[-inf,peak_mins];
-end;
-peak_maxs=section_maxs;
-for j=2:opts.num_sections_per_shell
-    peak_maxs=[peak_maxs,inf];
-end;
+%sort
+[~,inds]=sort(peak_mins);
+peak_mins=peak_mins(inds);
+peak_maxs=peak_maxs(inds);
 
 end
 
@@ -466,6 +493,14 @@ writemda(L,[output_path,'/locations.mda']);
 
 end
 
+function opts=use_default_opts(opts,def_opts)
+names=fieldnames(def_opts);
+for ii=1:length(names)
+    if (~isfield(opts,names{ii}))
+        opts.(names{ii})=def_opts.(names{ii});
+    end;
+end;
+end
 
 function test_sort_001
 
@@ -492,4 +527,6 @@ mv.firings=[path0,'/firings.mda'];
 ms_mountainview(mv);
 
 end
+
+
 
