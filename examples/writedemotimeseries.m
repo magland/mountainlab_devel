@@ -10,7 +10,7 @@ N = round(T*samplerate);         % number of time points
 % mean firing rates in Hz, K=7 must match demo waveforms:
 rates = 0.3*2.^(0:K-1);     % range of firing rates, gives up to >10 Hz
 rates = rates/samplerate;   % convert to per sample
-o_firings.amplsig = 0.2;         % amplitude variation
+o_firings.amplsig = 0.0;  % 0.2       % amplitude variation
 [times labels ampls] = randomfirings(N,rates,o_firings);
 peakchans = 0*times;
 % write out ground-truth firings in correct format...
