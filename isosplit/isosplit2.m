@@ -28,8 +28,6 @@ if N==0
     return;
 end;
 
-
-
 labels_init=local_kmeans_sorber(X,opts.K_init);
 labels=labels_init;
 active_labels=ones(1,opts.K_init);
@@ -51,8 +49,8 @@ while 1
     info.num_iterations=info.num_iterations+1;
     [k1,k2]=find_next_comparison(active_labels,centers,counts,attempted_comparisons,opts.repeat_tolerance);
     if (k1<0) break; end;
-    if (opts.verbose')
-        fprintf('Comparing %d (%d) with %d (%d)\n',k1,counts(k1),k2,counts(k2));
+    if (opts.verbose)
+        fprintf('Comparing %d (%d) with %d (%d)...',k1,counts(k1),k2,counts(k2));
     end;
     inds1=find(labels==k1);
     inds2=find(labels==k2);
@@ -66,7 +64,10 @@ while 1
     attempted_comparisons.counts1(end+1)=length(inds2);
     attempted_comparisons.counts2(end+1)=length(inds1);
     [do_merge,labels0]=test_redistribute(X(:,inds1),X(:,inds2),opts);
-    if (do_merge)
+    if (do_merge)||(max(labels0)==1)
+        if (opts.verbose)
+            fprintf('Merging\n',k1,counts(k1),k2,counts(k2));
+        end;
         labels(find(labels==k2))=k1;
         centers(:,k1)=compute_cluster_center(X(:,inds12));
         counts(k1)=length(inds12);
@@ -75,6 +76,9 @@ while 1
     else
         indsA=inds12(find(labels0==1));
         indsB=inds12(find(labels0==2));
+        if (opts.verbose)
+            fprintf('Redistributing (%d) (%d)\n',length(indsA),length(indsB));
+        end;
         labels(indsA)=k1;
         labels(indsB)=k2;
         centers(:,k1)=compute_cluster_center(X(:,indsA));
@@ -121,10 +125,12 @@ for j=1:length(ii)
        return;
     end;
     [k1,k2]=ind2sub(size(dists),ii(j));
-    if (~was_already_attempted(attempted_comparisons,centers_active(:,k1),centers_active(:,k2),counts_active(k1),counts_active(k2),repeat_tolerance))
-        k1=active_inds(k1);
-        k2=active_inds(k2);
-        return;
+    if ((counts(active_inds(k1))>0)&&(counts(active_inds(k2))>0)) % just to make sure (this was actually happening! probably should track down why)
+        if (~was_already_attempted(attempted_comparisons,centers_active(:,k1),centers_active(:,k2),counts_active(k1),counts_active(k2),repeat_tolerance))
+            k1=active_inds(k1);
+            k2=active_inds(k2);
+            return;
+        end;
     end;
 end;
 k1=-1; k2=-1;
@@ -134,8 +140,8 @@ function ret=was_already_attempted(attempted_comparisons,center1,center2,count1,
 AC=attempted_comparisons;
 tol=repeat_tolerance;
 ii=find( ...
-    (abs(AC.counts1-count1)<tol*sqrt((AC.counts1+count1)/2)) & ...
-    (abs(AC.counts2-count2)<tol*sqrt((AC.counts2+count2)/2)) ...
+    (abs(AC.counts1-count1)<=tol*sqrt((AC.counts1+count1)/2)) & ...
+    (abs(AC.counts2-count2)<=tol*sqrt((AC.counts2+count2)/2)) ...
     );
 
 AC_centers1=AC.centers1(:,ii);
@@ -150,7 +156,7 @@ dists0=dists0(aa); dists1=dists1(aa); dists2=dists2(aa);
 fracs1=dists1./dists0;
 fracs2=dists2./dists0;
 
-jj=find( (fracs1<tol*1/sqrt(count1)) & (fracs2<tol*1/sqrt(count2)) );
+jj=find( (fracs1<=tol*1/sqrt(count1)) & (fracs2<=tol*1/sqrt(count2)) );
 
 ret=~isempty(jj);
     

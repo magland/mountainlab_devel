@@ -53,10 +53,10 @@ opts.o_cross_correlograms.max_dt=1500;
 opts.o_extract_clips.clip_size=opts.o_templates.clip_size;
 
 mfile_path=fileparts(mfilename('fullpath'));
-addpath(sprintf('%s/..',mfile_path));
+addpath(sprintf('%s/../..',mfile_path));
 outputdir_path=sprintf('%s/output',mfile_path);
 if (~exist(outputdir_path,'dir')) mkdir(outputdir_path); end;
-datfile_path=sprintf('%s/../raw/ms11d45.dat',mfile_path);
+datfile_path=sprintf('%s/../../raw/ms11d45.dat',mfile_path);
 rawfile_path=sprintf('%s/output/raw.mda',mfile_path);
 
 mscmd_extract(datfile_path,[outputdir_path,'/raw.mda'],opts.o_extract);

@@ -26,6 +26,11 @@ function [mm,changes]=ms_geometric_median(X,num_iterations)
 if nargin<2, num_iterations=10; end;
 
 [M,N]=size(X);
+if (N==1) 
+    mm=X;
+    changes=[0];
+    return;
+end;
 weights=ones(1,N);
 changes=[];
 for it=1:num_iterations

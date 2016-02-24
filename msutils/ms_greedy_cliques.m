@@ -28,7 +28,7 @@ while max(A(:))>0
     A0=A; for j=1:size(A,1) A0(j,j)=0; end;
     cc=maximalCliques(A0);
     [maxval,ind0]=max(sum(cc,1));
-    if (maxval==1)
+    if (maxval<=1)
         inds0=find(used==0);
         for aa=1:length(inds0)
             C{end+1}=[inds0(aa)];

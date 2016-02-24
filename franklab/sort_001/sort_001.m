@@ -50,6 +50,13 @@ path0=output_path;
 mscmd_bandpass_filter(raw_path,[path0,'/pre1.mda'],sort_opts.filter);
 mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],struct);
 mscmd_detect([path0,'/pre2.mda'],[path0,'/detect.mda'],sort_opts.detect);
+
+% sort_opts.detect.individual_channels=1;
+% mscmd_detect([path0,'/pre2.mda'],[path0,'/detect.mda'],sort_opts.detect);
+% detect=readmda([path0,'/detect.mda']);
+% aa=find(detect(1,:)==2); detect=detect(:,aa);
+% writemda(detect,[path0,'/detect.mda']);
+
 mscmd_extract_clips([path0,'/pre2.mda'],[path0,'/detect.mda'],[path0,'/clips.mda'],struct('clip_size',sort_opts.clip_size));
 
 %%%% Reading clips
@@ -527,7 +534,7 @@ function test_sort_001
 
 close all;
 
-tetrode_num=2;
+tetrode_num=1;
 
 %%%% Set up paths
 mfile_path=fileparts(mfilename('fullpath'));
