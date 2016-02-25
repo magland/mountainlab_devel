@@ -180,7 +180,6 @@ Y2=X2-repmat(centroid2,1,N2);
 
 % Combine the data
 Y=cat(2,Y1,Y2);
-Y
 N=N1+N2;
 
 % Obtain the whitening matrix using svd
