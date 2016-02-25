@@ -2,16 +2,13 @@ function accuracy_sort002_on_demotimeseries
 % measure accuracy vs known firing times on synthetic demo data.
 % Barnett 2/25/16
 
-
 %%%% Set up paths
 mfile_path=fileparts(mfilename('fullpath'))
 
 addpath([mfile_path,'/../franklab/sort_002_multichannel']);
-dpath = [mfile_path,'/../unit_tests/demo_data'];
-raw=[dpath,'/demotimeseries.mda'];
-if ~exist(raw), writedemotimeseries; end
+rng(1);  % fix the seed
+[Yfile truefiringsfile trueWfile] = get_default_dataset('EJ K7'); % demo data
 
-mfile_path=fileparts(mfilename('fullpath'));
 output_path=[mfile_path,'/output'];
 if ~exist(output_path,'dir') mkdir(output_path); end;
 
@@ -22,7 +19,7 @@ sort_opts.detect.detect_interval=15;
 sort_opts.detectability_threshold=0; % controls exclusion of noise clusters
 sort_opts.plausibility_threshold=inf;  % exc
 sort_opts.clip_size=50;          % seems to have big effect? (truth at most 46)
-[firings_path,pre_path]=sort_002_multichannel(raw,output_path,sort_opts);
+[firings_path,pre_path]=sort_002_multichannel(Yfile,output_path,sort_opts);
 
 if 0 %%%% View output
   mv.mode='overview2';
@@ -46,9 +43,9 @@ templates=ms_templates(clips,labels);
 %figure; ms_view_templates(templates); % jfm W view
 
 % load the truth...
-Wtrue = readmda([dpath,'/waveforms_EJ_2005-04-26_elec359_20kHz_K7.mda']);
+Wtrue = readmda(trueWfile);
 plot_spike_shapes(Wtrue,'true W');
-truefirings=readmda([dpath,'/truefirings.mda']);
+truefirings=readmda(truefiringsfile);
 truetimes=truefirings(2,:); truelabels=truefirings(3,:);
 
 fprintf('compute accuracy vs known ground-truth...\n')
@@ -73,5 +70,5 @@ plot_spike_shapes(templates(:,:,iperm),'best-permed W');
 addpath ~/spikespy/matlab/  % prefer old spikespy
 spikespy({Y,truetimes,truelabels,'Y, truth'},{Y,times,perm(labels),'Y, sorted'});
 
-keyboard    % use dbcont to continue
+%keyboard    % use dbcont to continue
 end
