@@ -285,7 +285,7 @@ for k=1:K
     template_norms(k)=sqrt(ip_template0);
 end;
 %figure; plot(1:K,template_norms,'b.',1:K,detectability_scores,'r.','markersize',8);
-figure; plot(template_norms,detectability_scores,'k.','markersize',8);
+%figure; plot(template_norms,detectability_scores,'k.','markersize',8);
 xlabel('Template norm'); ylabel('Detectability score');
 end
 
