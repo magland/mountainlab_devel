@@ -294,7 +294,7 @@ for k=1:K
 end;
 %figure; plot(1:K,template_norms,'b.',1:K,detectability_scores,'r.','markersize',8);
 %figure; plot(template_norms,detectability_scores,'k.','markersize',8);
-xlabel('Template norm'); ylabel('Detectability score');
+%xlabel('Template norm'); ylabel('Detectability score');
 end
 
 function firings2=compute_plausibility_scores(clips,firings,rclips)
