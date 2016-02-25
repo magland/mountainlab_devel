@@ -14,7 +14,7 @@ if ~exist(output_path,'dir') mkdir(output_path); end;
 
 %%%% Sort
 sort_opts=struct;
-sort_opts.detectability_threshold=3; %this controls exclusion of noise clusters
+sort_opts.detectability_threshold=2.5; %this controls exclusion of noise clusters
 [firings_path,pre_path]=sort_002_multichannel(raw_path,output_path,sort_opts);
 
 %%%% View output
