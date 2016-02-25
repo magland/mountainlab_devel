@@ -15,12 +15,14 @@ if ~exist(output_path,'dir') mkdir(output_path); end;
 %%%% Sort
 sort_opts=struct;
 sort_opts.detectability_threshold=2.5; %this controls exclusion of noise clusters
+sort_opts.test_mode=0;
 [firings_path,pre_path]=sort_002_multichannel(raw_path,output_path,sort_opts);
 
 %%%% View output
 mv.mode='overview2';
 mv.raw=pre_path;
 mv.firings=firings_path;
+mv.sampling_freq=20000;
 ms_mountainview(mv);
 
 % firings=readmda(firings_path);
