@@ -1,5 +1,5 @@
 function [firings_path,pre_path]=sort_002_multichannel(raw_path,output_path,sort_opts)
-%SORT_002_MULTICHANNEL - Version 001 of sorting based on shell method and isosplit2
+%SORT_002_MULTICHANNEL - Version 002 of sorting based on shell method and isosplit2
 %
 % Syntax:  firings_path=sort_002_multichannel(raw_path,output_path,sort_opts)
 %
@@ -18,7 +18,7 @@ function [firings_path,pre_path]=sort_002_multichannel(raw_path,output_path,sort
 % Author: Jeremy Magland
 % Feb 2016; Last revision: 23-Feb-2016
 
-if nargin<1 test_sort_001_multichannel; return; end;
+if nargin<1 test_sort_002_multichannel; return; end;
 
 def_sort_opts.clip_size=120;
 def_sort_opts.branch.min_section_count=50;
@@ -56,6 +56,14 @@ mscmd_bandpass_filter(raw_path,[path0,'/pre1.mda'],sort_opts.filter);
 mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],struct);
 mscmd_detect([path0,'/pre2.mda'],[path0,'/detect.mda'],sort_opts.detect);
 detect=readmda([path0,'/detect.mda']);
+
+%% The following should be removed when we are done testing
+if (isfield(sort_opts,'test_mode'))&&(sort_opts.test_mode)
+    mscmd_branch_cluster_v1([path0,'/pre2.mda'],[path0,'/detect.mda'],'',[path0,'/firings.mda'],sort_opts);
+    firings_path=[path0,'/firings.mda'];
+    pre_path=[path0,'/pre2.mda'];
+    return;
+end;
 
 %%%% Sort individual channels
 pre2=readmda([path0,'/pre2.mda']);
@@ -119,8 +127,8 @@ clips=clips-repmat(mean(clips,2),1,T,1); % Subtract temporal mean Important to d
 %templates=compute_geometric_median_templates(clips,labels);
 templates=ms_templates(clips,labels);
 energies=squeeze(sum(templates.^2,2));
-[~,inds]=max(energies,[],1);
-labels_to_use=find(inds==m);
+max_energies=max(energies,[],1);
+labels_to_use=find(energies(m,:)>=0.9*max_energies);
 
 events_to_use=zeros(1,length(times));
 label_map=zeros(1,K);
@@ -430,6 +438,7 @@ end;
 
 FF=ms_event_features(clips,opts.num_features);
 %FF=normalize_features(FF);
+%labels0=test_isosplit2(FF,opts.isosplit);
 labels0=isosplit2(FF,opts.isosplit);
 K0=max(labels0);
 if (K0>=2)
@@ -482,6 +491,12 @@ else %K0=1
     end;
 end;
 
+end
+
+function labels=test_isosplit2(X,opts)
+writemda(X,'tmp_X.mda');
+mscmd_isosplit2('tmp_X.mda','tmp_labels.mda',opts);
+labels=readmda('tmp_labels.mda');
 end
 
 function FF=normalize_features(FF)
@@ -631,7 +646,7 @@ writemda(L,[output_path,'/locations.mda']);
 end
 
 
-function test_sort_001_multichannel
+function test_sort_002_multichannel
 
 close all;
 
@@ -647,7 +662,7 @@ if ~exist(path0,'dir') mkdir(path0); end;
 test_extract_raw_data(raw_path,path0,tetrode_num);
 
 %%%% Sort
-sort_001_multichannel([path0,'/pre0.mda'],path0);
+sort_002_multichannel([path0,'/pre0.mda'],path0);
 
 %%%% View output
 mv.mode='overview2';
