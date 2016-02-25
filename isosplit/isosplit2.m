@@ -185,7 +185,6 @@ N=N1+N2;
 % Obtain the whitening matrix using svd
 if (N>=M)
     [U,D,V] = svd(Y,'econ');
-    diag(D)
     D(D~=0)=1./D(D~=0);
     % Amd apply it to the original (non-mean subtracted) data
     X1b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X1);
