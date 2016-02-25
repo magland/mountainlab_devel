@@ -189,7 +189,6 @@ if (N>=M)
     % Amd apply it to the original (non-mean subtracted) data
     X1b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X1);
     X2b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X2);
-    disp(sqrt(N-1)*U*D(1:M,1:M)*U');
 else
     %two few points to whiten
     X1b=X1;
