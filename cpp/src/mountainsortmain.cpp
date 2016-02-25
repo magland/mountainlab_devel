@@ -30,6 +30,7 @@
 #include "Eigen/Core"
 #include "Eigen/SVD"
 #include "process_msh.h"
+#include "isosplit2.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -361,6 +362,11 @@ int main(int argc,char *argv[]) {
 	CLParams CLP;
 	QStringList required;
 	CLP=get_command_line_params(argc,argv,required);
+
+    if (CLP.unnamed_parameters.value(0)=="test_isosplit2_routines") {
+        test_isosplit2_routines();
+        return 0;
+    }
 
 	ProcessTracker PT;
 	register_processors(PT);
