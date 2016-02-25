@@ -10,7 +10,7 @@ function [times labels ampls] = randomfirings(N,rates,opts)
 %   opts - (optional) struct controlling options:
 %          opts.amplsig = std deviation of amplitudes about 1.0 (default 0)
 % Outputs:
-%   times - (1xL) integer firing times in range 1 to N
+%   times - (1xL) real-valued firing times in range 1 to N
 %   labels - (1xL) labels in 1...K
 %   ampls - (1xL) firing amplitudes (reals).
 %
@@ -40,4 +40,4 @@ opts.amplsig = 0.2;
 fprintf('populations: '); histc(labels,1:3)
 hist(ampls,50); title('firing ampls');
 figure; showfirings(times,labels); title('firing times');
-%spikespy({times,labels,'test randomfirings'});
+spikespy({times,labels});
