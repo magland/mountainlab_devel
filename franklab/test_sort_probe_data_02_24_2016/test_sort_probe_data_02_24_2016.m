@@ -2,6 +2,8 @@ function test_sort_probe_data_02_24_2016
 
 close all;
 
+rng(1);
+
 mfile_path=fileparts(mfilename('fullpath'));
 addpath(sprintf('%s/../sort_002_multichannel',mfile_path));
 path0=sprintf('%s/output',mfile_path);
@@ -18,7 +20,7 @@ mscmd_extract(datfile_path,[path0,'/raw.mda'],o_extract);
 
 sort_opts.adjacency_matrix=adjacency_matrix;
 sort_opts.merge_threshold=0.5;
-sort_opts.debug_channels=[3];
+%sort_opts.debug_channels=[2];
 sort_002_multichannel([path0,'/raw.mda'],path0,sort_opts);
 
 %%%% View output

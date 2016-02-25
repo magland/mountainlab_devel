@@ -1,5 +1,5 @@
 function [firings_path,pre_path]=sort_002_multichannel(raw_path,output_path,sort_opts)
-%SORT_001 - Version 001 of sorting based on shell method and isosplit2
+%SORT_002_MULTICHANNEL - Version 001 of sorting based on shell method and isosplit2
 %
 % Syntax:  firings_path=sort_002_multichannel(raw_path,output_path,sort_opts)
 %
@@ -21,11 +21,9 @@ function [firings_path,pre_path]=sort_002_multichannel(raw_path,output_path,sort
 if nargin<1 test_sort_001_multichannel; return; end;
 
 def_sort_opts.clip_size=120;
-def_sort_opts.shell.min_section_count=50;
-def_sort_opts.shell.num_sections_per_shell=4;
-def_sort_opts.shell.section_increment=0.25;
-def_sort_opts.shell.merge_threshold=0.8;
-def_sort_opts.shell.num_features=12;
+def_sort_opts.branch.min_section_count=50;
+def_sort_opts.branch.section_increment=0.5;
+def_sort_opts.branch.num_features=12;
 def_sort_opts.isosplit.isocut_threshold=1.5;
 def_sort_opts.isosplit.verbose=0;
 def_sort_opts.filter.samplefreq=30000;
@@ -34,8 +32,8 @@ def_sort_opts.filter.freq_max=10000;
 def_sort_opts.filter.outlier_threshold=500;
 def_sort_opts.detect.detect_threshold=4;
 def_sort_opts.detect.detect_interval=25;
-def_sort_opts.plausibility_threshold=2.5;
-def_sort_opts.detectability_threshold=2;
+def_sort_opts.plausibility_threshold=3;
+def_sort_opts.detectability_threshold=2.5;
 def_sort_opts.min_cluster_size=10;
 def_sort_opts.detect.individual_channels=1;
 def_sort_opts.adjacency_matrix=[];
@@ -79,16 +77,10 @@ for m=1:M
     fprintf('Sorting channel %d...\n',m);
     neighborhood=[m,find(sort_opts.adjacency_matrix(m,:))];
     if (channels_to_sort(m))
-        channel_firings{m}=sort_channel(path0,pre2,detect_m,neighborhood,sort_opts);
+        channel_firings{m}=sort_channel(path0,pre2,detect_m,m,neighborhood,sort_opts);
     else
         channel_firings{m}=zeros(5,0);
     end;
-end;
-
-%%%% Consolidate
-fprintf('Consolidating channel firings...\n');
-for m=1:M
-    channel_firings{m}=consolidate_channel_firings(pre2,channel_firings{m},m,sort_opts);
 end;
 
 %%%% Assemble firings
@@ -100,7 +92,7 @@ for m=1:M
     labels_m=firings_m(3,:);
     if (~isempty(labels_m))
         K_m=max(labels_m); 
-        labels_m=labels_m+k_offset;
+        labels_m(labels_m~=0)=labels_m(labels_m~=0)+k_offset;
         k_offset=k_offset+K_m;
         firings_m(3,:)=labels_m;
         firings=cat(2,firings,firings_m);
@@ -117,11 +109,13 @@ pre_path=[path0,'/pre2.mda'];
 
 end
 
-function firings=consolidate_channel_firings(pre,firings,m,sort_opts)
+function [firings,inds_to_use]=consolidate_channel_firings(pre,firings,m,sort_opts)
 times=firings(2,:);
 labels=firings(3,:);
 K=max(labels);
 clips=ms_extract_clips(pre,times,sort_opts.clip_size);
+[M,T,NC]=size(clips);
+clips=clips-repmat(mean(clips,2),1,T,1); % Subtract temporal mean Important to do this here! Otherwise we get a situation where a spike type may have a systematic offset from baseline which will give it artificially more energy in the below calculation.
 %templates=compute_geometric_median_templates(clips,labels);
 templates=ms_templates(clips,labels);
 energies=squeeze(sum(templates.^2,2));
@@ -137,12 +131,13 @@ for k=labels_to_use
     kk=kk+1;
 end;
 
-firings=firings(:,find(events_to_use));
+inds_to_use=find(events_to_use);
+firings=firings(:,inds_to_use);
 firings(3,:)=label_map(firings(3,:));
 
 end
 
-function firings=sort_channel(path0,pre,detect,neighborhood,sort_opts)
+function firings=sort_channel(path0,pre,detect,m,neighborhood,sort_opts)
 times=detect(2,:);
 
 %%%% Extract clips
@@ -153,11 +148,12 @@ clips=clips(neighborhood,:,:);
 clips=clips-repmat(mean(clips,2),1,T,1); %subtract mean over time
 
 %%%% Branch cluster
-fprintf('Branch cluster...\n');
-sort_opts.shell.isosplit=sort_opts.isosplit;
+fprintf('------- Branch cluster -------\n');
+sort_opts.branch.isosplit=sort_opts.isosplit;
 %[labels1,peaks]=shell_cluster(clips,sort_opts.shell);
-[labels1,peaks]=branch_cluster(clips,sort_opts.shell);
+[labels1,peaks]=branch_cluster(clips,sort_opts.branch);
 K=max(labels1);
+fprintf('K=%d\n',K);
 firings1=zeros(4,NC);
 firings1(1:2,:)=detect;
 firings1(3,:)=labels1;
@@ -175,9 +171,16 @@ writemda(firings1,[path0,'/firings1.mda']);
 % firings1(4,:)=peaks;
 % writemda(firings1,[path0,'/firings1.mda']);
 
+fprintf('Consolidating...\n');
+[firings1_consolidated,inds_used]=consolidate_channel_firings(pre,firings1,m,sort_opts);
+writemda(firings1_consolidated,[path0,'/firings1_consolidated.mda']);
+fprintf('K=%d\n',max(firings1_consolidated(3,:)));
+clips=clips(:,:,inds_used);
+NC=length(inds_used);
+
 %%%% Split clusters
 fprintf('Split clusters...\n');
-[firings1_split,cluster_map]=split_clusters_by_peak(clips,firings1);
+[firings1_split,cluster_map]=split_clusters_by_peak(clips,firings1_consolidated);
 writemda(firings1_split,[path0,'/firings1_split.mda']);
 
 %%%% Define rclips
@@ -198,9 +201,10 @@ writemda(firings2_split,[path0,'/firings2_split.mda']);
 
 %%%% Remove events with large plausibility score
 firings3_split=firings2_split;
-% inds0=find(firings2_split(5,:)>sort_opts.plausibility_threshold);
-% firings3_split(3,inds0)=0;
-% writemda(firings3_split,[path0,'/firings3_split.mda']);
+inds0=find(firings2_split(5,:)>sort_opts.plausibility_threshold);
+fprintf('Excluding %d/%d outlier events...\n',length(inds0),NC);
+firings3_split(3,inds0)=0;
+writemda(firings3_split,[path0,'/firings3_split.mda']);
 
 %%%% Detectability scores
 fprintf('Detectability scores...\n');
@@ -209,13 +213,19 @@ templates3_split=ms_templates(clips,labels3_split);
 detectability_scores=compute_detectability_scores(templates3_split,rclips);
 
 %%%% Remove clusters with low detectability scores
-% K_split=length(detectability_scores);
-% for k=1:K_split
-%     if (detectability_scores(k)<sort_opts.detectability_threshold)
-%         firings3_split(3,find(labels3_split==k))=0;
-%     end;
-% end;
-% writemda(firings3_split,[path0,'/firings3_split_B.mda']);
+K_split=length(detectability_scores);
+to_remove=zeros(1,NC);
+num_clusters_to_remove=0;
+for k=1:K_split
+    if (detectability_scores(k)<sort_opts.detectability_threshold)
+        to_remove(find(labels3_split==k))=1;
+        num_clusters_to_remove=num_clusters_to_remove+1;
+    end;
+end;
+inds_to_keep=find(to_remove==0);
+fprintf('Removing %d/%d events in %d subclusters with low detectability...\n',NC-length(inds_to_keep),NC,num_clusters_to_remove);
+firings3_split=firings3_split(:,inds_to_keep);
+writemda(firings3_split,[path0,'/firings3_split_B.mda']);
 
 %%%% Recombine
 fprintf('Recombine...\n');
@@ -400,7 +410,6 @@ function [labels,clip_peaks,base_branch_inds]=branch_cluster(clips,opts)
 [M,T,NC]=size(clips);
 
 % Compute peaks
-fprintf('Computing peaks...\n');
 clip_peaks_pos=squeeze(max(clips(1,T/2+1,:),[],1))';
 clip_peaks_neg=-squeeze(max(-clips(1,T/2+1,:),[],1))';
 clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>=abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
@@ -419,23 +428,25 @@ if (length(inds_neg)>0)&&(length(inds_pos)>0)
     return;
 end;
 
-fprintf('features...\n');
 FF=ms_event_features(clips,opts.num_features);
 FF=normalize_features(FF);
-fprintf('isosplit...\n');
 labels0=isosplit2(FF,opts.isosplit);
 K0=max(labels0);
-fprintf('K0=%d\n',K0);
 if (K0>=2)
+    fprintf('Branching (K=%d) sizes: ',K0);
     %If more than one cluster, then divide and conquer
     labels=zeros(1,NC);
     k_offset=0;
     for k=1:K0
         inds_k=find(labels0==k);
+        fprintf('%d ',length(inds_k));
         labels_k=branch_cluster(clips(:,:,inds_k),opts);
-        labels(inds_k)=labels_k+k_offset;
-        k_offset=k_offset+max(labels_k);
+        KK=max(labels_k);
+        labels_k(labels_k~=0)=labels_k(labels_k~=0)+k_offset;
+        labels(inds_k)=labels_k;
+        k_offset=k_offset+KK;
     end;
+    fprintf('\n');
     base_branch_inds=[];
 else %K0=1
     peak_cutoff=0;
@@ -451,7 +462,6 @@ else %K0=1
         peak_cutoff=peak_cutoff+opts.section_increment;
     end;
     if (peak_cutoff<max(abs(clip_peaks)))
-        fprintf('Using peak cutoff %g\n',peak_cutoff);
         %okay, let's proceed with next section
         inds_low_peak=find(abs(clip_peaks)<=peak_cutoff);
         inds_high_peak=find(abs(clip_peaks)>peak_cutoff);
@@ -479,131 +489,6 @@ norms=sqrt(sum(FF.^2,1));
 inds=find(norms~=0);
 FF(:,inds)=FF(:,inds)./repmat(norms(inds),size(FF,1),1);
 end
-
-function [labels,clip_peaks]=shell_cluster(clips,opts)
-[M,T,NC]=size(clips);
-
-% Compute peaks
-fprintf('Computing peaks...\n');
-clip_peaks_pos=squeeze(max(clips(1,T/2+1,:),[],1))';
-clip_peaks_neg=-squeeze(max(-clips(1,T/2+1,:),[],1))';
-clip_peaks=clip_peaks_pos.*(abs(clip_peaks_pos)>=abs(clip_peaks_neg))+clip_peaks_neg.*(abs(clip_peaks_pos)<abs(clip_peaks_neg));
-
-% Define shells
-[peak_mins,peak_maxs]=define_shells(clip_peaks,opts);
-
-% Cluster in each shell
-clusterings={};
-for ii=1:length(peak_mins)
-    rr1=peak_mins(ii);
-    rr2=peak_maxs(ii);
-    fprintf('rr1=%g rr2=%g... ',rr1,rr2);
-    inds_shell=find((clip_peaks>=rr1)&(clip_peaks<rr2));
-    CC.inds=inds_shell;
-    CC.rr1=rr1;
-    CC.rr2=rr2;
-    if (length(inds_shell)>1)
-        clips_shell=clips(:,:,inds_shell);
-        fprintf('features... ');
-        FF_shell=ms_event_features(clips_shell,opts.num_features);
-        fprintf('isosplit... ');
-        labels_shell=isosplit2(FF_shell,opts.isosplit);
-        K=max(labels_shell);
-        fprintf('K=%d\n',K);
-        CC.labels=labels_shell;
-        CC.K=K;
-        CC.FF_shell=FF_shell;
-        CC.clips_shell=clips_shell;
-    else
-        CC.labels=[];
-        CC.K=0;
-        CC.FF_shell=zeros(opts.num_features,0);
-        CC.clips_shell=zeros(M,T,0);
-    end;
-    clusterings{end+1}=CC;
-end
-
-% Compute all templates and keep track of levels and indices
-templates=zeros(M,T,0);
-levels=zeros(1,0);
-indices=zeros(1,0);
-for j=1:length(clusterings)
-    CC=clusterings{j};
-    fprintf('Computing geometric median templates %d/%d\n',j,length(clusterings));
-    templates0=compute_geometric_median_templates(CC.clips_shell,CC.labels);
-    K0=size(templates0,3);
-    templates=cat(3,templates,templates0);
-    levels=cat(2,levels,ones(1,K0)*j);
-    indices=cat(2,indices,1:K0);
-end;
-KK=length(levels);
-
-% Assemble similarity matrix
-fprintf('Assemble similarity matrix...\n');
-SM=zeros(KK,KK);
-for k1=1:KK
-    for k2=1:KK
-        SM(k1,k2)=compute_template_similarity(templates(:,:,k1),templates(:,:,k2));
-    end;
-end;
-similarity_threshold=0.8;
-SM=(SM>=similarity_threshold);
-fprintf('downstream transitive fill...\n');
-SM=downstream_transitive_fill(SM,levels);
-fprintf('Greedy cliques...\n');
-CL=ms_greedy_cliques(SM);
-labels=zeros(1,NC);
-for ii=1:length(CL)
-    CL0=CL{ii};
-    CL0=sort(CL0); %sort from low to high so that we give preference to higher peak classification
-    for jj=1:length(CL0)
-        aa=CL0(jj);
-        level0=levels(aa);
-        index0=indices(aa);
-        CC=clusterings{level0};
-        inds0=find(CC.labels==index0);
-        labels(CC.inds(inds0))=ii;
-    end;
-end;
-
-figure; ms_view_templates_from_clips(clips,labels);
-drawnow;
-
-end
-
-function ret=compute_template_similarity(T1,T2)
-T1=T1-repmat(mean(T1,2),1,size(T1,2));
-T2=T2-repmat(mean(T2,2),1,size(T2,2));
-T1=reshape(T1,1,length(T1(:)));
-T2=reshape(T2,1,length(T2(:)));
-norm1=sqrt(T1*T1');
-norm2=sqrt(T2*T2');
-T1=T1/norm1;
-T2=T2/norm2;
-ret=T1*T2';
-end
-
-function A=downstream_transitive_fill(A,levels)
-K=length(levels);
-something_changed=1;
-while something_changed
-something_changed=0;
-for k1=1:K
-    for k2=1:K
-        for k3=1:K
-            if (A(k1,k2)&&(A(k2,k3))&&(~A(k1,k3)))
-                if ((levels(k1)<levels(k2))&&(levels(k2)<levels(k3)))
-                    A(k1,k3)=1;
-                    A(k3,k1)=1;
-                    something_changed=1;
-                end;
-            end;
-        end;
-    end;
-end;
-end;
-end
-
 
 function [peak_mins,peak_maxs]=define_shells(clip_peaks,opts)
 

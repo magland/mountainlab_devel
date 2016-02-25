@@ -40,7 +40,8 @@ HEADERS += \
     textfile.h \
     assemble_firings_file.h \
     extract_channels.h \
-    remove_artifacts.h
+    remove_artifacts.h \
+    branch_cluster_v1.h
 
 SOURCES += \
 mountainsortmain.cpp \
@@ -70,13 +71,14 @@ mountainsortmain.cpp \
     textfile.cpp \
     assemble_firings_file.cpp \
     extract_channels.cpp \
-    remove_artifacts.cpp
+    remove_artifacts.cpp \
+    branch_cluster_v1.cpp
 
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit
 VPATH += ../../isosplit
-HEADERS += isocut.h mda.h jisotonic.h isosplit.h
-SOURCES += isocut.cpp mda.cpp jisotonic.cpp isosplit.cpp
+HEADERS += isocut.h mda.h jisotonic.h isosplit.h isosplit2.h
+SOURCES += isocut.cpp mda.cpp jisotonic.cpp isosplit.cpp isosplit2.cpp
 
 HEADERS += qjson.h
 SOURCES += qjson.cpp
