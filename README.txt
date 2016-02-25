@@ -35,4 +35,3 @@ sort_demo (in progress): sorts demo data derived from waveforms in unit_tests/de
 
 All commands ms_*.m do self-test when called without arguments
 test_filter: compares MATLAB and C filter pipelines
-

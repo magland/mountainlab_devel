@@ -1,5 +1,5 @@
 % Basic demo of spike sorting the shipped demo data with mountainsort pipeline.
-% Very alpha. *** indicates to fix.
+% Very alpha. *** indicates to fix. Obsolete since jfm_shell_cluster is.
 % Barnett 2/19/16
 
 if ~exist('unit_tests/demo_data/demotimeseries.mda'), writedemotimeseries; end
