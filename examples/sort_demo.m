@@ -26,7 +26,7 @@ fprintf('read clips...\n'); clips=readmda([path0,'/clips.mda']);
 clus_opts.num_features=12;
 iso_opts.whiten_at_each_comparison = 0;   % iso2 fails if 1  ***
 X = ms_event_features(clips,clus_opts.num_features);  % for viz or clustering
-clus = 2;   % clustering style - todo: should be opts via a cluster func!
+clus = 1;   % clustering style - todo: should be opts via a cluster func!
 if clus==0  % plain isosplit on *raw* clips
   fullX = reshape(clips,[M*T,L]); [labels,info] = isosplit2(fullX,iso_opts); 
   peaks = 0*labels;    % dummy peak ampls
