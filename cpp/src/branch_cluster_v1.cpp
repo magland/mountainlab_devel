@@ -301,6 +301,7 @@ QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<in
 
     //QList<int> labels0=do_cluster_with_normalized_features(clips,opts);
     QList<int> labels0=do_cluster_without_normalized_features(clips,opts);
+    return labels0;
     int K0=compute_max(labels0);
     if (K0>1) {
         printf("Branch(K0=%d) ",K0);
