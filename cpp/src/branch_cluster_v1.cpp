@@ -9,7 +9,7 @@ Mda extract_clips_00(DiskReadMda &X,const QList<long> &times,const QList<int> &c
 QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<int> &base_inds);
 QList<double> compute_peaks(Mda &clips,int ch);
 
-bool branch_cluster(const char *raw_path, const char *detect_path, const char *adjacency_matrix_path, const char *output_firings_path, const Branch_Cluster_Opts &opts)
+bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char *adjacency_matrix_path, const char *output_firings_path, const Branch_Cluster_Opts &opts)
 {
     DiskReadMda X; X.setPath(raw_path);
     int M=X.N1();

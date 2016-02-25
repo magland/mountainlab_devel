@@ -1,6 +1,11 @@
 #include "isosplit2.h"
 #include <QSet>
 #include <math.h>
+#include "isocut.h"
+#include <stdio.h>
+#include "Eigen/Core"
+#include "Eigen/SVD"
+#include <QDebug>
 
 QList<int> do_kmeans(Mda &X,int K);
 
@@ -8,6 +13,7 @@ struct AttemptedComparisons {
     QList<double> centers1,centers2;
     QList<int> counts1,counts2;
 };
+
 
 QList<int> find_inds(const QList<int> &labels,int k) {
     QList<int> ret;
@@ -18,6 +24,7 @@ QList<int> find_inds(const QList<int> &labels,int k) {
 }
 
 void geometric_median(int M,int N,double *ret,double *X) {
+	printf("test %d\n",__LINE__);
     int num_iterations=10;
     if (N==0) return;
     if (N==1) {
@@ -27,6 +34,7 @@ void geometric_median(int M,int N,double *ret,double *X) {
     double *weights=(double *)malloc(sizeof(double)*N);
     for (int i=0; i<N; i++) weights[i]=1;
     for (int it=1; it<=num_iterations; it++) {
+		printf("test %d\n",__LINE__);
         double sum_weights=0;
         for (int i=0; i<N; i++) sum_weights+=weights[i];
         if (sum_weights) {
@@ -54,16 +62,34 @@ void geometric_median(int M,int N,double *ret,double *X) {
             else weights[n]=0;
         }
     }
+	printf("test %d\n",__LINE__);
 }
+
+QList<double> compute_centroid(Mda &X) {
+	int M=X.N1();
+	int N=X.N2();
+	QList<double> ret;
+	for (int i=0; i<M; i++) ret << 0;
+	for (int n=0; n<N; n++) {
+		for (int m=0; m<M; m++) {
+			ret[m]+=X.value(m,n);
+		}
+	}
+	for (int i=0; i<M; i++) ret[i]/=N;
+	return ret;
+}
+
 
 QList<double> compute_center(Mda &X,const QList<int> &inds) {
     int M=X.N1();
     int NN=inds.count();
+	printf("test %d\n",__LINE__);
     if (NN==0) {
         QList<double> ret; for (int i=0; i<M; i++) ret << 0;
         return ret;
     }
-    double *XX=(double *)malloc(sizeof(double)*NN);
+	printf("test %d\n",__LINE__);
+	double *XX=(double *)malloc(sizeof(double)*M*NN);
     int aa=0;
     for (int n=0; n<NN; n++) {
         for (int m=0; m<M; m++) {
@@ -71,23 +97,35 @@ QList<double> compute_center(Mda &X,const QList<int> &inds) {
             aa++;
         }
     }
+	printf("test %d, M=%d, NN=%d\n",__LINE__,M,NN);
     double *result=(double *)malloc(sizeof(double)*M);
+	printf("test %d\n",__LINE__);
     geometric_median(M,NN,result,XX);
+	printf("test %d\n",__LINE__);
     QList<double> ret; for (int m=0; m<M; m++) ret << result[m];
+	printf("test %d\n",__LINE__);
     free(result);
     free(XX);
+	printf("test %d\n",__LINE__);
     return ret;
 }
 
 Mda compute_centers(Mda &X,const QList<int> &labels,int K) {
+	printf("test %d\n",__LINE__);
     int M=X.N1();
+	printf("test %d\n",__LINE__);
     //int N=X.N2();
     Mda ret;
     ret.allocate(M,K);
+	printf("test %d\n",__LINE__);
     for (int k=0; k<K; k++) {
+		printf("test %d\n",__LINE__);
         QList<int> inds=find_inds(labels,k);
+		printf("test %d\n",__LINE__);
         QList<double> ctr=compute_center(X,inds);
+		printf("test %d\n",__LINE__);
         for (int m=0; m<M; m++) ret.setValue(ctr[m],m,k);
+		printf("test %d\n",__LINE__);
     }
     return ret;
 }
@@ -130,12 +168,14 @@ bool was_already_attempted(int M,AttemptedComparisons &attempted_comparisons,dou
 }
 
 void find_next_comparison(int M,int K,int &k1,int &k2,bool *active_labels,double *Cptr,int *counts,AttemptedComparisons &attempted_comparisons,double repeat_tolerance) {
+	printf("test %d\n",__LINE__);
     QList<int> active_inds;
     for (int k=0; k<K; k++) if (active_labels[k]) active_inds << k;
     if (active_inds.count()==0) {
         k1=-1; k2=-1;
         return;
     }
+	printf("test %d\n",__LINE__);
     int Nactive=active_inds.count();
     double dists[Nactive][Nactive];
     for (int a=0; a<Nactive; a++) {
@@ -144,12 +184,15 @@ void find_next_comparison(int M,int K,int &k1,int &k2,bool *active_labels,double
         }
         dists[a][a]=-1; //don't use it
     }
+	printf("test %d\n",__LINE__);
     while (true) {
+		printf("test %d\n",__LINE__);
         int best_a=-1,best_b=-1;
         double best_dist=-1;
         for (int a=0; a<Nactive; a++) {
+			printf("test %d\n",__LINE__);
             for (int b=0; b<Nactive; b++) {
-                double val=dists[a][b];
+				double val=dists[active_inds[a]][active_inds[b]];
                 if (val>=0) {
                     if ((best_dist<0)||(val<best_dist)) {
                         best_a=a;
@@ -159,6 +202,13 @@ void find_next_comparison(int M,int K,int &k1,int &k2,bool *active_labels,double
                 }
             }
         }
+		printf("test %d\n",__LINE__);
+		if (best_a<0) {
+			printf("test %d\n",__LINE__);
+			k1=-1; k2=-1;
+			return;
+		}
+		printf("test %d\n",__LINE__);
         k1=active_inds[best_a];
         k2=active_inds[best_b];
         if ((counts[k1]>0)&&(counts[k2]>0)) { //just to make sure (zero was actually happening some times, but not sure why)
@@ -170,43 +220,155 @@ void find_next_comparison(int M,int K,int &k1,int &k2,bool *active_labels,double
         dists[k1][k2]=-1;
         dists[k2][k1]=-1;
     }
+	printf("test %d\n",__LINE__);
     k1=-1; k2=-1;
 }
 
-QList<int> test_redistribute(bool &do_merge,Mda &X1,Mda &X2,double isocut_threshold) {
-//    if opts.whiten_at_each_comparison
-//        [X1,X2,V]=whiten_two_clusters(X1,X2);
-//    else
-//        V=compute_cluster_center(X2)-compute_cluster_center(X1);
-//    end;
+void whiten_two_clusters(double *V,Mda &X1,Mda &X2) {
 
-//    if (sum(V.^2)==0)
-//        warning('isosplit: vector V is null.');
-//    else
-//        V=V/sqrt(sum(V.^2));
-//    end;
-//    XX=V'*cat(2,X1,X2); %Project onto the line connecting the centroids
-//    N=length(XX);
-//    if (N<=5) %avoid a crash - 2/22/2016 jfm
-//        do_merge=1;
-//        labels=ones(1,N);
-//        return;
-//    end;
-//    XXs=sort(XX);
-//    cutpoint=isocut(XXs,opts.isocut_threshold); %This is the core procedure -- split based on isotonic regression
-//    if (cutpoint~=0)
-//        %It was a statistically significant split -- so let's redistribute!
-//        ii1=find(XX<=cutpoint);
-//        ii2=find(XX>cutpoint);
-//        do_merge=0;
-//    else
-//        ii1=1:N;
-//        ii2=[];
-//        do_merge=1;
-//    end;
-//    labels=zeros(1,N);
-//    labels(ii1)=1;
-//    labels(ii2)=2;
+	using namespace Eigen;
+
+	int M=X1.N1();
+	int N1=X1.N2();
+	int N2=X2.N2();
+	int N=N1+N2;
+
+	QList<double> center1=compute_centroid(X1);
+	QList<double> center2=compute_centroid(X2);
+
+	if (M<N) { //otherwise there are too few points to whiten
+		MatrixXf Y(M,N);
+		int ii=0;
+		for (int n=0; n<N1; n++) {
+			for (int m=0; m<M; m++) {
+				Y.data()[ii]=X1.value(m,n)-center1[m];
+				ii++;
+			}
+		}
+		for (int n=0; n<N2; n++) {
+			for (int m=0; m<M; m++) {
+				Y.data()[ii]=X2.value(m,n)-center2[m];
+				ii++;
+			}
+		}
+
+		JacobiSVD<MatrixXf> svd(Y, ComputeThinU | ComputeThinV);
+		MatrixXf singvals0=svd.singularValues();
+		MatrixXf U0=svd.matrixU();
+		MatrixXf V0=svd.matrixV();
+
+		MatrixXf D(M,M);
+		for (int m2=0; m2<M; m2++) {
+			for (int m1=0; m1<M; m1++) {
+				if (m1==m2)
+					D.data()[m1+M*m2]=1.0/singvals0.data()[m1];
+				else
+					D.data()[m1+M*m2]=0;
+			}
+		}
+
+		MatrixXf A(M,M);
+		//Somehow the following functionality is not supported by the version of libstdc++ that comes with MATLAB
+		//A=U0*D*Transpose<MatrixXf>(U0);
+		//so we need to do it by hand!
+		for (int m2=0; m2<M; m2++) {
+			for (int m1=0; m1<M; m1++) {
+				float tmp=0;
+				for (int i=0; i<M; i++) {
+					tmp+=U0.data()[m1+M*i]*D.data()[i+M*i]*U0.data()[m2+M*i];
+				}
+				A.data()[m1+M*m2]=sqrt(N-1)*tmp; //the constant factor is used to guarantee a unit variance on each channel
+			}
+		}
+
+		//apply the whitening matrix to the original (non mean subtracted) data
+		double buf[M];
+		for (int n=0; n<N1; n++) {
+			for (int m=0; m<M; m++) buf[m]=0;
+			for (int m1=0; m1<M; m1++) {
+				for (int m2=0; m2<M; m2++) {
+					buf[m1]+=A.data()[m1+M*m2]*X1.value(m2,n);
+				}
+			}
+			for (int m=0; m<M; m++) X1.setValue(buf[m],m,n);
+		}
+		for (int n=0; n<N2; n++) {
+			for (int m=0; m<M; m++) buf[m]=0;
+			for (int m1=0; m1<M; m1++) {
+				for (int m2=0; m2<M; m2++) {
+					buf[m1]+=A.data()[m1+M*m2]*X2.value(m2,n);
+				}
+			}
+			for (int m=0; m<M; m++) X2.setValue(buf[m],m,n);
+		}
+	}
+
+
+	//compute the vector
+	center1=compute_centroid(X1);
+	center2=compute_centroid(X2);
+	for (int m=0; m<M; m++) {
+		V[m]=center2[m]-center1[m];
+	}
+
+
+
+}
+
+QList<int> test_redistribute(bool &do_merge,Mda &Y1,Mda &Y2,double isocut_threshold) {
+	Mda X1; X1=Y1;
+	Mda X2; X2=Y2;
+	int M=X1.N1();
+	int N1=X1.N2();
+	int N2=X2.N2();
+	QList<int> ret; for (int i=0; i<N1+N2; i++) ret << 1;
+	do_merge=true;
+	double V[M];
+	whiten_two_clusters(V,X1,X2);
+	double normv=0;
+	{
+		double sumsqr=0; for (int m=0; m<M; m++) sumsqr+=V[m]*V[m];
+		normv=sqrt(sumsqr);
+	}
+	if (!normv) {
+		printf("Warning: isosplit2: vector V is null.\n");
+		return ret;
+	}
+	if (N1+N2<=5) {
+		//avoid a crash?
+		return ret;
+	}
+
+	//project onto line connecting the centers
+	QList<double> XX;
+	for (int i=0; i<N1; i++) {
+		double val=0;
+		for (int m=0; m<M; m++) val+=X1.value(m,i)*V[m];
+		XX << val;
+	}
+	for (int i=0; i<N1; i++) {
+		double val=0;
+		for (int m=0; m<M; m++) val+=X2.value(m,i)*V[m];
+		XX << val;
+	}
+
+	QList<double> XXs=XX;
+	qSort(XXs);
+	double *XXX=(double *)malloc(sizeof(double)*(N1+N2));
+	for (int i=0; i<N1+N2; i++) XXX[i]=XXs[i];
+
+	double cutpoint;
+	bool do_cut=isocut(N1+N2,&cutpoint,XXX,isocut_threshold,5);
+	free(XXX);
+
+	if (do_cut) {
+		do_merge=0;
+		for (int i=0; i<N1+N2; i++) {
+			if (XX[i]<=cutpoint) ret[i]=1;
+			else ret[i]=2;
+		}
+	}
+	return ret;
 }
 
 QList<int> test_redistribute(bool &do_merge,Mda &X,const QList<int> &inds1,const QList<int> &inds2,double isocut_threshold) {
@@ -235,32 +397,45 @@ int compute_max_00(const QList<int> &X) {
 }
 
 
-QList<int> isosplit2(Mda &X, float isocut_threshold, int K_init)
+QList<int> isosplit2(Mda &X, float isocut_threshold, int K_init,bool verbose)
 {
+	if (verbose) printf("isosplit2: start\n");
     double repeat_tolerance=0.2;
 
     int M=X.N1();
     int N=X.N2();
-    QList<int> labels=do_kmeans(X,K_init);
+	if (verbose) printf("isosplit2: kmeans\n");
+	QList<int> labels=do_kmeans(X,K_init);
 
+	if (verbose) printf("isosplit2: setup, K_init=%d\n",K_init);
     bool active_labels[K_init];
+	printf("test %d\n",__LINE__);
     for (int ii=0; ii<K_init; ii++) active_labels[ii]=true;
+	printf("test %d\n",__LINE__);
     Mda centers=compute_centers(X,labels,K_init); //M x K_init
+	printf("test %d\n",__LINE__);
     int counts[K_init]; for (int ii=0; ii<K_init; ii++) counts[ii]=0;
+	printf("test %d\n",__LINE__);
     for (int i=0; i<N; i++) counts[labels[i]]++;
+	printf("test %d\n",__LINE__);
     double *Cptr=centers.dataPtr();
 
+	printf("test %d\n",__LINE__);
     AttemptedComparisons attempted_comparisons;
 
     int num_iterations=0;
     int max_iterations=1000;
     while ((true)&&(num_iterations<max_iterations)) {
         num_iterations++;
+		if (verbose) printf("isosplit2: iteration %d\n",num_iterations);
         QList<int> old_labels=labels;
         int k1,k2;
+		printf("test %d\n",__LINE__);
         find_next_comparison(M,K_init,k1,k2,active_labels,Cptr,counts,attempted_comparisons,repeat_tolerance);
+		printf("test %d\n",__LINE__);
         if (k1<0) break;
 
+		printf("test %d\n",__LINE__);
         QList<int> inds1=find_inds(labels,k1);
         QList<int> inds2=find_inds(labels,k2);
         QList<int> inds12=inds1; inds12.append(inds2);
@@ -268,6 +443,7 @@ QList<int> isosplit2(Mda &X, float isocut_threshold, int K_init)
             attempted_comparisons.centers1 << Cptr[m+k1*M];
             attempted_comparisons.centers2 << Cptr[m+k2*M];
         }
+		printf("test %d\n",__LINE__);
         attempted_comparisons.counts1 << inds1.count();
         attempted_comparisons.counts2 << inds2.count();
         for (int m=0; m<M; m++) {
@@ -277,10 +453,13 @@ QList<int> isosplit2(Mda &X, float isocut_threshold, int K_init)
         attempted_comparisons.counts2 << inds1.count();
         attempted_comparisons.counts1 << inds2.count();
 
+		printf("test %d\n",__LINE__);
         bool do_merge;
         QList<int> labels0=test_redistribute(do_merge,X,inds1,inds2,isocut_threshold);
         int max_label=compute_max_00(labels0);
+		printf("test %d\n",__LINE__);
         if ((do_merge)||(max_label==1)) {
+			printf("test %d\n",__LINE__);
             for (int i=0; i<N; i++) {
                 if (labels[i]==k2) labels[i]=k1;
             }
@@ -294,6 +473,7 @@ QList<int> isosplit2(Mda &X, float isocut_threshold, int K_init)
 
         }
         else {
+			printf("test %d\n",__LINE__);
             QList<int> indsA0=find_inds(labels0,1);
             QList<int> indsB0=find_inds(labels0,2);
             QList<int> indsA,indsB;
@@ -320,9 +500,11 @@ QList<int> isosplit2(Mda &X, float isocut_threshold, int K_init)
             counts[k1]=indsA.count();
             counts[k2]=indsB.count();
         }
+		printf("test %d\n",__LINE__);
 
     }
 
+	if (verbose) printf("isosplit2: label map\n");
     int labels_map[K_init]; for (int k=0; k<K_init; k++) labels_map[k]=0;
     int kk=1;
     for (int j=0; j<K_init; j++) {
@@ -334,6 +516,7 @@ QList<int> isosplit2(Mda &X, float isocut_threshold, int K_init)
     for (int i=0; i<N; i++) {
         ret << labels_map[labels[i]];
     }
+	if (verbose) printf("isosplit2: done\n");
     return ret;
 }
 
@@ -431,4 +614,65 @@ QList<int> do_kmeans(Mda &X,int K) {
     free(counts);
 
     return labels;
+}
+
+
+void test_isosplit2_routines()
+{
+	{ //whiten two clusters
+		//compare this with the test in matlab isosplit2('test')
+		Mda X1,X2;
+		int M=4;
+		X1.allocate(M,M);
+		X2.allocate(M,M);
+		for (int m1=0; m1<M; m1++) {
+			for (int m2=0; m2<M; m2++) {
+				X1.setValue(sin(m1+m2)+sin(m1*m2),m1,m2);
+				X2.setValue(cos(m1+m2)-cos(m1*m2),m1,m2);
+			}
+		}
+		printf("X1:\n");
+		for (int m2=0; m2<M; m2++) {
+			for (int m1=0; m1<M; m1++) {
+				printf("%g ",X1.value(m2,m1));
+			}
+			printf("\n");
+		}
+		double V[M];
+		whiten_two_clusters(V,X1,X2);
+		printf("V: ");
+		for (int m=0; m<M; m++) {
+			printf("%g ",V[m]);
+		}
+		printf("\n");
+	}
+
+	{
+		int M=2;
+		int N=50;
+		Mda X; X.allocate(M,N);
+		for (int i=0; i<N; i++) {
+			double r1=(qrand()%100000)*1.0/100000;
+			double r2=(qrand()%100000)*1.0/100000;
+			if (i<20) {
+				double val1=r1;
+				double val2=r2;
+				X.setValue(val1,0,i);
+				X.setValue(val2,1,i);
+			}
+			else {
+				double val1=4+r1;
+				double val2=1+r2;
+				X.setValue(val1,0,i);
+				X.setValue(val2,1,i);
+			}
+		}
+
+		QList<int> labels=isosplit2(X,1.5,30,true);
+		printf("Labels:\n");
+		for (int i=0; i<labels.count(); i++) {
+			printf("%d ",labels[i]);
+		}
+		printf("\n");
+	}
 }

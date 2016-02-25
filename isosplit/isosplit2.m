@@ -5,6 +5,11 @@ if (nargin<1)
 	return;
 end;
 
+if (isstr(X))&&(strcmp(X,'test'))
+    run_misc_tests;
+    return;
+end;
+
 if (nargin<2)
     opts=struct;
 end;
@@ -175,15 +180,18 @@ Y2=X2-repmat(centroid2,1,N2);
 
 % Combine the data
 Y=cat(2,Y1,Y2);
+Y
 N=N1+N2;
 
 % Obtain the whitening matrix using svd
 if (N>=M)
     [U,D,V] = svd(Y,'econ');
+    diag(D)
     D(D~=0)=1./D(D~=0);
     % Amd apply it to the original (non-mean subtracted) data
     X1b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X1);
     X2b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X2);
+    disp(sqrt(N-1)*U*D(1:M,1:M)*U');
 else
     %two few points to whiten
     X1b=X1;
@@ -349,4 +357,13 @@ while length(unique(L)) ~= k
     
 end
 
+end
+
+function run_misc_tests
+M=4;
+[A,B]=ndgrid((0:M-1),(0:M-1));
+X1=sin(A+B)+sin(A.*B);
+X2=cos(A+B)-cos(A.*B);
+[X1b,X2b,V]=whiten_two_clusters(X1,X2);
+V
 end

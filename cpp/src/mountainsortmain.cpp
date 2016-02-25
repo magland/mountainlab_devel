@@ -30,6 +30,7 @@
 #include "Eigen/Core"
 #include "Eigen/SVD"
 #include "process_msh.h"
+#include "isosplit2.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -351,6 +352,9 @@ void test_svd() {
 int main(int argc,char *argv[]) {
 
 	QCoreApplication app(argc,argv); //important for qApp->applicationDirPath() in processtracker
+
+	test_isosplit2_routines();
+	return 0;
 
     //int test_max_int=1e9;
     //printf("%ld,%ld\n",test_max_int+1,sizeof(test_max_int));
