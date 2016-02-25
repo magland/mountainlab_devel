@@ -8,6 +8,10 @@
 Mda extract_clips_00(DiskReadMda &X,const QList<long> &times,const QList<int> &channels,int clip_size);
 QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<int> &base_inds);
 QList<double> compute_peaks(Mda &clips,int ch);
+double compute_min(const QList<double> &X);
+double compute_max(const QList<double> &X);
+int compute_max(const QList<int> &X);
+QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QList<int> &labels,int ch,int clip_size);
 
 bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char *adjacency_matrix_path, const char *output_firings_path, const Branch_Cluster_Opts &opts)
 {
@@ -18,7 +22,7 @@ bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char
     int L=detect.N2();
 
     Mda AM;
-    if (adjacency_matrix_path) {
+    if ((adjacency_matrix_path)&&(strlen(adjacency_matrix_path)>0)) {
         AM.read(adjacency_matrix_path);
     }
     else {
@@ -35,35 +39,113 @@ bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char
         return false;
     }
 
-    Mda firings; firings.allocate(5,L);
+    Mda firings0; firings0.allocate(5,L); //L is the max it could be
 
     int jjjj=0;
+    int k_offset=0;
     for (int m=0; m<M; m++) {
+        printf("Channel %d/%d, jjjj=%d/%d\n",m+1,M,jjjj,L);
         QList<int> neighborhood; neighborhood << m;
         for (int a=0; a<M; a++) if ((AM.value(m,a))&&(a!=m)) neighborhood << a;
         QList<long> times;
         for (int i=0; i<L; i++) {
             if (detect.value(0,i)==(m+1)) {
-                times << (long)detect.value(1,i);
+                times << (long)detect.value(1,i) - 1; //convert to 0-based indexing
             }
         }
         Mda clips=extract_clips_00(X,times,neighborhood,opts.clip_size);
         QList<int> base_inds;
         QList<int> labels=do_branch_cluster(clips,opts,base_inds);
+        labels=consolidate_labels(X,times,labels,m,opts.clip_size);
         QList<double> peaks=compute_peaks(clips,0);
 
         for (int i=0; i<times.count(); i++) {
-            firings.setValue(m,0,jjjj); //channel
-            firings.setValue(times[i],1,jjjj); //times
-            firings.setValue(labels[i],2,jjjj); //labels
-            firings.setValue(peaks[i],3,jjjj); //peaks
-            jjjj++;
+            if (labels[i]) {
+                firings0.setValue(m+1,0,jjjj); //channel
+                firings0.setValue(times[i]+1,1,jjjj); //times //convert back to 1-based indexing
+                firings0.setValue(labels[i]+k_offset,2,jjjj); //labels
+                firings0.setValue(peaks[i],3,jjjj); //peaks
+                jjjj++;
+            }
+        }
+        k_offset+=compute_max(labels);
+    }
+
+    int L_true=jjjj;
+    Mda firings; firings.allocate(firings0.N1(),L_true);
+    for (int i=0; i<L_true; i++) {
+        for (int j=0; j<firings0.N1(); j++) {
+            firings.setValue(firings0.value(j,i),j,i);
         }
     }
 
     firings.write(output_firings_path);
 
     return true;
+}
+
+Mda compute_mean_clip(Mda &clips) {
+    int M=clips.N1();
+    int T=clips.N2();
+    int L=clips.N3();
+    Mda ret; ret.allocate(M,T);
+    int aaa=0;
+    for (int i=0; i<L; i++) {
+        int bbb=0;
+        for (int t=0; t<T; t++) {
+            for (int m=0; m<M; m++) {
+                ret.setValue1(ret.value1(bbb)+clips.value1(aaa),bbb);
+                aaa++;
+                bbb++;
+            }
+        }
+    }
+    if (L) {
+        for (int t=0; t<T; t++) {
+            for (int m=0; m<M; m++) {
+                ret.setValue(ret.value(m,t)/L,m,t);
+            }
+        }
+    }
+    return ret;
+}
+
+QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QList<int> &labels,int ch,int clip_size) {
+    int M=X.N1();
+    int T=clip_size;
+    int K=compute_max(labels);
+    QList<int> all_channels;
+    for (int m=0; m<M; m++) all_channels << m;
+    int label_mapping[K+1];
+    label_mapping[0]=0;
+    int kk=1;
+    for (int k=1; k<=K; k++) {
+        QList<long> times_k;
+        for (int i=0; i<times.count(); i++) {
+            if (labels[i]==k) times_k << times[i];
+        }
+        Mda clips_k=extract_clips_00(X,times_k,all_channels,clip_size);
+        Mda template_k=compute_mean_clip(clips_k);
+        QList<double> energies;
+        for (int m=0; m<M; m++) energies << 0;
+        for (int t=0; t<T; t++) {
+            for (int m=0; m<M; m++) {
+                double val=template_k.value(m,t);
+                energies[m]+=val*val;
+            }
+        }
+        double max_energy=compute_max(energies);
+        if (energies[ch]>=max_energy*0.9) {
+            label_mapping[k]=kk;
+            kk++;
+        }
+        else label_mapping[k]=0;
+    }
+    QList<int> ret;
+    for (int i=0; i<labels.count(); i++) {
+        ret << label_mapping[labels[i]];
+    }
+    return ret;
 }
 
 QList<double> compute_peaks(Mda &clips,int ch) {
@@ -175,6 +257,17 @@ QList<int> do_cluster_with_normalized_features(Mda &clips,const Branch_Cluster_O
     return isosplit2(FF);
 }
 
+QList<int> do_cluster_without_normalized_features(Mda &clips,const Branch_Cluster_Opts &opts) {
+    int M=clips.N1();
+    int T=clips.N2();
+    int L=clips.N3();
+    int nF=opts.num_features;
+    Mda FF; FF.allocate(nF,L);
+    get_pca_features(M*T,L,nF,FF.dataPtr(),clips.dataPtr());
+    //normalize_features(FF);
+    return isosplit2(FF);
+}
+
 QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<int> &base_inds) {
     int L=clips.N3();
     QList<double> peaks=compute_peaks(clips,0);
@@ -206,9 +299,11 @@ QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<in
         return labels;
     }
 
-    QList<int> labels0=do_cluster_with_normalized_features(clips,opts);
+    //QList<int> labels0=do_cluster_with_normalized_features(clips,opts);
+    QList<int> labels0=do_cluster_without_normalized_features(clips,opts);
     int K0=compute_max(labels0);
     if (K0>1) {
+        printf("Branch(K0=%d) ",K0);
         QList<int> labels; for (int i=0; i<L; i++) labels << 0;
         int kk_offset=0;
         for (int k=1; k<=K0; k++) {
@@ -216,6 +311,7 @@ QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<in
             for (int a=0; a<L; a++) {
                 if (labels0[a]==k) inds_k << a;
             }
+            printf("%d ",inds_k.count());
             Mda clips_k=grab_clips_subset(clips,inds_k);
             QList<int> base_inds_k;
             QList<int> labels_k=do_branch_cluster(clips_k,opts,base_inds_k);
@@ -224,6 +320,7 @@ QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<in
             }
             kk_offset+=compute_max(labels_k);
         }
+        printf("\n");
         return labels;
     }
     else {
@@ -275,7 +372,7 @@ Mda extract_clips_00(DiskReadMda &X,const QList<long> &times,const QList<int> &c
     int L=times.count();
     Mda clips; clips.allocate(M,T,L);
     for (int i=0; i<L; i++) {
-        int tt=times[0]-((T+1)/2 - 1);
+        int tt=times[i]-((T+1)/2 - 1);
         if ((tt>=0)&&(tt+clip_size<=N)) {
             int iii=M*T*i;
             int jjj=MMM*tt;

@@ -190,7 +190,7 @@ if (N>=M)
     X1b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X1);
     X2b=sqrt(N-1)*U*D(1:M,1:M)*(U'*X2);
 else
-    %two few points to whiten
+    %too few points to whiten
     X1b=X1;
     X2b=X2;
 end;

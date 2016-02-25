@@ -429,7 +429,7 @@ if (length(inds_neg)>0)&&(length(inds_pos)>0)
 end;
 
 FF=ms_event_features(clips,opts.num_features);
-FF=normalize_features(FF);
+%FF=normalize_features(FF);
 labels0=isosplit2(FF,opts.isosplit);
 K0=max(labels0);
 if (K0>=2)

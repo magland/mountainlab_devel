@@ -31,6 +31,7 @@
 #include "Eigen/SVD"
 #include "process_msh.h"
 #include "isosplit2.h"
+#include "branch_cluster_v1.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -198,6 +199,14 @@ void register_processors(ProcessTracker &PT) {
 		P.version="0.12";
 		PT.registerProcessor(P);
 	}
+    {
+        PTProcessor P;
+        P.command="branch_cluster_v1";
+        P.input_file_pnames << "raw" << "detect";
+        P.output_file_pnames << "firings";
+        P.version="0.1";
+        PT.registerProcessor(P);
+    }
 	{
 		PTProcessor P;
 		P.command="copy";
@@ -283,6 +292,10 @@ void cross_correlograms_usage() {
 
 void confusion_matrix_usage() {
 	printf("mountainsort confusion_matrix --firings1=firings1.mda --firings2=firings2.mda --output=confusion_matrix.mda --max_matching_offset=3\n");
+}
+
+void branch_cluster_v1_usage() {
+    printf("mountainsort branch_cluster_v1 --raw=pre.mda --detect=detect.mda --adjacency_matrix= --firings=firings.mda --clip_size=100 --min_section_count=50 --section_increment=0.5 --num_features=6\n");
 }
 
 void copy_usage() {
@@ -711,6 +724,32 @@ int main(int argc,char *argv[]) {
 			return -1;
 		}
 	}
+    else if (command=="branch_cluster_v1") {
+        QString raw_path=CLP.named_parameters["raw"];
+        QString detect_path=CLP.named_parameters["detect"];
+        QString adjacency_matrix_path=CLP.named_parameters["adjacency_matrix"];
+        QString firings_path=CLP.named_parameters["firings"];
+        int clip_size=CLP.named_parameters.value("clip_size","0").toInt();
+        int min_section_count=CLP.named_parameters.value("min_section_count","0").toInt();
+        double section_increment=CLP.named_parameters.value("section_increment","0.5").toDouble();
+        int num_features=CLP.named_parameters.value("num_features","0").toInt();
+
+        if ((raw_path.isEmpty())||(detect_path.isEmpty())||(firings_path.isEmpty())) {branch_cluster_v1_usage(); return -1;}
+        if (clip_size==0) {branch_cluster_v1_usage(); return -1;}
+        if (min_section_count==0) {branch_cluster_v1_usage(); return -1;}
+        if (section_increment==0) {branch_cluster_v1_usage(); return -1;}
+        if (num_features==0) {branch_cluster_v1_usage(); return -1;}
+
+        Branch_Cluster_Opts opts;
+        opts.clip_size=clip_size;
+        opts.min_section_count=min_section_count;
+        opts.num_features=num_features;
+        opts.section_increment=section_increment;
+        if (!branch_cluster_v1(raw_path.toLatin1().data(),detect_path.toLatin1().data(),adjacency_matrix_path.toLatin1().data(),firings_path.toLatin1().data(),opts)) {
+            printf("Error in branch_cluster_v1.\n");
+            return -1;
+        }
+    }
 	else if (command=="copy") {
 		QString input_path=CLP.named_parameters["input"];
 		QString output_path=CLP.named_parameters["output"];
