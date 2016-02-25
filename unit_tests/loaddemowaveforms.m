@@ -5,11 +5,15 @@ function [W samplerate] = loaddemowaveforms
 % Barnett 2/19/16. Upsampled 2/24/16
 
 % not upsampled case:
-demowaveforms = 'unit_tests/demo_data/waveforms_EJ_2005-04-26_elec359_20kHz_K7.mda';
-W = readmda(demowaveforms);
-samplerate = 2e4;
+%demowaveforms = 'unit_tests/demo_data/waveforms_EJ_2005-04-26_elec359_20kHz_K7.mda';
+%samplerate = 2e4;
 
-% upsampled:
-demowaveforms = 'unit_tests/demo_data/waveforms_EJ_2005-04-26_elec359_60kHz_K7.mda';
+% 3x upsampled:
+%demowaveforms = 'unit_tests/demo_data/waveforms_EJ_2005-04-26_elec359_60kHz_K7.mda';
+%samplerate = 6e4;
+
+% 30x upsampled:
+demowaveforms = 'unit_tests/demo_data/waveforms_EJ_2005-04-26_elec359_600kHz_K7.mda';
+samplerate = 6e5;
+
 W = readmda(demowaveforms);
-samplerate = 6e4;
