@@ -207,6 +207,14 @@ void register_processors(ProcessTracker &PT) {
         P.version="0.1";
         PT.registerProcessor(P);
     }
+    {
+        PTProcessor P;
+        P.command="isosplit2";
+        P.input_file_pnames << "input";
+        P.output_file_pnames << "labels";
+        P.version="0.1";
+        PT.registerProcessor(P);
+    }
 	{
 		PTProcessor P;
 		P.command="copy";
@@ -296,6 +304,10 @@ void confusion_matrix_usage() {
 
 void branch_cluster_v1_usage() {
     printf("mountainsort branch_cluster_v1 --raw=pre.mda --detect=detect.mda --adjacency_matrix= --firings=firings.mda --clip_size=100 --min_section_count=50 --section_increment=0.5 --num_features=6\n");
+}
+
+void isosplit2_usage() {
+    printf("mountainsort isosplit2 --input=X.mda --labels=out_labels.mda --isocut_threshold=1.5 --K_init=30\n");
 }
 
 void copy_usage() {
@@ -749,6 +761,16 @@ int main(int argc,char *argv[]) {
             printf("Error in branch_cluster_v1.\n");
             return -1;
         }
+    }
+    else if (command=="isosplit2") {
+        QString input_path=CLP.named_parameters["input"];
+        QString labels_path=CLP.named_parameters["labels"];
+        double isocut_threshold=CLP.named_parameters.value("isocut_threshold","1.5").toDouble();
+        int K_init=CLP.named_parameters.value("K_init","30").toInt();
+        Mda X; X.read(input_path);
+        QList<int> labels=isosplit2(X,isocut_threshold,K_init,true);
+        Mda labels_mda; labels_mda.allocate(1,labels.count());
+        for (int i=0; i<labels.count(); i++) labels_mda.setValue(labels[i],0,i);
     }
 	else if (command=="copy") {
 		QString input_path=CLP.named_parameters["input"];
