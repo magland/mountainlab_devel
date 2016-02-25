@@ -1,26 +1,33 @@
-function Y = ms_synthesize(W,N,times,labels,ampls)
+function Y = ms_synthesize(W,N,times,labels,ampls,opts)
 % MS_SYNTHESIZE.  Make timeseries via linear addition of spikes forward model
 %
-% Y = ms_synthesize(W,T,times,labels,ampls) outputs a synthetic time series
+% Y = ms_synthesize(W,T,times,labels,ampls,opts) outputs a synthetic time series
 % given waveforms and firing information; ie, it applies the forward model.
 % No noise is added.
 %
 % Inputs:
-%  W - waveform (templates) array, M by T by K. (note: not upsampled).
+%  W - waveform (templates) array, M by T by K. (note: assumed not upsampled
+%      unless opts.upsamplefac > 1).
 %  N - integer number of time points to generate.
 %  times - (1xL) list of firing times, integers or real,
 %          where 1st output time is 1 and last is N (ie, sample index units).
 %  labels - (1xL) list of integer labels in range 1 to K.
-%  ampls - (optional, 1xL) list of firing amplitudes (if absent, taken as 1).
+%  ampls - (optional, 1xL) list of firing amplitudes (if absent or empty,
+%          taken as 1).
+%  opts - (optional struct) controls various options such as
+%         opts.upsamplefac : integer ratio between sampling rate of W and for
+%                            the output timeseries.
 % Outputs:
 %  Y - (MxN, real-valued) timeseries
 
 % Barnett 2/19/16 based on validspike/synthesis/spikemodel.m
-% todo: 1) downsampling & fractional time-shifts?
-%       2) faster C executable acting on MDAs I/O.
+% todo: faster C executable acting on MDAs I/O.
 
 if nargin==0, test_ms_synthesize; return; end
-if nargin<5, ampls = 1.0+0*times; end                % default ampl
+if nargin<5 || isempty(ampls), ampls = 1.0+0*times; end      % default ampl
+if nargin<6, opts = []; end
+if ~isfield(opts,'upsamplefac'), opts.upsamplefac = 1; end
+
 [M T K] = size(W);
 tcen = floor((T+1)/2);    % center firing time in waveform
 L = numel(times);
