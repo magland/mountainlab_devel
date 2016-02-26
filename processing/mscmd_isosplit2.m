@@ -4,6 +4,8 @@ if (nargin==0) test_mscmd_isosplit2; return; end;
 
 if (nargin<3) opts=struct; end;
 
+input_path=mktmpfile(input_path);
+
 if (~isfield(opts,'isocut_threshold')) opts.isocut_threshold=1.5; end;
 if (~isfield(opts,'K_init')) opts.K_init=30; end;
 

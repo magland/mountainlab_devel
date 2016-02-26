@@ -155,15 +155,15 @@ end
 %
 %    Alex Barnett 12/5/02
 
-function legnum(a, prec, prefix)
-
-if nargin==1
-  legend(num2cellstr(a));
-elseif nargin==2
-  legend(num2cellstr(a, prec));
-elseif nargin==3
-  legend(num2cellstr(a, prec, prefix));
-else
-  error('too many arguments to legnum.')
-end
-end
+% function legnum(a, prec, prefix)
+% 
+% if nargin==1
+%   legend(num2cellstr(a));
+% elseif nargin==2
+%   legend(num2cellstr(a, prec));
+% elseif nargin==3
+%   legend(num2cellstr(a, prec, prefix));
+% else
+%   error('too many arguments to legnum.')
+% end
+% end
