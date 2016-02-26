@@ -41,7 +41,9 @@ HEADERS += \
     assemble_firings_file.h \
     extract_channels.h \
     remove_artifacts.h \
-    branch_cluster_v1.h
+    branch_cluster_v1.h \
+    remove_duplicates.h \
+    get_sort_indices.h
 
 SOURCES += \
 mountainsortmain.cpp \
@@ -72,7 +74,9 @@ mountainsortmain.cpp \
     assemble_firings_file.cpp \
     extract_channels.cpp \
     remove_artifacts.cpp \
-    branch_cluster_v1.cpp
+    branch_cluster_v1.cpp \
+    remove_duplicates.cpp \
+    get_sort_indices.cpp
 
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit

@@ -6,7 +6,8 @@ close all;
 mfile_path=fileparts(mfilename('fullpath'));
 addpath([mfile_path,'/../franklab/sort_002_multichannel']);
 raw_path=[mfile_path,'/../unit_tests/demo_data/demotimeseries.mda'];
-if ~exist(raw_path), writedemotimeseries; end
+%if ~exist(raw_path), writedemotimeseries; end
+writedemotimeseries;
 
 mfile_path=fileparts(mfilename('fullpath'));
 output_path=[mfile_path,'/output_sort001_on_demotimeseries'];
@@ -15,7 +16,7 @@ if ~exist(output_path,'dir') mkdir(output_path); end;
 %%%% Sort
 sort_opts=struct;
 sort_opts.detectability_threshold=2.5; %this controls exclusion of noise clusters
-sort_opts.test_mode=0;
+sort_opts.test_mode=1;
 [firings_path,pre_path]=sort_002_multichannel(raw_path,output_path,sort_opts);
 
 %%%% View output

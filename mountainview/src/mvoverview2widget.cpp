@@ -5,6 +5,7 @@
 #include "mvcrosscorrelogramswidget.h"
 #include "mvoverview2widgetcontrolpanel.h"
 #include "get_principal_components.h"
+#include "get_sort_indices.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -214,38 +215,6 @@ void MVOverview2Widget::slot_cross_correlogram_current_unit_changed()
 }
 
 typedef QList<long> IntList;
-struct special_comparer_struct {
-	double val;
-	long index;
-};
-struct special_comparer
-{
-	bool operator()(const special_comparer_struct & a, const special_comparer_struct & b) const {
-		if (a.val<b.val) return true;
-		else if (a.val==b.val) {
-			return (a.index<b.index);
-		}
-		else return false;
-	}
-};
-
-QList<long> get_sort_indices(const QList<long> &X) {
-	QList<special_comparer_struct> list;
-	for (long i=0; i<X.count(); i++) {
-		special_comparer_struct tmp;
-		tmp.val=X[i];
-		tmp.index=i;
-		list << tmp;
-	}
-	qSort(list.begin(),list.end(),special_comparer());
-	QList<long> ret;
-	for (int i=0; i<list.count(); i++) {
-		ret << list[i].index;
-	}
-	return ret;
-}
-
-
 void MVOverview2WidgetPrivate::create_cross_correlograms_data()
 {
 	set_progress("Computing","Creating cross correlograms data",0);
@@ -265,11 +234,11 @@ void MVOverview2WidgetPrivate::create_cross_correlograms_data()
 	}
 
 	printf("Sorting by times...\n");
-	QList<long> iiii=get_sort_indices(times);
+	QList<long> indices=get_sort_indices(times);
 	QList<long> times2,labels2;
-	for (int i=0; i<iiii.count(); i++) {
-		times2 << times[iiii[i]];
-		labels2 << labels[iiii[i]];
+	for (int i=0; i<indices.count(); i++) {
+		times2 << times[indices[i]];
+		labels2 << labels[indices[i]];
 	}
 	times=times2; labels=labels2;
 

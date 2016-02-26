@@ -2,18 +2,19 @@
 #include "diskreadmda.h"
 #include <QList>
 #include <stdio.h>
+#include "get_sort_indices.h"
 
 typedef QList<int> IntList;
 bool cross_correlograms(const char *firings_path,const char *output_path,int max_dt) {
-	QList<int> times,labels;
+	QList<long> times,labels;
 
     printf("Setting up times and labels...\n");
-	DiskReadMda C; C.setPath(firings_path);
-	int L=C.N2();
+	DiskReadMda F; F.setPath(firings_path);
+	int L=F.N2();
 	int K=1;
 	for (int ii=0; ii<L; ii++) {
-		int time0=(int)C.value(1,ii);
-		int label0=(int)C.value(2,ii);
+		int time0=(int)F.value(1,ii);
+		int label0=(int)F.value(2,ii);
 		times << time0;
 		labels << label0;
 		if (label0>K) K=label0;
@@ -27,6 +28,15 @@ bool cross_correlograms(const char *firings_path,const char *output_path,int max
 			out << empty_list;
 		}
 	}
+
+	printf("Sorting times/labels...\n");
+	QList<long> indices=get_sort_indices(times);
+	QList<long> times2,labels2;
+	for (int i=0; i<indices.count(); i++) {
+		times2 << times[indices[i]];
+		labels2 << labels[indices[i]];
+	}
+	times=times2; labels=labels2;
 
     printf("Setting time differences...\n");
 	int i1=0;

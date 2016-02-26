@@ -32,6 +32,7 @@
 #include "process_msh.h"
 #include "isosplit2.h"
 #include "branch_cluster_v1.h"
+#include "remove_duplicates.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -207,6 +208,14 @@ void register_processors(ProcessTracker &PT) {
         P.version="0.1";
         PT.registerProcessor(P);
     }
+	{
+		PTProcessor P;
+		P.command="remove_duplicates";
+		P.input_file_pnames << "firings_in";
+		P.output_file_pnames << "firings_out";
+		P.version="0.1";
+		PT.registerProcessor(P);
+	}
     {
         PTProcessor P;
         P.command="isosplit2";
@@ -304,6 +313,10 @@ void confusion_matrix_usage() {
 
 void branch_cluster_v1_usage() {
     printf("mountainsort branch_cluster_v1 --raw=pre.mda --detect=detect.mda --adjacency_matrix= --firings=firings.mda --clip_size=100 --min_section_count=50 --section_increment=0.5 --num_features=6\n");
+}
+
+void remove_duplicates_usage() {
+	printf("mountainsort remove_duplicates --firings_in=firings.mda --firings_out=firings2.mda --max_dt=6 --overlap_threshold=0.25\n");
 }
 
 void isosplit2_usage() {
@@ -762,6 +775,20 @@ int main(int argc,char *argv[]) {
             return -1;
         }
     }
+	else if (command=="remove_duplicates") {
+		QString firings_in_path=CLP.named_parameters["firings_in"];
+		QString firings_out_path=CLP.named_parameters["firings_out"];
+		int max_dt=CLP.named_parameters.value("max_dt","6").toInt();
+		double overlap_threshold=CLP.named_parameters.value("overlap_threshold","0.25").toDouble();
+		if ((firings_in_path.isEmpty())||(firings_out_path.isEmpty())) {
+			remove_duplicates_usage();
+			return -1;
+		}
+		if (!remove_duplicates(firings_in_path.toLatin1().data(),firings_out_path.toLatin1().data(),max_dt,overlap_threshold)) {
+			printf("Error in remove_duplicates.\n");
+			return -1;
+		}
+	}
     else if (command=="isosplit2") {
         QString input_path=CLP.named_parameters["input"];
         QString labels_path=CLP.named_parameters["labels"];

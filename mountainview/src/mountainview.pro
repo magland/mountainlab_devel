@@ -42,6 +42,12 @@ SOURCES += mountainviewmain.cpp \
     correlationmatrixview.cpp \
     mvoverview2widgetcontrolpanel.cpp
 
+INCLUDEPATH += ../../cpp/src
+DEPENDPATH += ../../cpp/src
+VPATH += ../../cpp/src
+HEADERS += get_sort_indices.h
+SOURCES += get_sort_indices.cpp
+
 HEADERS += get_principal_components.h
 SOURCES += get_principal_components.cpp
 
