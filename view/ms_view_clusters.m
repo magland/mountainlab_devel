@@ -10,12 +10,12 @@ function ms_view_clusters(features,labels)
 %    labels - 1xL array of integer labels (controls the colors of the data
 %    points)
 %
-% Other m-files required: distinguishable_colors
+% Other m-files required: distinguishable_colors, legnum, num2cellstr
 %
 % See also: mscmd_features, ms_event_features
 
 % Author: Jeremy Magland
-% Jan 2015; Last revision: 15-Feb-2106
+% Jan 2015; Last revision: 26-Feb-2016. AHB broke legnum/num2cellstr out.
 
 if nargin<1, test_ms_view_clusters; return; end;
 
@@ -49,6 +49,8 @@ if M==2
     end;
     hold off;
     legnum(1:K);
+    axis equal; xlabel('z_1'); ylabel('z_2');
+  
 elseif M==3
     for k=0:K
         inds=find(labels==k);
@@ -62,9 +64,12 @@ elseif M==3
     end;
     hold off;
     legnum(1:K);
+    xlabel('z_1'); ylabel('z_2'); zlabel('z_3');
+    axis equal vis3d;       % for good aspect ratio and rotation
 else
     error('Invalid number of dimensions: %d',M);
 end
+hline(0); vline(0);   % ahb plot improvements
 
 end
 
@@ -74,96 +79,3 @@ labels=cat(2,ones(1,200),ones(1,200)*2);
 figure;
 ms_view_clusters(X,labels);
 end
-
-function legnum(a, prec, prefix)
-
-if nargin==1
-  legend(num2cellstr(a));
-elseif nargin==2
-  legend(num2cellstr(a, prec));
-elseif nargin==3
-  legend(num2cellstr(a, prec, prefix));
-else
-  error('too many arguments to legnum.')
-end
-end
-
-%
-% NUM2CELLSTR convert array of floating-point numbers to cell array of strings
-%    NUM2CELLSTR(X) converts array X to cell array of strings.
-%    If X is a two- or multi-dimensional array, it will be
-%    flattened (all elements will still be included).
-%
-%    NUM2CELLSTR(X, P) is the same but uses precision P, where P is an integer.
-%
-%    NUM2CELLSTR(X, P, S) same as above but includes a prefix string to
-%    each cell.
-%
-%    This clumsy routine would be unnecessary if Matlab provided something
-%    like python's string.strip() function.
-%
-% See also SPRINTF, CELLSTR
-%
-%    Alex Barnett 12/5/02
-
-function [c] = num2cellstr(a, prec, prefix)
-
-if nargin==1
-  prec = 4;      % default precision
-else
-  if prec<1
-    error('precision must be at least 1.')
-  end
-  if prec>16
-    error('precision cannot exceed 16.')
-  end
-end
-if nargin<3
-  prefix = ''; % default prefix
-end
-
-l = 25;          % max number of characters for representing a number
-n = numel(a);
-
-% build printf format string
-f = sprintf('%%-%d.%dg', l, round(prec));
-
-c = cellstr([repmat(prefix, [n 1]) reshape(sprintf(f, a),[l, n])']);
-end
-
-
-%
-% LEGNUM Legend current figure using array of numbers.
-%    LEGNUM(X) adds a legend to current figure using string
-%    representations of the numbers in X. If X is a two- or multi-dimensional
-%    array, it will be flattened and all elements will be included.
-%
-%    LEGNUM(X, P) is the same but uses precision P, where P is an integer.
-%
-%    LEGNUM(X, P, S) same as above but includes a prefix string to
-%    each legend label.
-%
-% Examples
-%    legnum(logspace(-5,-4,7), 6);
-%    Adds a legend with logarithmically-spaced number labels, with
-%    6 significant digit precision
-%
-%    legnum(logspace(-5,-4,7), 6, 'x = ');
-%    Same but labels are of the form 'x = 1e-5', etc.
-%
-% See also NUM2CELLSTR
-%
-%    Alex Barnett 12/5/02
-
-% function legnum(a, prec, prefix)
-% 
-% if nargin==1
-%   legend(num2cellstr(a));
-% elseif nargin==2
-%   legend(num2cellstr(a, prec));
-% elseif nargin==3
-%   legend(num2cellstr(a, prec, prefix));
-% else
-%   error('too many arguments to legnum.')
-% end
-% end

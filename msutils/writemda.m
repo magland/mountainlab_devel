@@ -1,5 +1,5 @@
 function writemda(X,fname)
-%READMDA - write to a .mda file. MDA stands for
+%WRITEMDA - write to a .mda file. MDA stands for
 %multi-dimensional array.
 %
 % See http://magland.github.io//articles/mda-format/
@@ -15,7 +15,7 @@ function writemda(X,fname)
 % See also: readmda
 
 % Author: Jeremy Magland
-% Jan 2015; Last revision: 15-Feb-2106
+% Jan 2015; Last revision: 15-Feb-2016; typo fixed Barnett 2/26/16
 num_dims=2;
 if (size(X,3)~=1) num_dims=3; end; % ~=1 added by jfm on 11/5/2015 to handle case of, eg, 10x10x0
 if (size(X,4)~=1) num_dims=4; end;
