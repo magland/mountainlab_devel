@@ -32,7 +32,8 @@ T=clip_size;
 C=length(times);
 
 clips=zeros(M,T,C);
-tt1=-ceil((clip_size)/2);
+Tmid=floor((T+1)/2);
+tt1=-Tmid+1; %changed by jfm on 2/26/2016 to conform with docs
 tt2=tt1+clip_size-1;
 inds=find((times+tt1>=1)&(times+tt2<=N));
 %if (min(times+tt1)<1) error('Invalid time in extract_clips'); end;

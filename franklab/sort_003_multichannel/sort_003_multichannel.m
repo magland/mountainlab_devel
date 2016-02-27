@@ -22,11 +22,11 @@ if nargin<1 test_sort_003_multichannel; return; end;
 
 def_sort_opts.clip_size=120;
 def_sort_opts.filter.samplefreq=30000;
-def_sort_opts.filter.freq_min=500;
-def_sort_opts.filter.freq_max=3000;
+def_sort_opts.filter.freq_min=300;
+def_sort_opts.filter.freq_max=6000;
 def_sort_opts.filter.outlier_threshold=500;
-def_sort_opts.detect.detect_threshold=4;
-def_sort_opts.detect.detect_interval=25;
+def_sort_opts.detect.detect_threshold=3;
+def_sort_opts.detect.detect_interval=15;
 def_sort_opts.detect.individual_channels=1;
 def_sort_opts.plausibility_threshold=3;
 def_sort_opts.detectability_threshold=9;
@@ -59,10 +59,11 @@ mscmd_branch_cluster_v1([path0,'/pre2.mda'],[path0,'/detect.mda'],'',[path0,'/fi
 ooo.detectability_threshold=sort_opts.detectability_threshold;
 ooo.clip_size=sort_opts.clip_size;
 mscmd_remove_duplicates([path0,'/firings1.mda'],[path0,'/firings2.mda']);
-remove_noisy_subclusters([path0,'/pre2.mda'],[path0,'/firings2.mda'],[path0,'/firings3.mda'],ooo);
+%remove_noisy_subclusters([path0,'/pre2.mda'],[path0,'/firings2.mda'],[path0,'/firings3.mda'],ooo);
 
 %%%% Copying
-mscmd_copy([path0,'/firings3.mda'],[path0,'/firings.mda']);
+mscmd_copy([path0,'/firings2.mda'],[path0,'/firings.mda']);
+%mscmd_copy([path0,'/firings3.mda'],[path0,'/firings.mda']);
 
 firings_path=[path0,'/firings.mda'];
 pre_path=[path0,'/pre2.mda'];
