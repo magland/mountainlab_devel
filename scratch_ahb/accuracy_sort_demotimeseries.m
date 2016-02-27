@@ -1,7 +1,7 @@
 function accuracy_sort_demotimeseries
 % measure accuracy vs known firing times on synthetic demo data.
 % Currently uses some C executables in the chain, shuffling data to MDA & back.
-% Barnett 2/25/16. 2/26/16 playing w/ sorting chain & vis.
+% Barnett 2/25/16. 2/26/16 playing w/ sorting chain & viz.
 
 %%%% Set up paths
 mfile_path=fileparts(mfilename('fullpath'));
@@ -21,11 +21,11 @@ trueX = ms_event_features(clips,3);       % 3 features for vis
 figure; set(gcf,'position',[1000 1000 1000 1000]); tsubplot(2,2,1);
 ms_view_clusters(trueX,truelabels); title('true labels in fea space');
 Wtrue = readmda(trueWfile);
-tsubplot(2,2,2); ms_view_templates(Wtrue), title('true W');
+tsubplot(2,2,2); ms_view_templates(Wtrue), title('true W'); drawnow
 
 if 1         % standard simple sort chain, w/o filtering or prewhitening
   o.clip_size=T; o.detect_interval = 20;
-  o.detect_threshold = 100;    % absolute (uV);  80 uV adds noise clus
+  o.detect_threshold = 80;    % absolute (uV);  80 uV collects a noise clus
   times = ms_detect(Y,o);
   if 0      % the C interface to get clips
     writemda([0*times; times], [outdir,'/detect.mda']);

@@ -15,9 +15,11 @@ function ms_view_clusters(features,labels)
 % See also: mscmd_features, ms_event_features
 
 % Author: Jeremy Magland
-% Jan 2015; Last revision: 26-Feb-2016. AHB broke legnum/num2cellstr out.
+% Jan 2015; Last revision: 26-Feb-2016. AHB broke legnum/num2cellstr out,
+% replaced plot3 w/ scatter3, does correct z-buffering.
 
 if nargin<1, test_ms_view_clusters; return; end;
+ptsiz = 20;    % for 3d points
 
 addpath([fileparts(mfilename('fullpath')),'/colorspace']);
 
@@ -52,20 +54,21 @@ if M==2
     axis equal; xlabel('z_1'); ylabel('z_2');
   
 elseif M==3
-    for k=0:K
-        inds=find(labels==k);
-        if (length(inds)>0)
-            if (k>0)
-                plot3(features(1,inds),features(2,inds),features(3,inds),'.','Color',colors{k}); hold on;
-            else
-                plot3(features(1,inds),features(2,inds),features(3,inds),'+','Color',[0.5,0.5,0.5]); hold on;
-            end;
-        end;
+  for k=0:K
+    inds=find(labels==k);
+    if (length(inds)>0)
+      if (k>0)
+        scatter3(features(1,inds),features(2,inds),features(3,inds),ptsiz*ones(size(inds)),ones(numel(inds),1)*colors{k},'.'); hold on;
+      else
+        scatter3(features(1,inds),features(2,inds),features(3,inds),ptsiz*ones(size(inds)),0.5*ones(numel(inds),3),'+'); hold on;
+      end;
     end;
-    hold off;
-    legnum(1:K);
-    xlabel('z_1'); ylabel('z_2'); zlabel('z_3');
-    axis equal vis3d;       % for good aspect ratio and rotation
+  end
+  hold off;
+  grid off
+  legnum(1:K);
+  xlabel('z_1'); ylabel('z_2'); zlabel('z_3');
+  axis equal vis3d;       % for good aspect ratio and rotation
 else
     error('Invalid number of dimensions: %d',M);
 end
