@@ -3,6 +3,7 @@
 #include "mdaio.h"
 #include "mda.h"
 #include <QSet>
+#include <math.h>
 
 //void get_load_channels(int K,int *load_channels,DiskReadMda &cluster);
 Mda get_load_channels(int K,DiskReadMda &cluster);
@@ -50,35 +51,35 @@ QList<int> get_template_sort_order(const Mda &X) {
 
 typedef QSet<int> IntSet;
 
-float compute_overlap(const QSet<int> &S1,const QSet<int> &S2) {
+double compute_overlap(const QSet<int> &S1,const QSet<int> &S2) {
 	if ((S1.count()==0)||(S2.count()==0)) return 0;
 	QSet<int> S3=S1;
 	S3.intersect(S2);
 	int ct=S3.count();
-	float ret1=ct*1.0/S1.count();
-	float ret2=ct*1.0/S2.count();
+	double ret1=ct*1.0/S1.count();
+	double ret2=ct*1.0/S2.count();
 	if (ret1>ret2) return ret1;
 	else return ret2;
 }
 
-bool consolidate(const char *firings_path,const char *templates_path,const char *cluster_out_path,const char *templates_out_path,const char *load_channels_out_path,float coincidence_threshold) {
+bool consolidate(const char *firings_path,const char *templates_path,const char *firings_out_path,const char *templates_out_path,const char *load_channels_out_path,double coincidence_threshold,int detect_interval) {
 	DiskReadMda cluster; cluster.setPath(firings_path);
 	Mda templates; templates.read(templates_path);
 
 	int M=templates.N1();
 	int T=templates.N2();
 	int K=templates.N3();
+	int Tmid=(int)((T+1)/2)-1;
 
 	Mda load_channels=get_load_channels(K,cluster);
 
-
 	bool to_use[K+1];
 	for (int k=1; k<=K; k++) { //loop through each spike type
-		float energies[M+1]; //compute the per-channel energies
+		double energies[M+1]; //compute the per-channel energies
 		for (int m=1; m<=M; m++) {
-			float sumsqr=0;
+			double sumsqr=0;
 			for (int t=0; t<T; t++) {
-				float val=templates.value(m-1,t,k-1);
+				double val=templates.value(m-1,t,k-1);
 				sumsqr+=val*val;
 			}
 			energies[m]=sumsqr;
@@ -91,6 +92,19 @@ bool consolidate(const char *firings_path,const char *templates_path,const char 
 					okay=false;
 				}
 			}
+		}
+		//the peak must occur near Tmid;
+		double abs_peak_val=0;
+		int abs_peak_ind=0;
+		for (int t=0; t<T; t++) {
+			double value=templates.value(ch-1,t,k-1);
+			if (fabs(value)>abs_peak_val) {
+				abs_peak_val=fabs(value);
+				abs_peak_ind=t;
+			}
+		}
+		if (fabs(abs_peak_ind-Tmid)>detect_interval) {
+			okay=false;
 		}
 		to_use[k]=okay;
 	}
@@ -112,7 +126,7 @@ bool consolidate(const char *firings_path,const char *templates_path,const char 
 			for (int k2=1; k2<=K; k2++) {
 				if (k1!=k2) {
 					if ((to_use[k1])&&(to_use[k2])) {
-						float overlap_frac=compute_overlap(times_bin_20[k1],times_bin_20[k2]);
+						double overlap_frac=compute_overlap(times_bin_20[k1],times_bin_20[k2]);
 						if (overlap_frac>0.25) {
 							printf("OVERLAP (%d%%) BETWEEN CLUSTERS %d and %d.\n",(int)(overlap_frac*100),k1,k2);
 						}
@@ -205,9 +219,9 @@ bool consolidate(const char *firings_path,const char *templates_path,const char 
 	H_cluster.dims[0]=3;
 	H_cluster.dims[1]=num_events2;
 	{
-		FILE *outf=fopen(cluster_out_path,"wb");
+		FILE *outf=fopen(firings_out_path,"wb");
 		if (!outf) {
-			printf("Unable to open file for writing: %s\n",cluster_out_path);
+			printf("Unable to open file for writing: %s\n",firings_out_path);
 			return false;
 		}
 		mda_write_header(&H_cluster,outf);

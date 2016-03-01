@@ -33,6 +33,9 @@
 #include "isosplit2.h"
 #include "branch_cluster_v1.h"
 #include "remove_duplicates.h"
+#include "remove_noise_subclusters.h"
+#include <vector>
+#include <iostream>
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -121,7 +124,7 @@ void register_processors(ProcessTracker &PT) {
     }
     {
         PTProcessor P;
-        P.command="consolidate";
+		P.command="consolidate";
 		P.input_file_pnames << "firings";
         P.input_file_pnames << "templates";
         P.output_file_pnames << "cluster_out";
@@ -210,6 +213,14 @@ void register_processors(ProcessTracker &PT) {
     }
 	{
 		PTProcessor P;
+		P.command="remove_noise_subclusters";
+		P.input_file_pnames << "pre" << "firings";
+		P.output_file_pnames << "firings_out";
+		P.version="0.11";
+		PT.registerProcessor(P);
+	}
+	{
+		PTProcessor P;
 		P.command="remove_duplicates";
 		P.input_file_pnames << "firings_in";
 		P.output_file_pnames << "firings_out";
@@ -264,7 +275,7 @@ void cluster_usage() {
 }
 
 void isobranch_usage() {
-    printf("mountainsort isobranch --input_clips=clips.mda --output_labels=labels.mda --branch_thresholds=2.5,3,3.5,4,5 --isocut_threshold=1.2 --K_init=30 --num_features=3 \n");
+	printf("mountainsort isobranch --input_clips=clips.mda --output_labels=labels.mda --branch_thresholds=2.5,3,3.5,4,5 --isocut_threshold=1.2 --K_init=30 --num_features=3\n");
 }
 
 void split_firings_usage() {
@@ -276,7 +287,7 @@ void templates_usage() {
 }
 
 void consolidate_usage() {
-	printf("mountainsort consolidate --cluster=cluster.mda --templates=templates.mda --cluster_out=cluster_out.mda --templates_out=templates_out.mda --load_channels_out=load_channels.mda --coincidence_threshold=0.5\n");
+	printf("mountainsort consolidate --cluster=cluster.mda --templates=templates.mda --cluster_out=cluster_out.mda --templates_out=templates_out.mda --load_channels_out=load_channels.mda --coincidence_threshold=0.5 --detect_interval=15\n");
 }
 
 void fit_usage() {
@@ -312,7 +323,11 @@ void confusion_matrix_usage() {
 }
 
 void branch_cluster_v1_usage() {
-    printf("mountainsort branch_cluster_v1 --raw=pre.mda --detect=detect.mda --adjacency_matrix= --firings=firings.mda --clip_size=100 --min_section_count=50 --section_increment=0.5 --num_features=6\n");
+	printf("mountainsort branch_cluster_v1 --raw=pre.mda --detect=detect.mda --adjacency_matrix= --firings=firings.mda --clip_size=100 --min_shell_count=50 --shell_increment=0.5 --num_features=6 --detect_interval=15\n");
+}
+
+void remove_noise_subclusters_usage() {
+	printf("mountainsort remove_noise_subclusters --pre=pre.mda --firings=firings.mda --firings_out=firings2.mda --clips_size=100 --shell_increment=0.5 --min_shell_size=100\n");
 }
 
 void remove_duplicates_usage() {
@@ -387,6 +402,76 @@ void test_svd() {
 	}
 }
 
+void test_get_pca_features() {
+	//Compare with scratch/test_get_pca_features.m
+	int M=4;
+	int N=10;
+	int ncomp=4;
+	double *data=(double *)malloc(sizeof(double)*M*N);
+	double *features=(double *)malloc(sizeof(double)*ncomp*N);
+	for (int n=0; n<N; n++) {
+		data[0+M*n]=1;
+		data[1+M*n]=n;
+		data[2+M*n]=n*n;
+		data[3+M*n]=n*n*n;
+	}
+	get_pca_features(M,N,ncomp,features,data);
+
+	for (int cc=0; cc<ncomp; cc++) {
+		printf("Features %d: ",cc);
+		for (int n=0; n<N; n++) {
+			printf("%g ",features[cc+ncomp*n]);
+		}
+		printf("\n");
+	}
+
+	free(data);
+	free(features);
+}
+
+//extern "C" void dgetrs(char *TRANS, int *N, int *NRHS, double *A,
+//					  int *LDA, int *IPIV, double *B, int *LDB, int *INFO );
+
+void print_matrix( const char* desc, int m, int n, double* a, int lda ) {
+	int i, j;
+	printf( "\n %s\n", desc );
+	for( i = 0; i < m; i++ ) {
+			for( j = 0; j < n; j++ ) printf( " %6.2f", a[i*lda+j] );
+			printf( "\n" );
+	}
+}
+
+#ifdef USE_LAPACK
+#include "lapacke.h"
+void test_lapack() {
+	int N=5; int LDA=N;
+	/* Locals */
+	int n = N, lda = LDA, info;
+	/* Local arrays */
+	double w[N];
+	double a[LDA*N] = {
+		1.96, -6.49, -0.47, -7.20, -0.65,
+		0.00,  3.80, -6.39,  1.50, -6.34,
+		0.00,  0.00, 4.17, -1.51, 2.67,
+		0.00,  0.00, 0.00,  5.70, 1.80,
+		0.00,  0.00, 0.00,  0.00, -7.10
+	};
+	/* Executable statements */
+	printf( "LAPACKE_dsyev (row-major, high-level) Example Program Results\n" );
+	/* Solve eigenproblem */
+	info = LAPACKE_dsyev( LAPACK_ROW_MAJOR, 'V', 'U', n, a, lda, w );
+	/* Check for convergence */
+	if( info > 0 ) {
+			printf( "The algorithm failed to compute eigenvalues.\n" );
+			exit( 1 );
+	}
+	/* Print eigenvalues */
+	print_matrix( "Eigenvalues", 1, n, w, 1 );
+	/* Print eigenvectors */
+	print_matrix( "Eigenvectors (stored columnwise)", n, n, a, lda );
+}
+#endif
+
 int main(int argc,char *argv[]) {
 
 	QCoreApplication app(argc,argv); //important for qApp->applicationDirPath() in processtracker
@@ -396,6 +481,9 @@ int main(int argc,char *argv[]) {
     //return 0;
 
 	//test_svd();
+	//test_get_pca_features(); //compare with scratch/test_get_pca_features.m
+	//test_lapack();
+	//return 0;
 
 	CLParams CLP;
 	QStringList required;
@@ -620,13 +708,14 @@ int main(int argc,char *argv[]) {
         QString templates_out_path=CLP.named_parameters["templates_out"];
         QString load_channels_out_path=CLP.named_parameters["load_channels_out"];
 		float coincidence_threshold=CLP.named_parameters["coincidence_threshold"].toFloat();
+		int detect_interval=CLP.named_parameters.value("detect_interval","15").toInt();
 
 		if ((firings_path.isEmpty())||(templates_path.isEmpty())) {consolidate_usage(); return -1;}
         if ((cluster_out_path.isEmpty())||(templates_out_path.isEmpty())) {consolidate_usage(); return -1;}
         if (load_channels_out_path.isEmpty()) {consolidate_usage(); return -1;}
 		if (coincidence_threshold==0) {consolidate_usage(); return -1;}
 
-		if (!consolidate(firings_path.toLatin1().data(),templates_path.toLatin1().data(),cluster_out_path.toLatin1().data(),templates_out_path.toLatin1().data(),load_channels_out_path.toLatin1().data(),coincidence_threshold)) {
+		if (!consolidate(firings_path.toLatin1().data(),templates_path.toLatin1().data(),cluster_out_path.toLatin1().data(),templates_out_path.toLatin1().data(),load_channels_out_path.toLatin1().data(),coincidence_threshold,detect_interval)) {
             printf("Error in consolidate.\n");
             return -1;
         }
@@ -755,26 +844,48 @@ int main(int argc,char *argv[]) {
         QString adjacency_matrix_path=CLP.named_parameters["adjacency_matrix"];
         QString firings_path=CLP.named_parameters["firings"];
         int clip_size=CLP.named_parameters.value("clip_size","0").toInt();
-        int min_section_count=CLP.named_parameters.value("min_section_count","0").toInt();
-        double section_increment=CLP.named_parameters.value("section_increment","0.5").toDouble();
+		int min_shell_size=CLP.named_parameters.value("min_shell_size","100").toInt();
+		double shell_increment=CLP.named_parameters.value("shell_increment","0.5").toDouble();
         int num_features=CLP.named_parameters.value("num_features","0").toInt();
+		int detect_interval=CLP.named_parameters.value("num_features","-1").toInt();
 
         if ((raw_path.isEmpty())||(detect_path.isEmpty())||(firings_path.isEmpty())) {branch_cluster_v1_usage(); return -1;}
         if (clip_size==0) {branch_cluster_v1_usage(); return -1;}
-        if (min_section_count==0) {branch_cluster_v1_usage(); return -1;}
-        if (section_increment==0) {branch_cluster_v1_usage(); return -1;}
+		if (shell_increment==0) {branch_cluster_v1_usage(); return -1;}
         if (num_features==0) {branch_cluster_v1_usage(); return -1;}
+		if (detect_interval<0) {branch_cluster_v1_usage(); return -1;}
 
         Branch_Cluster_Opts opts;
         opts.clip_size=clip_size;
-        opts.min_section_count=min_section_count;
+		opts.min_shell_size=min_shell_size;
         opts.num_features=num_features;
-        opts.section_increment=section_increment;
+		opts.shell_increment=shell_increment;
+		opts.detect_interval=detect_interval;
         if (!branch_cluster_v1(raw_path.toLatin1().data(),detect_path.toLatin1().data(),adjacency_matrix_path.toLatin1().data(),firings_path.toLatin1().data(),opts)) {
             printf("Error in branch_cluster_v1.\n");
             return -1;
         }
     }
+	else if (command=="remove_noise_subclusters") {
+		QString pre_path=CLP.named_parameters["pre"];
+		QString firings_path=CLP.named_parameters["firings"];
+		QString firings_out_path=CLP.named_parameters["firings_out"];
+
+		Remove_noise_subclusters_opts opts;
+		opts.clip_size=CLP.named_parameters.value("clip_size","100").toInt();
+		opts.detectability_threshold=CLP.named_parameters.value("detectability_threshold","4").toDouble();
+		opts.min_shell_size=CLP.named_parameters.value("min_shell_size","100").toInt();
+		opts.shell_increment=CLP.named_parameters.value("shell_increment").toDouble();
+
+		if ((pre_path.isEmpty())||(firings_path.isEmpty())||(firings_out_path.isEmpty())) {
+			remove_noise_subclusters_usage();
+			return -1;
+		}
+		if (!remove_noise_subclusters(pre_path.toLatin1().data(),firings_path.toLatin1().data(),firings_out_path.toLatin1().data(),opts)) {
+			printf("Error in remove_noise_subclusters.\n");
+			return -1;
+		}
+	}
 	else if (command=="remove_duplicates") {
 		QString firings_in_path=CLP.named_parameters["firings_in"];
 		QString firings_out_path=CLP.named_parameters["firings_out"];

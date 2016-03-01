@@ -9,6 +9,9 @@ MOC_DIR=../build
 TARGET = mountainsort
 TEMPLATE = app
 
+#DEFINES += USE_LAPACK
+#LIBS += -llapack -llapacke
+
 # we want to avoid using any 3rdparty libraries -- this is important! Because ease of installation is critical!
 #LIBS += -larmadillo -lpca -L/usr/local/lib -Wl,-rpath,$(DEFAULT_LIB_INSTALL_PATH)
 
@@ -43,7 +46,9 @@ HEADERS += \
     remove_artifacts.h \
     branch_cluster_v1.h \
     remove_duplicates.h \
-    get_sort_indices.h
+    get_sort_indices.h \
+    remove_noise_subclusters.h \
+    msutils.h
 
 SOURCES += \
 mountainsortmain.cpp \
@@ -76,7 +81,9 @@ mountainsortmain.cpp \
     remove_artifacts.cpp \
     branch_cluster_v1.cpp \
     remove_duplicates.cpp \
-    get_sort_indices.cpp
+    get_sort_indices.cpp \
+    remove_noise_subclusters.cpp \
+    msutils.cpp
 
 INCLUDEPATH += ../../isosplit
 DEPENDPATH += ../../isosplit

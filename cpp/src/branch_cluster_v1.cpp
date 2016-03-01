@@ -4,14 +4,11 @@
 #include "get_principal_components.h"
 #include <math.h>
 #include "isosplit2.h"
+#include "msutils.h"
 
-Mda extract_clips_00(DiskReadMda &X,const QList<long> &times,const QList<int> &channels,int clip_size);
 QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<int> &base_inds);
 QList<double> compute_peaks(Mda &clips,int ch);
-double compute_min(const QList<double> &X);
-double compute_max(const QList<double> &X);
-int compute_max(const QList<int> &X);
-QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QList<int> &labels,int ch,int clip_size);
+QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QList<int> &labels,int ch,int clip_size,int detect_interval);
 
 bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char *adjacency_matrix_path, const char *output_firings_path, const Branch_Cluster_Opts &opts)
 {
@@ -53,11 +50,11 @@ bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char
                 times << (long)detect.value(1,i) - 1; //convert to 0-based indexing
             }
         }
-        Mda clips=extract_clips_00(X,times,neighborhood,opts.clip_size);
+		Mda clips=extract_clips(X,times,neighborhood,opts.clip_size);
         QList<int> base_inds;
         QList<int> labels=do_branch_cluster(clips,opts,base_inds);
         printf("\n");
-        labels=consolidate_labels(X,times,labels,m,opts.clip_size);
+		labels=consolidate_labels(X,times,labels,m,opts.clip_size,opts.detect_interval);
         QList<double> peaks=compute_peaks(clips,0);
 
         for (int i=0; i<times.count(); i++) {
@@ -86,36 +83,13 @@ bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char
     return true;
 }
 
-Mda compute_mean_clip(Mda &clips) {
-    int M=clips.N1();
-    int T=clips.N2();
-    int L=clips.N3();
-    Mda ret; ret.allocate(M,T);
-    int aaa=0;
-    for (int i=0; i<L; i++) {
-        int bbb=0;
-        for (int t=0; t<T; t++) {
-            for (int m=0; m<M; m++) {
-                ret.setValue1(ret.value1(bbb)+clips.value1(aaa),bbb);
-                aaa++;
-                bbb++;
-            }
-        }
-    }
-    if (L) {
-        for (int t=0; t<T; t++) {
-            for (int m=0; m<M; m++) {
-                ret.setValue(ret.value(m,t)/L,m,t);
-            }
-        }
-    }
-    return ret;
-}
 
-QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QList<int> &labels,int ch,int clip_size) {
+
+QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QList<int> &labels,int ch,int clip_size,int detect_interval) {
     int M=X.N1();
     int T=clip_size;
     int K=compute_max(labels);
+	int Tmid=(int)((T+1)/2)-1;
     QList<int> all_channels;
     for (int m=0; m<M; m++) all_channels << m;
     int label_mapping[K+1];
@@ -126,7 +100,7 @@ QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QLis
         for (int i=0; i<times.count(); i++) {
             if (labels[i]==k) times_k << times[i];
         }
-        Mda clips_k=extract_clips_00(X,times_k,all_channels,clip_size);
+		Mda clips_k=extract_clips(X,times_k,all_channels,clip_size);
         Mda template_k=compute_mean_clip(clips_k);
         QList<double> energies;
         for (int m=0; m<M; m++) energies << 0;
@@ -137,7 +111,21 @@ QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QLis
             }
         }
         double max_energy=compute_max(energies);
-        if (energies[ch]>=max_energy*0.9) {
+		bool okay=true;
+		if (energies[ch]<max_energy*0.9) okay=false;
+		double abs_peak_val=0;
+		int abs_peak_ind=0;
+		for (int t=0; t<T; t++) {
+			double value=template_k.value(ch,t);
+			if (fabs(value)>abs_peak_val) {
+				abs_peak_val=fabs(value);
+				abs_peak_ind=t;
+			}
+		}
+		if (fabs(abs_peak_ind-Tmid)>detect_interval) {
+			okay=false;
+		}
+		if (okay) {
             label_mapping[k]=kk;
             kk++;
         }
@@ -170,24 +158,6 @@ QList<double> compute_abs_peaks(Mda &clips,int ch) {
     for (int i=0; i<L; i++) {
         ret << fabs(clips.value(ch,t0,i));
     }
-    return ret;
-}
-
-double compute_min(const QList<double> &X) {
-    double ret=X.value(0);
-    for (int i=0; i<X.count(); i++) if (X[i]<ret) ret=X[i];
-    return ret;
-}
-
-double compute_max(const QList<double> &X) {
-    double ret=X.value(0);
-    for (int i=0; i<X.count(); i++) if (X[i]>ret) ret=X[i];
-    return ret;
-}
-
-int compute_max(const QList<int> &X) {
-    int ret=X.value(0);
-    for (int i=0; i<X.count(); i++) if (X[i]>ret) ret=X[i];
     return ret;
 }
 
@@ -334,13 +304,13 @@ QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<in
         double max_abs_peak=compute_max(abs_peaks);
         while (true) {
             QList<int> inds_below=find_peaks_below_threshold(abs_peaks,abs_peak_threshold);
-            if ((inds_below.count()>=opts.min_section_count)&&(L-inds_below.count()>=opts.min_section_count)) {
+			if ((inds_below.count()>=opts.min_shell_size)&&(L-inds_below.count()>=opts.min_shell_size)) {
                 break;
             }
             if (abs_peak_threshold>max_abs_peak) {
                 break;
             }
-            abs_peak_threshold+=opts.section_increment;
+			abs_peak_threshold+=opts.shell_increment;
         }
         if (abs_peak_threshold>max_abs_peak) {
             QList<int> labels; for (int i=0; i<L; i++) labels << 1;
@@ -370,21 +340,3 @@ QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<in
     }
 }
 
-Mda extract_clips_00(DiskReadMda &X,const QList<long> &times,const QList<int> &channels,int clip_size) {
-    int N=X.N2();
-    int M=channels.count();
-    int T=clip_size;
-    int L=times.count();
-    Mda clips; clips.allocate(M,T,L);
-    for (int i=0; i<L; i++) {
-        int tt=times[i]-((T+1)/2 - 1);
-        if ((tt>=0)&&(tt+T<=N)) {
-            for (int t=0; t<T; t++) {
-                for (int m=0; m<M; m++) {
-                    clips.setValue(X.value(channels[m],t+tt),m,t,i);
-                }
-            }
-        }
-    }
-    return clips;
-}

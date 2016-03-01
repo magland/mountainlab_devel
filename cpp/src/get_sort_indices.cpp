@@ -31,3 +31,19 @@ QList<long> get_sort_indices(const QList<long> &X) {
 	}
 	return ret;
 }
+
+QList<long> get_sort_indices(const QList<double> &X) {
+	QList<special_comparer_struct> list;
+	for (long i=0; i<X.count(); i++) {
+		special_comparer_struct tmp;
+		tmp.val=X[i];
+		tmp.index=i;
+		list << tmp;
+	}
+	qSort(list.begin(),list.end(),special_comparer());
+	QList<long> ret;
+	for (int i=0; i<list.count(); i++) {
+		ret << list[i].index;
+	}
+	return ret;
+}

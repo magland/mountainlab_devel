@@ -5,12 +5,12 @@ if (nargin==0) test_mscmd_branch_cluster_v1; return; end;
 if (nargin<5) opts=struct; end;
 
 if (~isfield(opts,'clip_size')) opts.clip_size=100; end;
-if (~isfield(opts,'min_section_count')) opts.min_section_count=50; end;
-if (~isfield(opts,'section_increment')) opts.section_increment=0.5; end;
+if (~isfield(opts,'min_shell_size')) opts.min_shell_size=50; end;
+if (~isfield(opts,'shell_increment')) opts.shell_increment=0.5; end;
 if (~isfield(opts,'num_features')) opts.num_features=3; end;
 
-cmd=sprintf('%s branch_cluster_v1 --raw=%s --detect=%s --adjacency_matrix=%s --firings=%s --clip_size=%d --min_section_count=%d --section_increment=%g --num_features=%d',mscmd_exe,raw_path,detect_path,adjacency_matrix_path,out_firings_path,...
-    opts.clip_size,opts.min_section_count,opts.section_increment,opts.num_features);
+cmd=sprintf('%s branch_cluster_v1 --raw=%s --detect=%s --adjacency_matrix=%s --firings=%s --clip_size=%d --min_shell_size=%d --shell_increment=%g --num_features=%d',mscmd_exe,raw_path,detect_path,adjacency_matrix_path,out_firings_path,...
+    opts.clip_size,opts.min_shell_size,opts.shell_increment,opts.num_features);
 
 fprintf('\n*** BRANCH_CLUSTER_V1 ***\n');
 fprintf('%s\n',cmd);

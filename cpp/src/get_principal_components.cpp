@@ -1,6 +1,11 @@
 #include "get_principal_components.h"
 #include <QDebug>
 #include <math.h>
+#include <Eigen/Eigenvalues>
+#include "get_sort_indices.h"
+#include <stdlib.h>
+#include <iostream>
+#include <QTime>
 
 void make_random_vector(int M,double *v) {
 	for (int i=0; i<M; i++) v[i]=(qrand()*1.0/RAND_MAX)*2-1;
@@ -128,12 +133,124 @@ void get_pca_features(int M,int N,int ncomp,float *features,float *data) {
 	free(components2);
 }
 
+/*
 void get_pca_features(int M, int N, int ncomp, double *features, double *data)
 {
 	double *components2=(double *)malloc(sizeof(double)*M*ncomp);
 	do_pca(M,N,ncomp,components2,features,data);
 	free(components2);
 }
+*/
+
+#ifdef USE_LAPACK
+#include "lapacke.h"
+void get_pca_features(int M,int N,int ncomp,double *features,double *data) {
+
+	QTime timer; timer.start();
+
+	double *A=(double *)malloc(sizeof(double)*M*M);
+	double *B=(double *)malloc(sizeof(double)*M);
+
+	int iii=0;
+	//this loop may be sped up
+	for (int m1=0; m1<M; m1++) {
+		for (int m2=0; m2<M; m2++) {
+			double val=0;
+			for (int n=0; n<N; n++) {
+				val+=data[m1+M*n]*data[m2+M*n];
+			}
+			A[iii]=val;
+			iii++;
+		}
+	}
+
+	//'V' means compute eigenvalues and eigenvectors (use 'N' for eigenvalues only)
+	//'U' means upper triangle of A is stored.
+	int info=LAPACKE_dsyev(LAPACK_COL_MAJOR,'V','U',M,A,M,B);
+	if (info!=0) {
+		qWarning() << "Error in LAPACKE_dsyev" << info;
+	}
+
+	QList<double> eigenvalues;
+	for (int i=0; i<M; i++) eigenvalues << B[i];
+	QList<long> sort_inds_1=get_sort_indices(eigenvalues);
+	QList<long> sort_inds; for (int i=M-1; i>=0; i--) sort_inds << sort_inds_1[i];
+	double *eigenvectors=A;
+
+	for (int n=0; n<N; n++) {
+		for (int cc=0; cc<ncomp; cc++) {
+			if (cc<M) {
+				double *col=&eigenvectors[M*sort_inds[cc]];
+				double val=0;
+				for (int m=0; m<M; m++) val+=col[m]*data[m+M*n];
+				features[cc+ncomp*n]=val;
+			}
+			else {
+				features[cc+ncomp*n]=0;
+			}
+		}
+	}
+
+	free(A);
+	free(B);
+}
+#else
+#ifdef USE_EIGEN
+void get_pca_features(int M,int N,int ncomp,double *features,double *data) {
+	using namespace Eigen;
+
+	QTime timer; timer.start();
+
+	MatrixXd XXt(M,M);
+	int iii=0;
+	//this loop may be sped up
+	for (int m1=0; m1<M; m1++) {
+		for (int m2=0; m2<M; m2++) {
+			double val=0;
+			for (int n=0; n<N; n++) {
+				val+=data[m1+M*n]*data[m2+M*n];
+			}
+			XXt.data()[iii]=val;
+			iii++;
+		}
+	}
+
+	EigenSolver<MatrixXd> eigen_solver(XXt);
+	QList<double> eigenvalues;
+	for (int i=0; i<M; i++) eigenvalues << eigen_solver.eigenvalues().data()[i].real();
+	QList<long> sort_inds_1=get_sort_indices(eigenvalues);
+	QList<long> sort_inds; for (int i=M-1; i>=0; i--) sort_inds << sort_inds_1[i];
+	MatrixXcd U=eigen_solver.eigenvectors(); //MxM
+
+	for (int n=0; n<N; n++) {
+		for (int cc=0; cc<ncomp; cc++) {
+			if (cc<M) {
+				VectorXcd col=U.col(sort_inds[cc]);
+				double val=0;
+				for (int m=0; m<M; m++) val+=col.data()[m].real()*data[m+M*n];
+				features[cc+ncomp*n]=val;
+			}
+			else {
+				features[cc+ncomp*n]=0;
+			}
+		}
+	}
+
+	//[U,D] = eig(X*X');   % takes O(MM^2*(MM+Ns)). Note eig faster than svd.
+	//[d,I] = sort(diag(D),'descend'); U = U(:,I);  % sort eigenvectors
+	//U = bsxfun(@times, U, std_signs(U));   % std signs of col vecs
+	//z = U'*X;   % get all components in O(MM^2*Ns).   sing vals = sqrt(diag(D))
+}
+#else
+void get_pca_features(int M, int N, int ncomp, double *features, double *data)
+{
+	double *components2=(double *)malloc(sizeof(double)*M*ncomp);
+	do_pca(M,N,ncomp,components2,features,data);
+	free(components2);
+}
+#endif
+#endif
+
 
 
 /*
