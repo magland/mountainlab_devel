@@ -8,3 +8,5 @@ fi
 
 $mountainview \
 	--raw=$1/pre2.mda --firings=$1/firings.mda --mode=overview2 &
+
+sleep 4 #give the UI the chance to recover, else we tend to crash the system

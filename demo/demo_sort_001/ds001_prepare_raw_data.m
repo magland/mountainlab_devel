@@ -2,6 +2,8 @@ function ds001_prepare_raw_data
 
 prepare_hippocampal_tetrode_data(1);
 prepare_hippocampal_tetrode_data(2);
+prepare_raw_ms11d45;
+prepare_raw_synthetic;
 
 end
 
@@ -46,3 +48,60 @@ L=[...
 writemda(L,[output_path,'/locations.mda']);
 
 end
+
+
+function prepare_raw_ms11d45
+
+mfile_path=fileparts(mfilename('fullpath'));
+path0=sprintf('%s/output_ms11d45',mfile_path);
+if (~exist(path0,'dir')) mkdir(path0); end;
+datfile_path=sprintf('%s/../../franklab/raw/ms11d45.dat',mfile_path);
+locations=get_probe18_locations;
+adjacency_matrix=ms_adjacency_matrix(locations,2);
+
+o_extract.num_channels=72;
+o_extract.channels=[37:52,68,69];
+o_extract.t1=0; o_extract.t2=19e6;
+mscmd_extract(datfile_path,[path0,'/pre0.mda'],o_extract);
+
+writemda(locations,[path0,'/locations.mda']);
+writemda(adjacency_matrix,[path0,'/adjacency_matrix.mda']);
+
+end
+
+function L=get_probe18_locations
+
+L=[...
+0.0,0.0;...
+-0.5,1.0;...
+0.5,1.0;...
+-1.0,2.0;...
+1.0,2.0;...
+-1.0,3.0;...
+1.0,3.0;...
+-1.0,4.0;...
+1.0,4.0;...
+-1.0,5.0;...
+1.0,5.0;...
+-1.0,6.0;...
+1.0,6.0;...
+-1.0,7.0;...
+1.0,7.0;...
+-1.0,8.0;...
+1.0,8.0;...
+-1.0,9.0;...
+];
+
+end
+
+function prepare_raw_synthetic
+
+mfile_path=fileparts(mfilename('fullpath'));
+path0=sprintf('%s/output_synth_EJ_K7',mfile_path);
+if (~exist(path0,'dir')) mkdir(path0); end;
+Y=readmda(get_default_dataset('EJ K7'));
+writemda(Y,[path0,'/pre0.mda']);
+
+end
+
+
