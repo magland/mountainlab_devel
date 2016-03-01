@@ -1,3 +1,6 @@
+# MountainSort demo sorting script
+# Pass this script file name as command-line input to mountainsort
+
 if [ "$#" -ne 2 ]; then
     echo "You must provide two arguments."
     echo "The first is the raw file name, e.g., tetrode1_raw.mda"
@@ -14,7 +17,7 @@ freq_max=6000
 outlier_threshold=500 #only for preprocessing of data to exclude major artifacts
 detect_threshold=3.5
 detect_interval=10  #min num timepoints between spikes on same channel
-detectability_treshold 4 #for excluding noise subclusters
+detectability_threshold=4 #for excluding noise subclusters
 shell_increment=0.5 #for the branch cluster method
 min_shell_size=100 #for the branch cluster method
 
@@ -62,8 +65,4 @@ mscmd copy
 	--input=$2/firings3.mda --output=$2/firings.mda 
 
 echo "Sorting results are stored in $2/firings.mda"
-echo "Preprocessed data is stored in $2/pre2.mda"
-
-
-
-
+echo "Preprocessed data array is stored in $2/pre2.mda"
