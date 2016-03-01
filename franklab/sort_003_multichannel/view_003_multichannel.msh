@@ -1,0 +1,9 @@
+if [ "$#" -ne 1 ]; then
+    echo "You must provide one argument."
+    echo "It is the output directory, e.g., tetrode1_output"
+    exit -1
+fi
+
+
+$mountainview \
+	--raw=$1/pre2.mda --firings=$1/firings.mda
