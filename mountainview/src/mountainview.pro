@@ -25,7 +25,8 @@ HEADERS += \
     mvutils.h \
     mvoverview2widget.h \
     correlationmatrixview.h \
-    mvoverview2widgetcontrolpanel.h
+    mvoverview2widgetcontrolpanel.h \
+    mvclusterdetailwidget.h
 SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
@@ -40,13 +41,14 @@ SOURCES += mountainviewmain.cpp \
     mvutils.cpp \
     mvoverview2widget.cpp \
     correlationmatrixview.cpp \
-    mvoverview2widgetcontrolpanel.cpp
+    mvoverview2widgetcontrolpanel.cpp \
+    mvclusterdetailwidget.cpp
 
 INCLUDEPATH += ../../cpp/src
 DEPENDPATH += ../../cpp/src
 VPATH += ../../cpp/src
-HEADERS += get_sort_indices.h
-SOURCES += get_sort_indices.cpp
+HEADERS += get_sort_indices.h msutils.h
+SOURCES += get_sort_indices.cpp msutils.cpp
 
 HEADERS += get_principal_components.h
 SOURCES += get_principal_components.cpp

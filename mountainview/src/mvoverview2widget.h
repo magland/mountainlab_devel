@@ -31,6 +31,7 @@ private slots:
 	void slot_control_panel_button_clicked(QString str);
 	void slot_auto_correlogram_activated(int k);
     void slot_templates_clicked();
+	void slot_details_current_k_changed();
     void slot_cross_correlogram_current_unit_changed();
 
 private:

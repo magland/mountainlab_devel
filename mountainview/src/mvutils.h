@@ -2,6 +2,8 @@
 #define MVUTILS_H
 
 #include "diskarraymodel.h"
+#include "diskreadmda.h"
+#include <QList>
 
 Mda compute_mean_waveform(DiskArrayModel *C);
 Mda compute_mean_stdev_waveform(DiskArrayModel *C);

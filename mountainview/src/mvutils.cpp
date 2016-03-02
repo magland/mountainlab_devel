@@ -140,3 +140,4 @@ Mda compute_features(const QList<DiskArrayModel *> &C) {
 
 	return ret;
 }
+

@@ -131,7 +131,6 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
         d->add_horizontal_divider(layout);
 	}
 
-
 	{ // Templates
 		QGridLayout *G=new QGridLayout;
         layout->addLayout(G);
@@ -162,6 +161,7 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
 		layout->addLayout(G);
 
         d->add_group_label(G,"Actions");
+		d->add_button(G,"open_cluster_details","Open Details")->setToolTip("Open a new window with auto-computed cluster details");
         d->add_button(G,"open_templates","Open Templates")->setToolTip("Open a new window with auto-computed templates");
         d->add_button(G,"open_auto_correlograms","Open Auto-Correlograms")->setToolTip("Open a new auto-correlograms window");
         d->add_button(G,"open_raw_data","Open Raw Data")->setToolTip("Open a window of raw data");

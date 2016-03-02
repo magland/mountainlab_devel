@@ -6,6 +6,7 @@
 #include "mvoverview2widgetcontrolpanel.h"
 #include "get_principal_components.h"
 #include "get_sort_indices.h"
+#include "mvclusterdetailwidget.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -15,6 +16,9 @@
 #include <QTimer>
 #include <math.h>
 #include <QProgressDialog>
+#include "msutils.h"
+#include <QColor>
+#include <QStringList>
 
 class MVOverview2WidgetPrivate {
 public:
@@ -38,17 +42,21 @@ public:
 	Mda m_cross_correlograms_data;
 	Mda m_templates_data;
 
+	QList<QColor> m_channel_colors;
+
 	void create_cross_correlograms_data();
 	void create_templates_data();
 
 	void update_sizes();
 	void update_templates();
+	void update_cluster_details();
 	void do_amplitude_split();
 	void add_tab(QWidget *W,QString label);
 
 	void open_auto_correlograms();
 	void open_cross_correlograms(int k);
 	void open_templates();
+	void open_cluster_details();
 	void open_raw_data();
     void open_clips();
 
@@ -66,8 +74,6 @@ public:
 	CustomTabWidget *get_other_tab_widget(CustomTabWidget *W);
     CustomTabWidget *tab_widget_of(QWidget *W);
 
-	Mda extract_clips(DiskReadMda &X,const QList<long> &times,int clip_size);
-
 	void remove_widgets_of_type(QString widget_type);
 
 	Mda compute_centroid(Mda &clips);
@@ -76,6 +82,16 @@ public:
 
 	void set_progress(QString title,QString text,float frac);
 };
+
+QColor brighten(QColor col,int amount) {
+	int r=col.red()+amount;
+	int g=col.green()+amount;
+	int b=col.blue()+amount;
+	if (r>255) r=255; if (r<0) r=0;
+	if (g>255) g=255; if (g<0) g=0;
+	if (b>255) b=255; if (b<0) b=0;
+	return QColor(r,g,b,col.alpha());
+}
 
 MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 {
@@ -111,6 +127,13 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 	QHBoxLayout *hlayout=new QHBoxLayout;
 	hlayout->addWidget(splitter1);
 	this->setLayout(hlayout);
+
+	QStringList color_strings; color_strings
+			<< "#282828"
+			<< "#402020"
+			<< "#204020"
+			<< "#202070";
+	for (int i=0; i<color_strings.count(); i++) d->m_channel_colors << QColor(brighten(color_strings[i],80));
 }
 
 MVOverview2Widget::~MVOverview2Widget()
@@ -137,6 +160,7 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
     d->do_amplitude_split();
 	d->update_cross_correlograms();
 	d->update_templates();
+	d->update_cluster_details();
 	d->update_raw_views();
 }
 
@@ -147,7 +171,8 @@ void MVOverview2Widget::setSamplingFrequency(float freq)
 
 void MVOverview2Widget::setDefaultInitialization()
 {
-	d->open_templates();
+	//d->open_templates();
+	d->open_cluster_details();
 	d->m_current_tab_widget=d->m_tabs2;
 	d->open_auto_correlograms();
 }
@@ -166,6 +191,9 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 	else if (str=="update_templates") {
 		d->update_templates();
 	}
+	else if (str=="update_cluster_details") {
+		d->update_cluster_details();
+	}
     else if ((str=="update_amplitude_split")||(str=="use_amplitude_split")) {
 		d->do_amplitude_split();
 		d->remove_widgets_of_type("cross_correlograms");
@@ -179,6 +207,9 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
     else if (str=="open_templates") {
         d->open_templates();
     }
+	else if (str=="open_cluster_details") {
+		d->open_cluster_details();
+	}
 	else if (str=="open_raw_data") {
 		d->open_raw_data();
 	}
@@ -203,7 +234,15 @@ void MVOverview2Widget::slot_templates_clicked()
     int x=X->currentX();
     int clip_num=(x/clip_size)+1;
     d->m_current_kk=clip_num;
-    d->set_cross_correlograms_current_number(clip_num);
+	d->set_cross_correlograms_current_number(clip_num);
+}
+
+void MVOverview2Widget::slot_details_current_k_changed()
+{
+	MVClusterDetailWidget *X=(MVClusterDetailWidget *)sender();
+	int k=X->currentK();
+	d->m_current_kk=k;
+	d->set_cross_correlograms_current_number(k);
 }
 
 void MVOverview2Widget::slot_cross_correlogram_current_unit_changed()
@@ -312,7 +351,7 @@ void MVOverview2WidgetPrivate::create_templates_data()
 
 	printf("Setting up times and labels...\n");
 	for (int n=0; n<L; n++) {
-		times << (long)m_firings.value(1,n);
+		times << (long)m_firings.value(1,n)-1; //convert to 0-based indexing
 		labels << (long)m_firings.value(2,n);
 	}
 	int K=0;
@@ -383,6 +422,16 @@ void MVOverview2WidgetPrivate::update_templates()
 			update_widget(W);
 		}
 		if (W->property("widget_type")=="clips") {
+			update_widget(W);
+		}
+	}
+}
+
+void MVOverview2WidgetPrivate::update_cluster_details()
+{
+	QList<QWidget *> list=get_all_widgets();
+	foreach (QWidget *W,list) {
+		if (W->property("widget_type")=="cluster_details") {
 			update_widget(W);
 		}
 	}
@@ -753,6 +802,19 @@ void MVOverview2WidgetPrivate::open_templates()
 	update_widget(X);
 }
 
+void MVOverview2WidgetPrivate::open_cluster_details()
+{
+	MVClusterDetailWidget *X=new MVClusterDetailWidget;
+	X->setChannelColors(m_channel_colors);
+	X->setRaw(m_raw);
+	X->setFirings(m_firings_original);
+	X->setProperty("widget_type","cluster_details");
+	X->setSamplingFrequency(m_sampling_frequency);
+	QObject::connect(X,SIGNAL(signalCurrentKChanged()),q,SLOT(slot_details_current_k_changed()));
+	add_tab(X,QString("Details"));
+	update_widget(X);
+}
+
 void MVOverview2WidgetPrivate::open_raw_data()
 {
     SSTimeSeriesWidget *X=new SSTimeSeriesWidget;
@@ -857,6 +919,9 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		WW->setMarkerLinesVisible(false);
 		printf(".\n");
 	}
+	else if (widget_type=="cluster_details") {
+		MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
+	}
     else if (widget_type=="clips") {
         printf("Extracting clips...\n");
         SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
@@ -911,6 +976,10 @@ void MVOverview2WidgetPrivate::set_templates_current_number(int kk)
             SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
             WW->setCurrentX((int)(clip_size*(kk-1+0.5)));
         }
+		else if (widget_type=="cluster_details") {
+			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
+			WW->setCurrentK(kk);
+		}
     }
 }
 
@@ -964,26 +1033,6 @@ CustomTabWidget *MVOverview2WidgetPrivate::tab_widget_of(QWidget *W)
         if (m_tabs2->widget(i)==W) return m_tabs2;
     }
     return m_tabs1;
-}
-
-Mda MVOverview2WidgetPrivate::extract_clips(DiskReadMda &X, const QList<long> &times,int clip_size)
-{
-	int M=X.N1();
-	int T=clip_size;
-	int NC=times.count();
-	Mda ret; ret.allocate(M,T,NC);
-	double *retptr=ret.dataPtr();
-	int dt1=-T/2;
-	for (int i=0; i<NC; i++) {
-		int jjj=i*M*T;
-		for (int t=0; t<T; t++) {
-			for (int m=0; m<M; m++) {
-				retptr[jjj]=X.value(m,times[i]-1+t+dt1);
-				jjj++;
-			}
-		}
-	}
-	return ret;
 }
 
 void MVOverview2WidgetPrivate::remove_widgets_of_type(QString widget_type)
