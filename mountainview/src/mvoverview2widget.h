@@ -52,4 +52,5 @@ private slots:
 	void slot_switch_to_other_tab_widget();
 };
 
+
 #endif // MVOVERVIEW2WIDGET_H

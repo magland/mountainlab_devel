@@ -262,7 +262,6 @@ int get_num_clips_from_process_output(QString output) {
 
 void SSTimeSeriesWidget::slot_extract_clips()
 {
-	qDebug() << "slot_extract_clips";
 	SSAbstractView *V=d->m_current_view;
 	if (!V) {
 		QMessageBox::critical(this,"Extract clips","No view selected.");
@@ -303,7 +302,6 @@ void SSTimeSeriesWidget::slot_extract_clips()
 		if (QFileInfo(save_to_path).suffix()!="mda") save_to_path+=".mda";
 	}
 
-	qDebug() << "slot_extract_clips";
 	SSTimeSeriesView *VV=(SSTimeSeriesView *)V;
 	DiskArrayModel *DD=VV->data();
 	QString data_path=DD->path();
@@ -311,7 +309,6 @@ void SSTimeSeriesWidget::slot_extract_clips()
 	MemoryMda TL0;
 	if (TL) TL0=TL->getTimepointsLabels(0,TL->getMaxTimepoint());
 	else qWarning() << "TL is null in slot_extract_clips";
-	qDebug() << "##############" << TL0.N1() << TL0.N2();
 	QString TL_path=ssTempPath()+"/spikespy-tmp-extract-clips-TL.mda";
 	removeOnClose(TL_path);
 	TL0.write(TL_path.toLatin1().data());

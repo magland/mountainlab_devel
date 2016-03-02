@@ -250,7 +250,7 @@ void MVOverview2Widget::slot_cross_correlogram_current_unit_changed()
     MVCrossCorrelogramsWidget *X=(MVCrossCorrelogramsWidget *)sender();
     d->m_current_kk=X->currentUnit();
     d->set_cross_correlograms_current_number(X->currentUnit());
-    d->set_templates_current_number(X->currentUnit());
+	d->set_templates_current_number(X->currentUnit());
 }
 
 typedef QList<long> IntList;
@@ -808,11 +808,13 @@ void MVOverview2WidgetPrivate::open_cluster_details()
 	X->setChannelColors(m_channel_colors);
 	X->setRaw(m_raw);
 	X->setFirings(m_firings_original);
-	X->setProperty("widget_type","cluster_details");
 	X->setSamplingFrequency(m_sampling_frequency);
 	QObject::connect(X,SIGNAL(signalCurrentKChanged()),q,SLOT(slot_details_current_k_changed()));
-	add_tab(X,QString("Details"));
-	update_widget(X);
+	MVClusterDetailWidgetScrollArea *X_SA=new MVClusterDetailWidgetScrollArea;
+	X_SA->setTheWidget(X);
+	X_SA->setProperty("widget_type","cluster_details");
+	add_tab(X_SA,QString("Details"));
+	update_widget(X_SA);
 }
 
 void MVOverview2WidgetPrivate::open_raw_data()
@@ -920,7 +922,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		printf(".\n");
 	}
 	else if (widget_type=="cluster_details") {
-		MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
+		MVClusterDetailWidget *WW=((MVClusterDetailWidgetScrollArea *)W)->theWidget();
 	}
     else if (widget_type=="clips") {
         printf("Extracting clips...\n");
@@ -961,7 +963,7 @@ void MVOverview2WidgetPrivate::set_cross_correlograms_current_number(int kk)
         QString widget_type=W->property("widget_type").toString();
         if ((widget_type=="auto_correlograms")||(widget_type=="cross_correlograms")) {
             MVCrossCorrelogramsWidget *WW=(MVCrossCorrelogramsWidget *)W;
-            WW->setCurrentUnit(kk);
+			WW->setCurrentUnit(kk);
         }
     }
 }
@@ -977,7 +979,7 @@ void MVOverview2WidgetPrivate::set_templates_current_number(int kk)
             WW->setCurrentX((int)(clip_size*(kk-1+0.5)));
         }
 		else if (widget_type=="cluster_details") {
-			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
+			MVClusterDetailWidget *WW=((MVClusterDetailWidgetScrollArea *)W)->theWidget();
 			WW->setCurrentK(kk);
 		}
     }
