@@ -1,14 +1,15 @@
-function [Yfile truefiringsfile trueWfile] = get_default_dataset(name)
+function [Yfile truefiringsfile trueWfile samplerate] = get_default_dataset(name)
 % GET_DEFAULT_DATASET.  Generate synthetic dataset and return path
 %
-% [Yfile truefiringsfile trueWfile] = default_test_dataset(name)
+% [Yfile truefiringsfile trueWfile samplerate] = default_test_dataset(name)
 %
 % This is the universal function to call to get a synthetic datasets.
 %
 % Input:
-%  name - a string choosing the test dataset type
-% Outputs: are filenames generated of Y timeseries, and truth firings and
-% waveforms.
+%  name - a string choosing the test dataset type (if absent, default used)
+%
+% Outputs: first 3 are filenames generated of Y timeseries, and truth firings and
+%  waveforms. 4th output is sample rate in samples/sec.
 
 % Magland+Barnett 2/25/16
 
@@ -18,7 +19,7 @@ mfile_path=fileparts(mfilename('fullpath'));
 
 if (strcmp(name,'EJ K7'))
   head=[mfile_path,'/demo_data/EJK7'];  % relative to this function!
-  [Yfile truefiringsfile trueWfile] = write_demo_timeseries(head);
+  [Yfile truefiringsfile trueWfile samplerate] = write_demo_timeseries_func(head);
 elseif (strcmp(name,'synthetic2'))
   % etc ...
 else
@@ -28,7 +29,7 @@ end;
 end
 %%%%%%%%%%%
 
-function [Yfile truefiringsfile trueWfile] = write_demo_timeseries(head)
+function [Yfile truefiringsfile trueWfile samplerate] = write_demo_timeseries_func(head)
 % Function packaging the synthesis script.
 %
 % Example script showing how to synthesize random time series and write to MDA.
