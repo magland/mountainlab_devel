@@ -2,10 +2,12 @@ function accuracy_sort_demotimeseries
 % measure accuracy vs known firing times on synthetic demo data.
 % Currently uses some C executables in the chain, shuffling data to MDA & back.
 % Barnett 2/25/16. 2/26/16 playing w/ sorting chain & viz.
+% 3/3/16 J's ds001
 
 %%%% Set up paths
 mfile_path=fileparts(mfilename('fullpath'));
 addpath([mfile_path,'/../franklab/sort_002_multichannel']);
+addpath([mfile_path,'/../demo/demo_sort_001']);
 rng(1);  % fix the seed
 [Yfile truefiringsfile trueWfile] = get_default_dataset('EJ K7'); % demo data
 outdir=[mfile_path,'/output'];
@@ -23,10 +25,21 @@ ms_view_clusters(trueX,truelabels); title('true labels in fea space');
 Wtrue = readmda(trueWfile);
 tsubplot(2,2,2); ms_view_templates(Wtrue), title('true W'); drawnow
 
-if 1         % standard simple sort chain, w/o filtering or prewhitening
+% common sorting opts
+o.samplefreq=2e4;   % needed  
+o.freq_min = 100; o.freq_max = inf;    % basically don't filter
+
+if 1         % Standard simple matlab chain
   o.clip_size=T; o.detect_interval = 20;
-  o.detect_threshold = 80;    % absolute (uV);  80 uV collects a noise clus
-  times = ms_detect(Y,o);
+  o.detect_threshold = 80;     % absolute (uV);  80 uV collects a noise clus
+  %o.detect_threshold = 3.5;   % only if whitened, in sigma units
+  %Y = ms_filter(Y,o); Y = ms_whiten(Y);  % if want match what ds001 does
+  if 0   % the C interface to detect
+    writemda(Y,prefile);
+    mscmd_detect(prefile,[outdir,'/detect.mda'],o_detect);
+  else
+    times = ms_detect(Y,o);
+  end
   if 0      % the C interface to get clips
     writemda([0*times; times], [outdir,'/detect.mda']);
     clip_opts.clip_size=T;
@@ -40,6 +53,17 @@ if 1         % standard simple sort chain, w/o filtering or prewhitening
   firingsfile=[outdir '/firings.mda'];    % make MDA for MV and mscmd_* to read
   writemda(TL2F(times,labels),firingsfile);
   prefile = Yfile;    % since no preproc
+  
+elseif 0     % J's ds001 chain
+  o.detect_threshold=3;
+  o.detect_interval=20;   % in samples
+  o.shell_increment=1.0;    % doubled so faster
+  firingsfile=[outdir '/firings.mda'];    % make MDA for MV and mscmd_* to read
+  [firingsfile,prefile]=ds001_sort(Yfile,outdir,o);
+  firings=readmda(firingsfile);       % read sort output file
+  times=firings(2,:); labels=firings(3,:);
+  clips=ms_extract_clips(Y,times,T);
+  X = ms_event_features(clips,3);       % 3 features, just for vis
   
 else          % J's experimental stuff
   sort_opts=struct;
@@ -77,7 +101,7 @@ o.max_matching_offset = 10;    % in samples; 0.5 ms
 if 1     % old matlab validspike way
   [perm Q acc t] = times_labels_accuracy(truetimes,truelabels,times,labels,o);
 else     % C fast way, but not full times-labels best search
-  mscmd_confusion_matrix([dpath,'/truefirings.mda'],firingsfile,[outdir '/accconfmat.mda'],o.max_matching_offset);
+  mscmd_confusion_matrix(truefiringsfile,firingsfile,[outdir '/accconfmat.mda'],o.max_matching_offset);
   Q = readmda([outdir '/accconfmat.mda']);   % un-permed
   [perm Q] = bestcolpermconfmat(Q);
   disp('best permed extended confusion matrix:'), Q
