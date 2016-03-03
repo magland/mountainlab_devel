@@ -31,12 +31,15 @@ o.freq_min = 100; o.freq_max = inf;    % basically don't filter
 
 if 1         % Standard simple matlab chain
   o.clip_size=T; o.detect_interval = 20;
-  o.detect_threshold = 80;     % absolute (uV);  80 uV collects a noise clus
+  o.detect_threshold = 100;     % absolute (uV);  80 uV collects a noise clus
   %o.detect_threshold = 3.5;   % only if whitened, in sigma units
   %Y = ms_filter(Y,o); Y = ms_whiten(Y);  % if want match what ds001 does
   if 0   % the C interface to detect
-    writemda(Y,prefile);
-    mscmd_detect(prefile,[outdir,'/detect.mda'],o_detect);
+    prefile = [outdir,'/pre.mda'];
+    writemda(Y,prefile);          % in case Y differs from raw
+    mscmd_detect(prefile,[outdir,'/detect.mda'],o);
+    times=readmda([outdir,'/detect.mda']);
+    times=times(2,:);
   else
     times = ms_detect(Y,o);
   end
@@ -54,7 +57,7 @@ if 1         % Standard simple matlab chain
   writemda(TL2F(times,labels),firingsfile);
   prefile = Yfile;    % since no preproc
   
-elseif 0     % J's ds001 chain
+elseif 1     % J's ds001 chain
   o.detect_threshold=3;
   o.detect_interval=20;   % in samples
   o.shell_increment=1.0;    % doubled so faster
