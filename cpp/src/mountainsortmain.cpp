@@ -51,7 +51,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="bandpass_filter";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-		P.version="0.11";
+        P.version="0.12";
 		PT.registerProcessor(P);
 	}
 	{
@@ -557,6 +557,9 @@ int main(int argc,char *argv[]) {
 		double samplefreq=CLP.named_parameters["samplefreq"].toDouble();
 		double freq_min=CLP.named_parameters["freq_min"].toDouble();
 		double freq_max=CLP.named_parameters["freq_max"].toDouble();
+        if (CLP.named_parameters["freq_max"]=="inf") {
+            freq_max=0; //3/3/2016
+        }
 		double outlier_threshold=CLP.named_parameters["outlier_threshold"].toDouble();
 
 		if ((input_path.isEmpty())||(output_path.isEmpty())) {bandpass_filter_usage(); return -1;}

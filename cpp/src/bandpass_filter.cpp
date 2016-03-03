@@ -230,8 +230,12 @@ void define_kernel(int N,float *kernel,double samplefreq,double freq_min,double 
 	for (int i=0; i<N; i++) {
 		float absf=fabs(fgrid[i]);
 		float val=1;
-		val*=(1+tanh((absf-freq_min)/fwidlo))/2;
-		val*=(1-tanh((absf-freq_max)/fwidhi))/2;
+        if (freq_min!=0) { //(suggested by ahb) added on 3/3/16 by jfm
+            val*=(1+tanh((absf-freq_min)/fwidlo))/2;
+        }
+        if (freq_max!=0) { //added on 3/3/16 by jfm
+            val*=(1-tanh((absf-freq_max)/fwidhi))/2;
+        }
 		kernel[i]=val;
 	}
 
