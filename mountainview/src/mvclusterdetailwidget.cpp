@@ -10,17 +10,12 @@
 #include <QMouseEvent>
 #include <QSet>
 
-struct Subcluster {
-    QList<int> inds;
-};
-
 struct ClusterData {
-	int k;
+    int k;
 	int channel;
-    Mda templates;
-	QList<int> inds;
-    QList<Subcluster> subclusters;
-	QList<long> times;
+    Mda template0;
+    QList<int> inds;
+    QList<long> times;
 	QList<double> peaks;
 };
 
@@ -59,7 +54,7 @@ private:
 	bool m_hovered;
 	bool m_selected;
 
-    QPointF template_coord2pix(int template_num,int m,double t,double val);
+    QPointF template_coord2pix(int m,double t,double val);
 	QColor get_firing_rate_text_color(double rate);
 };
 
@@ -68,9 +63,9 @@ public:
 	MVClusterDetailWidget *q;
 
 	DiskReadMda m_raw;
-	DiskReadMda m_firings;
-    QList<int> m_group_numbers;
+    DiskReadMda m_firings;
 	double m_sampling_freq;
+    QList<int> m_group_numbers;
 
 	bool m_calculations_needed;
 	int m_clip_size;
@@ -101,6 +96,8 @@ public:
 	int find_view_index_for_k(int k);
 	void ensure_view_visible(ClusterView *V);
 	void zoom(double factor);
+    QString group_label_for_k(int k);
+    bool has_nontrivial_group_numbers();
 };
 
 MVClusterDetailWidget::MVClusterDetailWidget(QWidget *parent) : QWidget(parent)
@@ -146,27 +143,18 @@ void MVClusterDetailWidget::setRaw(DiskReadMda &X)
 	this->update();
 }
 
-int compute_max_label(DiskReadMda &firings) {
-    int K=0;
-    for (int i=0; i<firings.N2(); i++) {
-        int val=(int)firings.value(2,i);
-        if (val>K) K=val;
-    }
-    return K;
+void MVClusterDetailWidget::setFirings(const DiskReadMda &X)
+{
+    d->m_firings=X;
+    d->m_space_ratio=0; //this is a hack to scale things back to fit into the window
+	d->m_calculations_needed=true;
+    this->update();
 }
 
-void MVClusterDetailWidget::setFirings(DiskReadMda &X,const QList<int> &group_numbers_in)
+void MVClusterDetailWidget::setGroupNumbers(const QList<int> &group_numbers)
 {
-    QList<int> group_numbers=group_numbers_in;
-    if (group_numbers.isEmpty()) {
-        int K=compute_max_label(X);
-        group_numbers << 0;
-        for (int k=1; k<=K; k++) group_numbers << k;
-    }
-	d->m_firings=X;
     d->m_group_numbers=group_numbers;
-	d->m_calculations_needed=true;
-	this->update();
+    this->update();
 }
 
 void MVClusterDetailWidget::setSamplingFrequency(double freq)
@@ -212,18 +200,15 @@ ChannelSpacingInfo compute_channel_spacing_info(QList<ClusterData> &cdata,double
 	ChannelSpacingInfo info;
 	info.vert_scaling_factor=1;
 	if (cdata.count()==0) return info;
-    int M=cdata[0].templates.N1();
-    int T=cdata[0].templates.N2();
+    int M=cdata[0].template0.N1();
+    int T=cdata[0].template0.N2();
 	double minval=0,maxval=0;
-	for (int i=0; i<cdata.count(); i++) {
-        int NT=cdata[i].templates.N3();
-        for (int ii=0; ii<NT; ii++) {
-            for (int t=0; t<T; t++) {
-                for (int m=0; m<M; m++) {
-                    double val=cdata[i].templates.value(m,t,ii);
-                    if (val<minval) minval=val;
-                    if (val>maxval) maxval=val;
-                }
+    for (int i=0; i<cdata.count(); i++) {
+        for (int t=0; t<T; t++) {
+            for (int m=0; m<M; m++) {
+                double val=cdata[i].template0.value(m,t);
+                if (val<minval) minval=val;
+                if (val>maxval) maxval=val;
             }
         }
 	}
@@ -254,7 +239,7 @@ void MVClusterDetailWidget::paintEvent(QPaintEvent *evt)
 	for (int i=0; i<d->m_cluster_data.count(); i++) {
 		ClusterData *CD=&d->m_cluster_data[i];
 		ClusterView *V=new ClusterView(this,d);
-		V->setHighlighted(CD->k==d->m_current_k);
+        V->setHighlighted(CD->k==d->m_current_k);
 		V->setSelected(d->m_selected_ks.contains(CD->k));
 		V->setHovered(CD->k==d->m_hovered_k);
 		V->setClusterData(CD);
@@ -429,21 +414,21 @@ void MVClusterDetailWidgetPrivate::do_calculations()
 	int K=0;
 	for (int i=0; i<L; i++) if (labels[i]>K) K=labels[i];
 
-	for (int k=1; k<=K; k++) {
-		set_progress("Computing Cluster Data","Computing Cluster Data",k*1.0/K);
-		ClusterData CD;
-		CD.k=k;
-		CD.channel=0;
-		for (int i=0; i<L; i++) {
-			if (labels[i]==k) {
-				CD.inds << i;
-				CD.times << times[i];
-				CD.channel=channels[i];
-				CD.peaks << peaks[i];
-			}
-		}
-		Mda clips_k=extract_clips(m_raw,CD.times,T);
-        CD.templates=compute_mean_clip(clips_k);
+    for (int k=1; k<=K; k++) {
+        set_progress("Computing Cluster Data","Computing Cluster Data",k*1.0/K);
+        ClusterData CD;
+        CD.k=k;
+        CD.channel=0;
+        for (int i=0; i<L; i++) {
+            if (labels[i]==k) {
+                CD.inds << i;
+                CD.times << times[i];
+                CD.channel=channels[i];
+                CD.peaks << peaks[i];
+            }
+        }
+        Mda clips_k=extract_clips(m_raw,CD.times,T);
+        CD.template0=compute_mean_clip(clips_k);
 		m_cluster_data << CD;
 	}
 }
@@ -547,7 +532,26 @@ void MVClusterDetailWidgetPrivate::zoom(double factor)
 	else {
 		m_space_ratio*=factor;
 	}
-	q->update();
+    q->update();
+}
+
+QString MVClusterDetailWidgetPrivate::group_label_for_k(int k)
+{
+    if (m_group_numbers.isEmpty()) return QString("%1").arg(k);
+    int g=m_group_numbers.value(k);
+    for (int i=1; i<k; i++) {
+        if (m_group_numbers[i]==g) return "";
+    }
+    return QString("%1").arg(g);
+}
+
+bool MVClusterDetailWidgetPrivate::has_nontrivial_group_numbers()
+{
+    if (m_group_numbers.isEmpty()) return false;
+    for (int i=1; i<m_group_numbers.count(); i++) {
+        if (m_group_numbers[i]!=i) return true;
+    }
+    return false;
 }
 
 
@@ -568,10 +572,9 @@ void ClusterView::paint(QPainter *painter, QRectF rect)
 	painter->setPen(pen_frame);
 	painter->drawRect(rect2);
 
-    Mda templates=m_CD->templates;
-    int M=templates.N1();
-    int T=templates.N2();
-    int NT=templates.N3();
+    Mda template0=m_CD->template0;
+    int M=template0.N1();
+    int T=template0.N2();
 	m_T=T;
 
 	int top_height=20,bottom_height=40;
@@ -580,20 +583,18 @@ void ClusterView::paint(QPainter *painter, QRectF rect)
 	m_template_rect=QRectF(rect2.x(),rect2.y()+top_height,rect2.width(),rect2.height()-bottom_height-top_height);
 	m_bottom_rect=QRectF(rect2.x(),rect2.y()+rect2.height()-bottom_height,rect2.width(),bottom_height);
 
-	QPen pen; pen.setWidth(1);
-    for (int ii=0; ii<NT; ii++) {
-        for (int m=0; m<M; m++) {
-            QColor col=d->m_channel_colors.value(m%d->m_channel_colors.count());
-            pen.setColor(col);
-            painter->setPen(pen);
-            QPainterPath path;
-            for (int t=0; t<T; t++) {
-                QPointF pt=template_coord2pix(ii,m,t,templates.value(m,t,ii));
-                if (t==0) path.moveTo(pt);
-                else path.lineTo(pt);
-            }
-            painter->drawPath(path);
+    QPen pen; pen.setWidth(1);
+    for (int m=0; m<M; m++) {
+        QColor col=d->m_channel_colors.value(m%d->m_channel_colors.count());
+        pen.setColor(col);
+        painter->setPen(pen);
+        QPainterPath path;
+        for (int t=0; t<T; t++) {
+            QPointF pt=template_coord2pix(m,t,template0.value(m,t));
+            if (t==0) path.moveTo(pt);
+            else path.lineTo(pt);
         }
+        painter->drawPath(path);
     }
 
 	QFont font=painter->font();
@@ -603,7 +604,14 @@ void ClusterView::paint(QPainter *painter, QRectF rect)
 	bool compressed_info=false;
 	if (rect2.width()<60) compressed_info=true;
 
-	txt=QString("%1").arg(m_CD->k);
+    QString group_label=d->group_label_for_k(m_CD->k);
+    if ((!group_label.isEmpty())&&(d->has_nontrivial_group_numbers())) {
+        pen.setColor(d->m_colors["divider_line"]);
+        pen.setStyle(Qt::DashLine);
+        painter->setPen(pen);
+        painter->drawLine(rect2.x(),rect2.y(),rect2.x(),rect2.y()+rect2.height());
+    }
+    txt=QString("%1").arg(group_label);
 	font.setPixelSize(16);
 	if (compressed_info) font.setPixelSize(12);
 	pen.setColor(Qt::darkBlue);
@@ -632,16 +640,14 @@ void ClusterView::paint(QPainter *painter, QRectF rect)
 
 double ClusterView::spaceNeeded()
 {
-	return 1;
+    return 1;
 }
 
-QPointF ClusterView::template_coord2pix(int template_num,int m, double t, double val)
+QPointF ClusterView::template_coord2pix(int m, double t, double val)
 {
-    int num_templates=this->m_CD->templates.N3();
     double pcty=m_csi.channel_locations.value(m)-val*m_csi.vert_scaling_factor; //negative because (0,0) is top-left, not bottom-right
 	double pctx=0;
-	if (m_T) pctx=(t+0.5)/m_T;
-    pctx=template_num/num_templates+pctx/num_templates;
+    if (m_T) pctx=(t+0.5)/m_T;
 	int margx=4;
 	int margy=4;
 	float x0=m_template_rect.x()+margx+pctx*(m_template_rect.width()-margx*2);
