@@ -810,11 +810,9 @@ void MVOverview2WidgetPrivate::open_cluster_details()
 	X->setFirings(m_firings_original);
 	X->setSamplingFrequency(m_sampling_frequency);
 	QObject::connect(X,SIGNAL(signalCurrentKChanged()),q,SLOT(slot_details_current_k_changed()));
-	MVClusterDetailWidgetScrollArea *X_SA=new MVClusterDetailWidgetScrollArea;
-	X_SA->setTheWidget(X);
-	X_SA->setProperty("widget_type","cluster_details");
-	add_tab(X_SA,QString("Details"));
-	update_widget(X_SA);
+	X->setProperty("widget_type","cluster_details");
+	add_tab(X,QString("Details"));
+	update_widget(X);
 }
 
 void MVOverview2WidgetPrivate::open_raw_data()
@@ -922,7 +920,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		printf(".\n");
 	}
 	else if (widget_type=="cluster_details") {
-		MVClusterDetailWidget *WW=((MVClusterDetailWidgetScrollArea *)W)->theWidget();
+		MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
 	}
     else if (widget_type=="clips") {
         printf("Extracting clips...\n");
@@ -979,7 +977,7 @@ void MVOverview2WidgetPrivate::set_templates_current_number(int kk)
             WW->setCurrentX((int)(clip_size*(kk-1+0.5)));
         }
 		else if (widget_type=="cluster_details") {
-			MVClusterDetailWidget *WW=((MVClusterDetailWidgetScrollArea *)W)->theWidget();
+			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
 			WW->setCurrentK(kk);
 		}
     }

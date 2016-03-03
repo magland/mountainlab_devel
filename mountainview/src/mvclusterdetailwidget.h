@@ -35,18 +35,4 @@ private:
 	MVClusterDetailWidgetPrivate *d;
 };
 
-class MVClusterDetailWidgetScrollArea : public QScrollArea {
-	Q_OBJECT
-public:
-	MVClusterDetailWidgetScrollArea(QWidget *parent=0);
-	void setTheWidget(MVClusterDetailWidget *W);
-	MVClusterDetailWidget *theWidget();
-private slots:
-	void slot_current_k_changed();
-	void slot_zoomed_in();
-private:
-	MVClusterDetailWidget *the_widget;
-	void ensure_visible(double x);
-};
-
 #endif // MVCLUSTERDETAILWIDGET_H

@@ -159,18 +159,21 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 	Q_UNUSED(evt)
 	QPainter painter(this);
 
+	QColor hover_color=QColor(150,150,150,80);
+	QColor current_color=QColor(150,200,200,80);
+	QColor hover_current_color=QColor(170,200,200,80);
+
 	QRect R(0,0,width(),height());
 	if ((d->m_hovered)&&(!d->m_selected)&&(!d->m_current)) {
-		painter.fillRect(R,QColor(150,150,150,80));
+		painter.fillRect(R,hover_color);
     }
 	else if ((!d->m_hovered)&&(d->m_current)) {
-		painter.setPen(QPen(Qt::darkBlue,10));
-		painter.drawRect(R);
+		painter.fillRect(R,current_color);
 	}
 	else if ((d->m_hovered)&&(d->m_current)) {
-		painter.setPen(QPen(Qt::darkBlue,10));
+		painter.setPen(QPen(Qt::darkRed,10));
 		painter.drawRect(R);
-		painter.fillRect(R,QColor(0,0,0,30));
+		painter.fillRect(R,hover_current_color);
 	}
 	else if ((!d->m_hovered)&&(d->m_selected)) {
 		painter.setPen(QPen(Qt::darkRed,10));
@@ -179,7 +182,7 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 	else if ((d->m_hovered)&&(d->m_selected)) {
 		painter.setPen(QPen(Qt::darkRed,10));
 		painter.drawRect(R);
-		painter.fillRect(R,QColor(0,0,0,30));
+		painter.fillRect(R,hover_color);
 	}
 	else {
 

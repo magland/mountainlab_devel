@@ -8,7 +8,6 @@
 #include <QMap>
 #include <QDebug>
 #include <QMouseEvent>
-#include <QScrollBar>
 
 struct ClusterData {
 	int k;
@@ -28,7 +27,7 @@ class ClusterView {
 public:
 	friend class MVClusterDetailWidgetPrivate;
 	friend class MVClusterDetailWidget;
-	ClusterView(MVClusterDetailWidget *q0,MVClusterDetailWidgetPrivate *d0) {q=q0; d=d0; m_T=1; m_CD=0; m_highlighted=false; m_hovered=false;}
+	ClusterView(MVClusterDetailWidget *q0,MVClusterDetailWidgetPrivate *d0) {q=q0; d=d0; m_T=1; m_CD=0; m_highlighted=false; m_hovered=false; x_position_before_scaling=0;}
 	void setClusterData(ClusterData *CD) {m_CD=CD;}
 	void setChannelSpacingInfo(const ChannelSpacingInfo &csi) {m_csi=csi; m_T=0;}
 	void setHighlighted(bool val) {m_highlighted=val;}
@@ -40,6 +39,7 @@ public:
 
 	MVClusterDetailWidget *q;
 	MVClusterDetailWidgetPrivate *d;
+	double x_position_before_scaling;
 private:
 	ClusterData *m_CD;
 	ChannelSpacingInfo m_csi;
@@ -68,8 +68,8 @@ public:
 	QList<ClusterData> m_cluster_data;
 
 	double m_vscale_factor;
-	double m_min_space_ratio;
 	double m_space_ratio;
+	double m_scroll_x;
 
 	QProgressDialog *m_progress_dialog;
 	QMap<QString,QColor> m_colors;
@@ -77,6 +77,7 @@ public:
 	double m_total_time_sec;
 	int m_current_k;
 	int m_hovered_k;
+	double m_anchor_x; double m_anchor_scroll_x;
 
 	QList<ClusterView *> m_views;
 
@@ -85,8 +86,10 @@ public:
 	void compute_total_time();
 	void set_current_k(int k);
 	void set_hovered_k(int k);
-	int find_view_at(QPoint pos);
+	int find_view_index_at(QPoint pos);
 	ClusterView *find_view_for_k(int k);
+	int find_view_index_for_k(int k);
+	void ensure_view_visible(ClusterView *V);
 };
 
 MVClusterDetailWidget::MVClusterDetailWidget(QWidget *parent) : QWidget(parent)
@@ -96,13 +99,15 @@ MVClusterDetailWidget::MVClusterDetailWidget(QWidget *parent) : QWidget(parent)
 	d->m_calculations_needed=true;
 	d->m_clip_size=100;
 	d->m_progress_dialog=0;
-	d->m_vscale_factor=1;
+	d->m_vscale_factor=2;
 	d->m_total_time_sec=1;
 	d->m_sampling_freq=0;
 	d->m_current_k=-1;
 	d->m_hovered_k=-1;
-	d->m_min_space_ratio=0;
-	d->m_space_ratio=1;
+	d->m_space_ratio=50;
+	d->m_scroll_x=0;
+	d->m_anchor_x=-1;
+	d->m_anchor_scroll_x=-1;
 
 	d->m_colors["background"]=QColor(240,240,240);
 	d->m_colors["frame1"]=QColor(245,245,245);
@@ -182,7 +187,7 @@ ChannelSpacingInfo compute_channel_spacing_info(QList<ClusterData> &cdata,double
 		y0+=1.0/M;
 	}
 	double maxabsval=qMax(maxval,-minval);
-	info.vert_scaling_factor=0.5/M/maxabsval/vscale_factor;
+	info.vert_scaling_factor=0.5/M/maxabsval*vscale_factor;
 	return info;
 }
 
@@ -209,40 +214,67 @@ void MVClusterDetailWidget::paintEvent(QPaintEvent *evt)
 		d->m_views << V;
 	}
 
-
 	double total_space_needed=0;
 	for (int i=0; i<d->m_views.count(); i++) {
 		total_space_needed+=d->m_views[i]->spaceNeeded();
 	}
+	if (d->m_scroll_x<0) d->m_scroll_x=0;
+	if (total_space_needed*d->m_space_ratio-d->m_scroll_x<this->width()) {
+		d->m_scroll_x=total_space_needed*d->m_space_ratio-this->width();
+		if (d->m_scroll_x<0) d->m_scroll_x=0;
+	}
+	if ((d->m_scroll_x==0)&&(total_space_needed*d->m_space_ratio<this->width())) {
+		d->m_space_ratio=this->width()/total_space_needed;
+		if (d->m_space_ratio>300) d->m_space_ratio=300;
+	}
 
-	double W0=this->width();
-	if (this->parentWidget()) W0=this->parentWidget()->width();
-
-	d->m_space_ratio=W0/total_space_needed;
-	if (d->m_space_ratio<d->m_min_space_ratio) d->m_space_ratio=d->m_min_space_ratio;
-	this->setMinimumWidth(d->m_space_ratio*total_space_needed);
 
 	ChannelSpacingInfo csi=compute_channel_spacing_info(d->m_cluster_data,d->m_vscale_factor);
 
-	float x0=0;
+	float x0_before_scaling=0;
 	for (int i=0; i<d->m_views.count(); i++) {
 		ClusterView *V=d->m_views[i];
-		QRectF rect(x0,0,V->spaceNeeded()*d->m_space_ratio,height());
+		QRectF rect(x0_before_scaling*d->m_space_ratio-d->m_scroll_x,0,V->spaceNeeded()*d->m_space_ratio,height());
 		V->setChannelSpacingInfo(csi);
 		V->paint(&painter,rect);
-		x0+=V->spaceNeeded()*d->m_space_ratio;
+		V->x_position_before_scaling=x0_before_scaling;
+		x0_before_scaling+=V->spaceNeeded();
 	}
 }
 
 void MVClusterDetailWidget::keyPressEvent(QKeyEvent *evt)
 {
-
+	double factor=1.15;
+	if (evt->key()==Qt::Key_Up) {
+		d->m_vscale_factor*=factor;
+		update();
+	}
+	else if (evt->key()==Qt::Key_Down) {
+		d->m_vscale_factor/=factor;
+		update();
+	}
 }
 
 void MVClusterDetailWidget::mousePressEvent(QMouseEvent *evt)
 {
 	QPoint pt=evt->pos();
-	int view_index=d->find_view_at(pt);
+	d->m_anchor_x=pt.x();
+	d->m_anchor_scroll_x=d->m_scroll_x;
+}
+
+void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent *evt)
+{
+	QPoint pt=evt->pos();
+
+	if ((d->m_anchor_x>=0)&&(qAbs(pt.x()-d->m_anchor_x)>5)) {
+		d->m_scroll_x=d->m_anchor_scroll_x-(pt.x()-d->m_anchor_x);
+		d->m_anchor_x=-1;
+		update();
+		return;
+	}
+	d->m_anchor_x=-1;
+
+	int view_index=d->find_view_index_at(pt);
 	if (view_index>=0) {
 		int k=d->m_views[view_index]->clusterData()->k;
 		if (d->m_current_k==k) d->set_current_k(-1);
@@ -253,15 +285,16 @@ void MVClusterDetailWidget::mousePressEvent(QMouseEvent *evt)
 	}
 }
 
-void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent *evt)
-{
-
-}
-
 void MVClusterDetailWidget::mouseMoveEvent(QMouseEvent *evt)
 {
 	QPoint pt=evt->pos();
-	int view_index=d->find_view_at(pt);
+	if ((d->m_anchor_x>=0)&&(qAbs(pt.x()-d->m_anchor_x)>5)) {
+		d->m_scroll_x=d->m_anchor_scroll_x-(pt.x()-d->m_anchor_x);
+		update();
+		return;
+	}
+
+	int view_index=d->find_view_index_at(pt);
 	if (view_index>=0) {
 		d->set_hovered_k(d->m_views[view_index]->clusterData()->k);
 	}
@@ -274,14 +307,20 @@ void MVClusterDetailWidget::mouseMoveEvent(QMouseEvent *evt)
 void MVClusterDetailWidget::wheelEvent(QWheelEvent *evt)
 {
 	int delta=evt->delta();
-	if (delta>0) {
-		d->m_min_space_ratio=qMax(d->m_space_ratio+1,d->m_space_ratio*1.1);
-		emit signalZoomedIn();
-		update();
-	}
-	else if (delta<0) {
-		d->m_min_space_ratio=qMin(d->m_min_space_ratio-1,d->m_min_space_ratio/1.1);
-		if (d->m_min_space_ratio<0) d->m_min_space_ratio=0;
+	double factor=1;
+	if (delta>0) factor=1.1;
+	else factor=1/1.1;
+	if (factor!=1) {
+		if ((d->m_current_k>=0)&&(d->find_view_for_k(d->m_current_k))) {
+			ClusterView *view=d->find_view_for_k(d->m_current_k);
+			double current_screen_x=view->x_position_before_scaling*d->m_space_ratio-d->m_scroll_x;
+			d->m_space_ratio*=factor;
+			d->m_scroll_x=view->x_position_before_scaling*d->m_space_ratio-current_screen_x;
+			if (d->m_scroll_x<0) d->m_scroll_x=0;
+		}
+		else {
+			d->m_space_ratio*=factor;
+		}
 		update();
 	}
 }
@@ -374,6 +413,8 @@ void MVClusterDetailWidgetPrivate::set_current_k(int k)
 {
 	if (k==m_current_k) return;
 	m_current_k=k;
+	ClusterView *V=find_view_for_k(k);
+	if (V) ensure_view_visible(V);
 	q->update();
 	emit q->signalCurrentKChanged();
 }
@@ -385,7 +426,7 @@ void MVClusterDetailWidgetPrivate::set_hovered_k(int k)
 	q->update();
 }
 
-int MVClusterDetailWidgetPrivate::find_view_at(QPoint pos)
+int MVClusterDetailWidgetPrivate::find_view_index_at(QPoint pos)
 {
 	for (int i=0; i<m_views.count(); i++) {
 		if (m_views[i]->rect().contains(pos)) return i;
@@ -399,6 +440,26 @@ ClusterView *MVClusterDetailWidgetPrivate::find_view_for_k(int k)
 		if (m_views[i]->clusterData()->k==k) return m_views[i];
 	}
 	return 0;
+}
+
+int MVClusterDetailWidgetPrivate::find_view_index_for_k(int k)
+{
+	for (int i=0; i<m_views.count(); i++) {
+		if (m_views[i]->clusterData()->k==k) return i;
+	}
+	return -1;
+}
+
+void MVClusterDetailWidgetPrivate::ensure_view_visible(ClusterView *V)
+{
+	double x0=V->x_position_before_scaling*m_space_ratio;
+	if (x0<m_scroll_x) {
+		m_scroll_x=x0-100;
+		if (m_scroll_x<0) m_scroll_x=0;
+	}
+	else if (x0>m_scroll_x+q->width()) {
+		m_scroll_x=x0-q->width()+100;
+	}
 }
 
 
@@ -423,10 +484,10 @@ void ClusterView::paint(QPainter *painter, QRectF rect)
 	m_T=T;
 
 	int top_height=20,bottom_height=40;
-	m_rect=rect2;
-	m_top_rect=QRectF(m_rect.x(),m_rect.y(),m_rect.width(),top_height);
-	m_template_rect=QRectF(m_rect.x(),m_rect.y()+top_height,m_rect.width(),m_rect.height()-bottom_height-top_height);
-	m_bottom_rect=QRectF(m_rect.x(),m_rect.y()+m_rect.height()-bottom_height,m_rect.width(),bottom_height);
+	m_rect=rect;
+	m_top_rect=QRectF(rect2.x(),rect2.y(),rect2.width(),top_height);
+	m_template_rect=QRectF(rect2.x(),rect2.y()+top_height,rect2.width(),rect2.height()-bottom_height-top_height);
+	m_bottom_rect=QRectF(rect2.x(),rect2.y()+rect2.height()-bottom_height,rect2.width(),bottom_height);
 
 	QPen pen; pen.setWidth(1);
 	for (int m=0; m<M; m++) {
@@ -446,16 +507,18 @@ void ClusterView::paint(QPainter *painter, QRectF rect)
 	QString txt;
 	QRectF RR;
 
+	bool compressed_info=false;
+	if (rect2.width()<60) compressed_info=true;
+
 	txt=QString("%1").arg(m_CD->k);
-	font.setPixelSize(16); pen.setColor(Qt::darkBlue);
+	font.setPixelSize(16);
+	if (compressed_info) font.setPixelSize(12);
+	pen.setColor(Qt::darkBlue);
 	painter->setFont(font); painter->setPen(pen);
 	painter->drawText(m_top_rect,Qt::AlignCenter|Qt::AlignBottom,txt);
 
 	font.setPixelSize(11);
 	int text_height=13;
-
-	bool compressed_info=false;
-	if (rect2.width()<50) compressed_info=true;
 
 	if (!compressed_info) {
 		RR=QRectF(m_bottom_rect.x(),m_bottom_rect.y()+m_bottom_rect.height()-text_height,m_bottom_rect.width(),text_height);
@@ -497,52 +560,6 @@ QColor ClusterView::get_firing_rate_text_color(double rate)
 	if (rate<=1) return QColor(150,150,150);
 	if (rate<=10) return QColor(0,50,0);
 	return QColor(50,0,0);
-}
-
-
-MVClusterDetailWidgetScrollArea::MVClusterDetailWidgetScrollArea(QWidget *parent) : QScrollArea(parent) {
-	the_widget=0;
-	this->setWidgetResizable(true);
-}
-
-void MVClusterDetailWidgetScrollArea::setTheWidget(MVClusterDetailWidget *W)
-{
-	the_widget=W;
-	this->setWidget(W);
-	connect(the_widget,SIGNAL(signalCurrentKChanged()),this,SLOT(slot_current_k_changed()));
-	connect(the_widget,SIGNAL(signalZoomedIn()),this,SLOT(slot_zoomed_in()));
-}
-
-MVClusterDetailWidget *MVClusterDetailWidgetScrollArea::theWidget()
-{
-	return the_widget;
-}
-
-void MVClusterDetailWidgetScrollArea::slot_current_k_changed()
-{
-	int k=the_widget->currentK();
-	if (k<0) return;
-	ClusterView *view=the_widget->d->find_view_for_k(k);
-	if (!view) return;
-	ensure_visible(view->rect().x()+view->rect().width()/2);
-}
-
-void MVClusterDetailWidgetScrollArea::slot_zoomed_in()
-{
-	slot_current_k_changed(); //to ensure visible
-}
-
-void MVClusterDetailWidgetScrollArea::ensure_visible(double x)
-{
-	int x0=this->horizontalScrollBar()->value();
-	int x1=x0+this->viewport()->width();
-
-	if (x<x0) {
-		this->horizontalScrollBar()->setValue(qMax(0.0,x-100));
-	}
-	if (x>x1) {
-		this->horizontalScrollBar()->setValue(qMin(1.0*the_widget->width()-this->viewport()->width(),x-viewport()->width()+100));
-	}
 }
 
 
