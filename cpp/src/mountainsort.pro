@@ -15,6 +15,11 @@ TEMPLATE = app
 # we want to avoid using any 3rdparty libraries -- this is important! Because ease of installation is critical!
 #LIBS += -larmadillo -lpca -L/usr/local/lib -Wl,-rpath,$(DEFAULT_LIB_INSTALL_PATH)
 
+INCLUDEPATH += ../../mountainview/src/spikespy/src
+DEPENDPATH += ../../mountainview/src/spikespy/src
+VPATH += ../../mountainview/src/spikespy/src
+HEADERS += diskreadmda.h
+SOURCES += diskreadmda.cpp
 
 HEADERS += \
     bandpass_filter.h \
@@ -30,7 +35,6 @@ HEADERS += \
     get_principal_components.h \
     cluster.h \
     templates.h \
-    diskreadmda.h \
     consolidate.h \
     split_firings.h \
     extract_clips.h \
@@ -65,7 +69,6 @@ mountainsortmain.cpp \
     get_principal_components.cpp \
     cluster.cpp \
     templates.cpp \
-    diskreadmda.cpp \
     consolidate.cpp \
     split_firings.cpp \
     extract_clips.cpp \
