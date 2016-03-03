@@ -10,16 +10,18 @@ fi
 
 mkdir $2
 
-clip_size=100 #num timepoints in a clip
-samplefreq=30000 #bandpass filter
+clip_size=100
+samplefreq=30000
 freq_min=300
 freq_max=6000
-outlier_threshold=500 #only for preprocessing of data to exclude major artifacts
+outlier_threshold=500
 detect_threshold=3.5
-detect_interval=10  #min num timepoints between spikes on same channel
-detectability_threshold=4 #for excluding noise subclusters
-shell_increment=0.5 #for the branch cluster method
-min_shell_size=100 #for the branch cluster method
+detect_interval=10
+detectability_threshold=4
+shell_increment=0.5
+min_shell_size=100
+
+#USER CONFIG#
 
 echo "*** COPY ***"
 mscmd copy
