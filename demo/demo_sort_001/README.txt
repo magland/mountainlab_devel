@@ -16,7 +16,10 @@ You can either run sorting using a MATLAB script, or using the command line (mou
 * Running from MATLAB:
 Use ds001_sort_all.m
 
-* Running from command line:
+* Running from command line (preferred):
 Be sure that the mountainsort/bin/mountainsort is in your PATH
-Run ds001_sort_all.sh
+> ./sort_tetrode1.sh
+> ./sort_tetrode2.sh
+> ./sort_ms11d45.sh
+> ./sort_synth_EJ_K7.sh
 

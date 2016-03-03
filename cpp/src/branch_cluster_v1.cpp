@@ -41,9 +41,10 @@ bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char
     int jjjj=0;
     int k_offset=0;
     for (int m=0; m<M; m++) {
-        printf("Channel %d/%d...\n",m+1,M);
+
         QList<int> neighborhood; neighborhood << m;
         for (int a=0; a<M; a++) if ((AM.value(m,a))&&(a!=m)) neighborhood << a;
+        printf("Channel %d/%d (neighborhood size = %d)...\n",m+1,M,neighborhood.count());
         QList<long> times;
         for (int i=0; i<L; i++) {
             if (detect.value(0,i)==(m+1)) {
