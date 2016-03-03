@@ -1,5 +1,5 @@
 function accuracy_sort_demotimeseries
-% measure accuracy vs known firing times on synthetic demo data.
+% measure accuracy vs known firing times on fixed synthetic demo data.
 % Currently uses some C executables in the chain, shuffling data to MDA & back.
 % Barnett 2/25/16. 2/26/16 playing w/ sorting chain & viz.
 % 3/3/16 J's ds001
@@ -9,7 +9,7 @@ mfile_path=fileparts(mfilename('fullpath'));
 addpath([mfile_path,'/../franklab/sort_002_multichannel']);
 addpath([mfile_path,'/../demo/demo_sort_001']);
 rng(1);  % fix the seed
-[Yfile truefiringsfile trueWfile] = get_default_dataset('EJ K7'); % demo data
+[Yfile truefiringsfile trueWfile o.samplefreq] = get_default_dataset('EJ K7');
 outdir=[mfile_path,'/output'];
 if ~exist(outdir,'dir') mkdir(outdir); end;
 
@@ -26,22 +26,22 @@ Wtrue = readmda(trueWfile);
 tsubplot(2,2,2); ms_view_templates(Wtrue), title('true W'); drawnow
 
 % common sorting opts
-o.samplefreq=2e4;   % needed  
-o.freq_min = 100; o.freq_max = inf;    % basically don't filter
+o.freq_min = 100; o.freq_max = 5000;   % filter for det, not clustering
 
 if 1         % Standard simple matlab chain
   o.clip_size=T; o.detect_interval = 20;
-  o.detect_threshold = 100;     % absolute (uV);  80 uV collects a noise clus
+  o.detect_threshold = 80;     % absolute (uV);  80 uV collects a noise clus
   %o.detect_threshold = 3.5;   % only if whitened, in sigma units
   %Y = ms_filter(Y,o); Y = ms_whiten(Y);  % if want match what ds001 does
+  Yf = ms_filter(Y,o);
   if 0   % the C interface to detect
     prefile = [outdir,'/pre.mda'];
-    writemda(Y,prefile);          % in case Y differs from raw
+    writemda(Yf,prefile);          % in case Y differs from raw
     mscmd_detect(prefile,[outdir,'/detect.mda'],o);
     times=readmda([outdir,'/detect.mda']);
     times=times(2,:);
   else
-    times = ms_detect(Y,o);
+    times = ms_detect(Yf,o);
   end
   if 0      % the C interface to get clips
     writemda([0*times; times], [outdir,'/detect.mda']);
