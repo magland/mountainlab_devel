@@ -563,7 +563,7 @@ int main(int argc,char *argv[]) {
 		double outlier_threshold=CLP.named_parameters["outlier_threshold"].toDouble();
 
 		if ((input_path.isEmpty())||(output_path.isEmpty())) {bandpass_filter_usage(); return -1;}
-		if ((samplefreq==0)||(freq_min==0)||(freq_max==0)) {bandpass_filter_usage(); return -1;}
+        if (samplefreq==0) {bandpass_filter_usage(); return -1;}
 
 		if (!bandpass_filter(input_path.toLatin1().data(),output_path.toLatin1().data(),samplefreq,freq_min,freq_max,outlier_threshold)) {
 			printf("Error in bandpass_filter.\n");
