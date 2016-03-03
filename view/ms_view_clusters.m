@@ -66,7 +66,9 @@ elseif M==3
   end
   hold off;
   grid off
-  legnum(1:K);
+  % call legend with 2 or more output arguments to fix bug in R2015b
+  % see: http://www.mathworks.com/support/bugreports/1283854
+  [~,~] = legend(findobj(gca,'type','Scatter'),num2cellstr(1:K));
   xlabel('z_1'); ylabel('z_2'); zlabel('z_3');
   axis equal vis3d;       % for good aspect ratio and rotation
 else
