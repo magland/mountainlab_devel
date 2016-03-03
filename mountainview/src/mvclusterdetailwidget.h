@@ -16,7 +16,7 @@ public:
 	MVClusterDetailWidget(QWidget *parent=0);
 	virtual ~MVClusterDetailWidget();
 	void setRaw(DiskReadMda &X);
-	void setFirings(DiskReadMda &X);
+    void setFirings(DiskReadMda &X,const QList<int> &group_numbers=QList<int>());
 	void setSamplingFrequency(double freq);
 	void setChannelColors(const QList<QColor> &colors);
 	void setColors(const QMap<QString,QColor> &colors);

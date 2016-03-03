@@ -69,6 +69,7 @@ public:
 
 	DiskReadMda m_raw;
 	DiskReadMda m_firings;
+    QList<int> m_group_numbers;
 	double m_sampling_freq;
 
 	bool m_calculations_needed;
@@ -145,13 +146,25 @@ void MVClusterDetailWidget::setRaw(DiskReadMda &X)
 	this->update();
 }
 
-void MVClusterDetailWidget::setFirings(DiskReadMda &X/*,const QList<int> &group_numbers*/)
+int compute_max_label(DiskReadMda &firings) {
+    int K=0;
+    for (int i=0; i<firings.N2(); i++) {
+        int val=(int)firings.value(2,i);
+        if (val>K) K=val;
+    }
+    return K;
+}
+
+void MVClusterDetailWidget::setFirings(DiskReadMda &X,const QList<int> &group_numbers_in)
 {
-    //if (group_numbers.isEmpty()) {
-    //    group_numbers << 0;
-    //    for (int k=1; k<=K)
-    //}
+    QList<int> group_numbers=group_numbers_in;
+    if (group_numbers.isEmpty()) {
+        int K=compute_max_label(X);
+        group_numbers << 0;
+        for (int k=1; k<=K; k++) group_numbers << k;
+    }
 	d->m_firings=X;
+    d->m_group_numbers=group_numbers;
 	d->m_calculations_needed=true;
 	this->update();
 }
@@ -204,13 +217,15 @@ ChannelSpacingInfo compute_channel_spacing_info(QList<ClusterData> &cdata,double
 	double minval=0,maxval=0;
 	for (int i=0; i<cdata.count(); i++) {
         int NT=cdata[i].templates.N3();
-		for (int t=0; t<T; t++) {
-			for (int m=0; m<M; m++) {
-                double val=cdata[i].templates.value(m,t,i);
-				if (val<minval) minval=val;
-				if (val>maxval) maxval=val;
-			}
-		}
+        for (int ii=0; ii<NT; ii++) {
+            for (int t=0; t<T; t++) {
+                for (int m=0; m<M; m++) {
+                    double val=cdata[i].templates.value(m,t,ii);
+                    if (val<minval) minval=val;
+                    if (val>maxval) maxval=val;
+                }
+            }
+        }
 	}
 	double y0=0.5/M;
 	for (int m=0; m<M; m++) {
