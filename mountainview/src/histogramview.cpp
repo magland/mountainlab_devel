@@ -17,6 +17,7 @@ public:
 	int m_hovered_bin_index;
 	int m_margin_left,m_margin_right,m_margin_top,m_margin_bottom;
     QString m_title;
+	QMap<QString,QColor> m_colors;
     bool m_hovered;
 	bool m_current;
 	bool m_selected;
@@ -124,6 +125,11 @@ void HistogramView::setTitle(const QString &title)
 	update();
 }
 
+void HistogramView::setColors(const QMap<QString, QColor> &colors)
+{
+	d->m_colors=colors;
+}
+
 void HistogramView::setCurrent(bool val)
 {
 	if (d->m_current!=val) {
@@ -159,33 +165,29 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 	Q_UNUSED(evt)
 	QPainter painter(this);
 
-	QColor hover_color=QColor(150,150,150,80);
-	QColor current_color=QColor(150,200,200,80);
-	QColor hover_current_color=QColor(170,200,200,80);
+	d->m_colors["view_background"]=QColor(245,245,245);
+	d->m_colors["view_background_highlighted"]=QColor(250,220,200);
+	d->m_colors["view_background_hovered"]=QColor(240,245,240);
+
+//	QColor hover_color=QColor(150,150,150,80);
+//	QColor current_color=QColor(150,200,200,80);
+//	QColor hover_current_color=QColor(170,200,200,80);
 
 	QRect R(0,0,width(),height());
-	if ((d->m_hovered)&&(!d->m_selected)&&(!d->m_current)) {
-		painter.fillRect(R,hover_color);
-    }
-	else if ((!d->m_hovered)&&(d->m_current)) {
-		painter.fillRect(R,current_color);
+
+	if (d->m_current) {
+		painter.fillRect(R,d->m_colors["view_background_highlighted"]);
 	}
-	else if ((d->m_hovered)&&(d->m_current)) {
-		painter.setPen(QPen(Qt::darkRed,10));
-		painter.drawRect(R);
-		painter.fillRect(R,hover_current_color);
-	}
-	else if ((!d->m_hovered)&&(d->m_selected)) {
-		painter.setPen(QPen(Qt::darkRed,10));
-		painter.drawRect(R);
-	}
-	else if ((d->m_hovered)&&(d->m_selected)) {
-		painter.setPen(QPen(Qt::darkRed,10));
-		painter.drawRect(R);
-		painter.fillRect(R,hover_color);
+	else if (d->m_hovered) {
+		painter.fillRect(R,d->m_colors["view_background_hovered"]);
 	}
 	else {
+		painter.fillRect(R,d->m_colors["view_background"]);
+	}
 
+	if (d->m_selected) {
+		painter.setPen(QPen(d->m_colors["view_frame_selected"],4));
+		painter.drawRect(R);
 	}
 
 	if (d->m_update_required) {

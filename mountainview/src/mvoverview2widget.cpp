@@ -19,6 +19,7 @@
 #include "msutils.h"
 #include <QColor>
 #include <QStringList>
+#include <QSet>
 
 class MVOverview2WidgetPrivate {
 public:
@@ -29,7 +30,8 @@ public:
 	Mda m_firings;
 	QList<int> m_original_cluster_numbers;
     QList<int> m_original_cluster_offsets;
-    int m_current_kk;
+	int m_current_k;
+	QSet<int> m_selected_ks;
 	float m_sampling_frequency;
 
 	MVOverview2WidgetControlPanel *m_control_panel;
@@ -43,6 +45,7 @@ public:
 	Mda m_templates_data;
 
 	QList<QColor> m_channel_colors;
+	QMap<QString,QColor> m_colors;
 
 	void create_cross_correlograms_data();
 	void create_templates_data();
@@ -65,7 +68,9 @@ public:
 	void update_widget(QWidget *W);
 
     void set_cross_correlograms_current_number(int kk);
+	void set_cross_correlograms_selected_numbers(const QList<int> &kks);
     void set_templates_current_number(int kk);
+	void set_templates_selected_numbers(const QList<int> &kks);
 
     void set_times_labels();
 
@@ -98,7 +103,7 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 	d=new MVOverview2WidgetPrivate;
 	d->q=this;
 
-    d->m_current_kk=0;
+	d->m_current_k=0;
 	d->m_sampling_frequency=0;
 
 	d->m_progress_dialog=0;
@@ -134,6 +139,14 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 			<< "#204020"
 			<< "#202070";
 	for (int i=0; i<color_strings.count(); i++) d->m_channel_colors << QColor(brighten(color_strings[i],80));
+
+	d->m_colors["background"]=QColor(240,240,240);
+	d->m_colors["frame1"]=QColor(245,245,245);
+	d->m_colors["info_text"]=QColor(80,80,80);
+	d->m_colors["view_background"]=QColor(245,245,245);
+	d->m_colors["view_background_highlighted"]=QColor(250,220,200);
+	d->m_colors["view_background_hovered"]=QColor(240,245,240);
+	d->m_colors["view_frame_selected"]=QColor(50,20,20);
 }
 
 MVOverview2Widget::~MVOverview2Widget()
@@ -233,7 +246,7 @@ void MVOverview2Widget::slot_templates_clicked()
     int clip_size=d->m_control_panel->getParameterValue("clip_size").toInt();
     int x=X->currentX();
     int clip_num=(x/clip_size)+1;
-    d->m_current_kk=clip_num;
+	d->m_current_k=clip_num;
 	d->set_cross_correlograms_current_number(clip_num);
 }
 
@@ -241,16 +254,32 @@ void MVOverview2Widget::slot_details_current_k_changed()
 {
 	MVClusterDetailWidget *X=(MVClusterDetailWidget *)sender();
 	int k=X->currentK();
-	d->m_current_kk=k;
+	d->m_current_k=k;
 	d->set_cross_correlograms_current_number(k);
+}
+
+void MVOverview2Widget::slot_details_selected_ks_changed()
+{
+	MVClusterDetailWidget *X=(MVClusterDetailWidget *)sender();
+	QList<int> ks=X->selectedKs();
+	d->m_selected_ks=ks.toSet();
+	d->set_cross_correlograms_selected_numbers(ks);
 }
 
 void MVOverview2Widget::slot_cross_correlogram_current_unit_changed()
 {
     MVCrossCorrelogramsWidget *X=(MVCrossCorrelogramsWidget *)sender();
-    d->m_current_kk=X->currentUnit();
+	d->m_current_k=X->currentUnit();
     d->set_cross_correlograms_current_number(X->currentUnit());
 	d->set_templates_current_number(X->currentUnit());
+}
+
+void MVOverview2Widget::slot_cross_correlogram_selected_units_changed()
+{
+	MVCrossCorrelogramsWidget *X=(MVCrossCorrelogramsWidget *)sender();
+	d->m_selected_ks=X->selectedUnits().toSet();
+	d->set_cross_correlograms_selected_numbers(X->selectedUnits());
+	d->set_templates_selected_numbers(X->selectedUnits());
 }
 
 typedef QList<long> IntList;
@@ -562,7 +591,7 @@ void define_shells(QList<double> &shell_mins,QList<double> &shell_maxs,QList<dou
 }
 
 void MVOverview2WidgetPrivate::do_amplitude_split() {
-	m_current_kk=0;
+	m_current_k=0;
 	if (!m_control_panel->getParameterValue("use_amplitude_split").toBool()) {
 		m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
 		for (int i2=0; i2<m_firings.N2(); i2++) {
@@ -656,7 +685,7 @@ void MVOverview2WidgetPrivate::do_amplitude_split() {
 /*
 void MVOverview2WidgetPrivate::do_amplitude_split_old()
 {
-    m_current_kk=0;
+	m_current_k=0;
     if (!m_control_panel->getParameterValue("use_amplitude_split").toBool()) {
         m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
         for (int i2=0; i2<m_firings.N2(); i2++) {
@@ -779,6 +808,7 @@ void MVOverview2WidgetPrivate::open_auto_correlograms()
 	add_tab(X,"Auto-Correlograms");
 	QObject::connect(X,SIGNAL(unitActivated(int)),q,SLOT(slot_auto_correlogram_activated(int)));
     QObject::connect(X,SIGNAL(currentUnitChanged()),q,SLOT(slot_cross_correlogram_current_unit_changed()));
+	QObject::connect(X,SIGNAL(selectedUnitsChanged()),q,SLOT(slot_cross_correlogram_selected_units_changed()));
 	update_widget(X);
 }
 
@@ -787,6 +817,7 @@ void MVOverview2WidgetPrivate::open_cross_correlograms(int k)
 	MVCrossCorrelogramsWidget *X=new MVCrossCorrelogramsWidget;
 	X->setProperty("widget_type","cross_correlograms");
     X->setProperty("kk",k);
+	X->setColors(m_colors);
     add_tab(X,QString("CC for %1(%2)").arg(m_original_cluster_numbers.value(k)).arg(m_original_cluster_offsets.value(k)+1));
     QObject::connect(X,SIGNAL(currentUnitChanged()),q,SLOT(slot_cross_correlogram_current_unit_changed()));
 	update_widget(X);
@@ -806,10 +837,12 @@ void MVOverview2WidgetPrivate::open_cluster_details()
 {
 	MVClusterDetailWidget *X=new MVClusterDetailWidget;
 	X->setChannelColors(m_channel_colors);
+	X->setColors(m_colors);
 	X->setRaw(m_raw);
 	X->setFirings(m_firings_original);
 	X->setSamplingFrequency(m_sampling_frequency);
 	QObject::connect(X,SIGNAL(signalCurrentKChanged()),q,SLOT(slot_details_current_k_changed()));
+	QObject::connect(X,SIGNAL(signalSelectedKsChanged()),q,SLOT(slot_details_selected_ks_changed()));
 	X->setProperty("widget_type","cluster_details");
 	add_tab(X,QString("Details"));
 	update_widget(X);
@@ -830,7 +863,7 @@ void MVOverview2WidgetPrivate::open_raw_data()
 
 void MVOverview2WidgetPrivate::open_clips()
 {
-    int kk=m_current_kk;
+	int kk=m_current_k;
     if (kk<=0) {
         QMessageBox::information(q,"Unable to open clips","You must first select a neuron.");
         return;
@@ -921,6 +954,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 	}
 	else if (widget_type=="cluster_details") {
 		MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
+		Q_UNUSED(WW)
 	}
     else if (widget_type=="clips") {
         printf("Extracting clips...\n");
@@ -963,7 +997,19 @@ void MVOverview2WidgetPrivate::set_cross_correlograms_current_number(int kk)
             MVCrossCorrelogramsWidget *WW=(MVCrossCorrelogramsWidget *)W;
 			WW->setCurrentUnit(kk);
         }
-    }
+	}
+}
+
+void MVOverview2WidgetPrivate::set_cross_correlograms_selected_numbers(const QList<int> &kks)
+{
+	QList<QWidget *> widgets=get_all_widgets();
+	foreach (QWidget *W,widgets) {
+		QString widget_type=W->property("widget_type").toString();
+		if ((widget_type=="auto_correlograms")||(widget_type=="cross_correlograms")) {
+			MVCrossCorrelogramsWidget *WW=(MVCrossCorrelogramsWidget *)W;
+			WW->setSelectedUnits(kks);
+		}
+	}
 }
 
 void MVOverview2WidgetPrivate::set_templates_current_number(int kk)
@@ -980,7 +1026,26 @@ void MVOverview2WidgetPrivate::set_templates_current_number(int kk)
 			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
 			WW->setCurrentK(kk);
 		}
-    }
+	}
+}
+
+void MVOverview2WidgetPrivate::set_templates_selected_numbers(const QList<int> &kks)
+{
+	QList<QWidget *> widgets=get_all_widgets();
+	foreach (QWidget *W,widgets) {
+		QString widget_type=W->property("widget_type").toString();
+		if (widget_type=="templates") {
+			int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
+			SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+			/////// NA
+			Q_UNUSED(clip_size)
+			Q_UNUSED(WW)
+		}
+		else if (widget_type=="cluster_details") {
+			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
+			WW->setSelectedKs(kks);
+		}
+	}
 }
 
 void MVOverview2WidgetPrivate::set_times_labels()

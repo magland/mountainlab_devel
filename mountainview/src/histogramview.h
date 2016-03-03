@@ -19,6 +19,7 @@ public:
 	void setFillColor(const QColor &col);
 	void setLineColor(const QColor &col);
     void setTitle(const QString &title);
+	void setColors(const QMap<QString,QColor> &colors);
 
 	void setCurrent(bool val);
 	void setSelected(bool val);

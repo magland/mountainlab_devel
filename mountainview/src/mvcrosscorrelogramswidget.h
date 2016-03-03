@@ -3,6 +3,8 @@
 
 #include <QWidget>
 #include "diskreadmda.h"
+#include <QMap>
+#include <QColor>
 
 class MVCrossCorrelogramsWidgetPrivate;
 class MVCrossCorrelogramsWidget : public QWidget
@@ -16,6 +18,7 @@ public:
 	void setCrossCorrelogramsPath(const QString &path);
 	void setCrossCorrelogramsData(const DiskReadMda &X);
     void setLabels(const QStringList &labels);
+	void setColors(const QMap<QString,QColor> &colors);
 	void updateWidget();
 
 	int currentUnit();

@@ -920,10 +920,12 @@ int main(int argc,char *argv[]) {
 			printf("Error in copy... input file does not exist.\n");
 			return -1;
 		}
-		if (QFile::exists(output_path)) QFile::remove(output_path);
-		if (!QFile::copy(input_path,output_path)) {
-			printf("Error in copy... unable to copy file.\n");
-			return -1;
+		if (input_path!=output_path) {
+			if (QFile::exists(output_path)) QFile::remove(output_path);
+			if (!QFile::copy(input_path,output_path)) {
+				printf("Error in copy... unable to copy file.\n");
+				return -1;
+			}
 		}
 	}
 	else {

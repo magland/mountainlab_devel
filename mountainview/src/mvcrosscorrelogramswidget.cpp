@@ -26,6 +26,7 @@ public:
 
 	QList<QWidget *> m_child_widgets;
     QStringList m_labels;
+	QMap<QString,QColor> m_colors;
 
 	void do_highlighting();
 };
@@ -65,7 +66,12 @@ void MVCrossCorrelogramsWidget::setCrossCorrelogramsData(const DiskReadMda &X)
 
 void MVCrossCorrelogramsWidget::setLabels(const QStringList &labels)
 {
-    d->m_labels=labels;
+	d->m_labels=labels;
+}
+
+void MVCrossCorrelogramsWidget::setColors(const QMap<QString, QColor> &colors)
+{
+	d->m_colors=colors;
 }
 
 typedef QList<float> FloatList;
@@ -212,6 +218,7 @@ void MVCrossCorrelogramsWidget::updateWidget()
 	for (int k1=1; k1<=K; k1++) {
 		HistogramView *HV=new HistogramView;
 		HV->setData(data0[k1]);
+		HV->setColors(d->m_colors);
 		//HV->autoSetBins(50);
 		HV->setBins(bin_min,bin_max,num_bins);
 		int k2=k1; if (d->m_base_unit_num>=1) k2=d->m_base_unit_num;
@@ -261,20 +268,25 @@ QList<int> MVCrossCorrelogramsWidget::selectedUnits()
 void MVCrossCorrelogramsWidget::setCurrentUnit(int num)
 {
 	if (d->m_current_unit_num==num) return;
-	if (num<1) return;
 	if (num>d->m_histogram_views.count()) return;
 
-	d->m_selected_unit_nums.clear();
-	d->m_selected_unit_nums.insert(num);
 	d->m_current_unit_num=num;
 	d->do_highlighting();
 	emit currentUnitChanged();
 }
 
+bool sets_match(const QSet<int> &S1,const QSet<int> &S2) {
+	foreach (int a,S1) if (!S2.contains(a)) return false;
+	foreach (int a,S2) if (!S1.contains(a)) return false;
+	return true;
+}
+
 void MVCrossCorrelogramsWidget::setSelectedUnits(const QList<int> &nums)
 {
+	if (sets_match(nums.toSet(),d->m_selected_unit_nums)) return;
 	d->m_selected_unit_nums=QSet<int>::fromList(nums);
 	d->do_highlighting();
+	emit selectedUnitsChanged();
 }
 
 int MVCrossCorrelogramsWidget::baseUnit()
@@ -296,8 +308,18 @@ void MVCrossCorrelogramsWidget::slot_histogram_view_clicked()
 {
 	int num=sender()->property("unit_number").toInt();
 	d->m_selected_unit_nums.clear();
-	d->m_selected_unit_nums << num;
-	setCurrentUnit(num);
+	if (d->m_current_unit_num==num) {
+		setCurrentUnit(-1);
+	}
+	else {
+		setCurrentUnit(num);
+		d->m_selected_unit_nums.clear();
+		d->m_selected_unit_nums << num;
+		d->do_highlighting();
+		emit selectedUnitsChanged();
+		update();
+	}
+	emit selectedUnitsChanged();
 }
 
 void MVCrossCorrelogramsWidget::slot_histogram_view_control_clicked()

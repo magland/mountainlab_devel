@@ -32,7 +32,9 @@ private slots:
 	void slot_auto_correlogram_activated(int k);
     void slot_templates_clicked();
 	void slot_details_current_k_changed();
+	void slot_details_selected_ks_changed();
     void slot_cross_correlogram_current_unit_changed();
+	void slot_cross_correlogram_selected_units_changed();
 
 private:
 	MVOverview2WidgetPrivate *d;

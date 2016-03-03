@@ -19,8 +19,11 @@ public:
 	void setFirings(DiskReadMda &X);
 	void setSamplingFrequency(double freq);
 	void setChannelColors(const QList<QColor> &colors);
+	void setColors(const QMap<QString,QColor> &colors);
 	int currentK();
+	QList<int> selectedKs();
 	void setCurrentK(int k);
+	void setSelectedKs(const QList<int> &ks);
 protected:
 	void paintEvent(QPaintEvent *evt);
 	void keyPressEvent(QKeyEvent *evt);
@@ -30,6 +33,7 @@ protected:
 	void wheelEvent(QWheelEvent *evt);
 signals:
 	void signalCurrentKChanged();
+	void signalSelectedKsChanged();
 	void signalZoomedIn();
 private:
 	MVClusterDetailWidgetPrivate *d;
