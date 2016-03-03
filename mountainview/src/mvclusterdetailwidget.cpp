@@ -151,6 +151,14 @@ void MVClusterDetailWidget::setFirings(const DiskReadMda &X)
     this->update();
 }
 
+void MVClusterDetailWidget::setClipSize(int T)
+{
+    if (d->m_clip_size==T) return;
+    d->m_clip_size=T;
+    d->m_calculations_needed=true;
+    this->update();
+}
+
 void MVClusterDetailWidget::setGroupNumbers(const QList<int> &group_numbers)
 {
     d->m_group_numbers=group_numbers;

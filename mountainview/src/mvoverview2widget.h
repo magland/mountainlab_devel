@@ -15,7 +15,8 @@ public:
 	friend class CustomTabWidget;
 	MVOverview2Widget(QWidget *parent=0);
 	virtual ~MVOverview2Widget();
-	void setRawPath(const QString &path);
+    void addRawPath(const QString &name,const QString &path);
+    void setCurrentRawDataName(const QString &name);
 	void setFiringsPath(const QString &firings);
 	void setSamplingFrequency(float freq);
 	void setDefaultInitialization();
@@ -29,8 +30,9 @@ public slots:
 
 private slots:
 	void slot_control_panel_button_clicked(QString str);
+    void slot_control_panel_combobox_activated(QString str);
 	void slot_auto_correlogram_activated(int k);
-    void slot_templates_clicked();
+    //void slot_templates_clicked();
 	void slot_details_current_k_changed();
 	void slot_details_selected_ks_changed();
     void slot_cross_correlogram_current_unit_changed();

@@ -16,12 +16,15 @@ public:
 	QVariant getParameterValue(QString name);
     void setParameterValue(QString name,QVariant val);
     void setParameterLabel(QString name,QString text);
+    void setParameterChoices(QString name,QStringList choices);
 signals:
 	void signalButtonClicked(QString str);
+    void signalComboBoxActivated(QString str);
 private slots:
 	void slot_button_clicked();
     void slot_checkbox_clicked(bool val);
 	void slot_radio_button_clicked();
+    void slot_combobox_activated();
 private:
 	MVOverview2WidgetControlPanelPrivate *d;
 };

@@ -24,7 +24,8 @@
 class MVOverview2WidgetPrivate {
 public:
 	MVOverview2Widget *q;
-	QString m_raw_data_path;
+    QMap<QString,QString> m_raw_data_paths;
+    QString m_current_raw_data_name;
 	DiskReadMda m_raw;
 	DiskReadMda m_firings_original;
 	Mda m_firings;
@@ -42,23 +43,24 @@ public:
 	QProgressDialog *m_progress_dialog;
 
 	Mda m_cross_correlograms_data;
-	Mda m_templates_data;
+    //Mda m_templates_data;
 
 	QList<QColor> m_channel_colors;
 	QMap<QString,QColor> m_colors;
 
 	void create_cross_correlograms_data();
-	void create_templates_data();
+    //void create_templates_data();
 
 	void update_sizes();
-	void update_templates();
+    //void update_templates();
 	void update_cluster_details();
+    void update_clips();
 	void do_amplitude_split();
 	void add_tab(QWidget *W,QString label);
 
 	void open_auto_correlograms();
 	void open_cross_correlograms(int k);
-	void open_templates();
+    //void open_templates();
 	void open_cluster_details();
 	void open_raw_data();
     void open_clips();
@@ -110,6 +112,7 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 
 	d->m_control_panel=new MVOverview2WidgetControlPanel;
 	connect(d->m_control_panel,SIGNAL(signalButtonClicked(QString)),this,SLOT(slot_control_panel_button_clicked(QString)));
+    connect(d->m_control_panel,SIGNAL(signalComboBoxActivated(QString)),this,SLOT(slot_control_panel_combobox_activated(QString)));
 
 	QSplitter *splitter1=new QSplitter;
 	splitter1->setOrientation(Qt::Horizontal);
@@ -152,14 +155,28 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 
 MVOverview2Widget::~MVOverview2Widget()
 {
-	delete d;
+    delete d;
 }
 
-void MVOverview2Widget::setRawPath(const QString &path)
+void MVOverview2Widget::addRawPath(const QString &name, const QString &path)
 {
-	d->m_raw_data_path=path;
-	d->m_raw.setPath(path);
-	d->update_raw_views();
+    d->m_raw_data_paths[name]=path;
+    QStringList choices=d->m_raw_data_paths.keys();
+    qSort(choices);
+    d->m_control_panel->setParameterChoices("raw_data_name",choices);
+    if (d->m_raw_data_paths.count()==1) {
+        this->setCurrentRawDataName(name);
+    }
+
+}
+
+void MVOverview2Widget::setCurrentRawDataName(const QString &name)
+{
+    d->m_current_raw_data_name=name;
+    d->m_raw.setPath(d->m_raw_data_paths[d->m_current_raw_data_name]);
+    d->m_control_panel->setParameterValue("raw_data_name",name);
+    d->update_raw_views();
+    d->update_cluster_details();
 }
 
 void MVOverview2Widget::setFiringsPath(const QString &firings)
@@ -173,7 +190,6 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
 	d->m_firings_original.setPath(firings);
     d->do_amplitude_split();
 	d->update_cross_correlograms();
-	d->update_templates();
 	d->update_cluster_details();
 	d->update_raw_views();
 }
@@ -202,9 +218,11 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 	if (str=="update_cross_correlograms") {
 		d->update_cross_correlograms();
 	}
-	else if (str=="update_templates") {
-		d->update_templates();
-	}
+    else if (str=="update_templates") {
+    //	d->update_templates();
+        d->update_cluster_details();
+        d->update_clips();
+    }
 	else if (str=="update_cluster_details") {
 		d->update_cluster_details();
 	}
@@ -213,14 +231,14 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 		d->remove_widgets_of_type("cross_correlograms");
 		d->remove_widgets_of_type("clips");
 		d->update_cross_correlograms();
-		d->update_templates();
+        d->update_cluster_details();
 	}
 	else if (str=="open_auto_correlograms") {
 		d->open_auto_correlograms();
 	}
-    else if (str=="open_templates") {
-        d->open_templates();
-    }
+    //else if (str=="open_templates") {
+    //    d->open_templates();
+    //}
 	else if (str=="open_cluster_details") {
 		d->open_cluster_details();
 	}
@@ -231,8 +249,15 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
         d->open_clips();
     }
 	else if (str=="template_method") {
-		d->update_templates();
-	}
+        d->update_cluster_details();
+    }
+}
+
+void MVOverview2Widget::slot_control_panel_combobox_activated(QString str)
+{
+    if (str=="raw_data_name") {
+        this->setCurrentRawDataName(d->m_control_panel->getParameterValue("raw_data_name").toString());
+    }
 }
 
 void MVOverview2Widget::slot_auto_correlogram_activated(int k)
@@ -241,15 +266,15 @@ void MVOverview2Widget::slot_auto_correlogram_activated(int k)
     d->open_cross_correlograms(k);
 }
 
-void MVOverview2Widget::slot_templates_clicked()
-{
-    SSTimeSeriesView *X=(SSTimeSeriesView *)sender();
-    int clip_size=d->m_control_panel->getParameterValue("clip_size").toInt();
-    int x=X->currentX();
-    int clip_num=(x/clip_size)+1;
-	d->m_current_k=clip_num;
-	d->set_cross_correlograms_current_number(clip_num);
-}
+//void MVOverview2Widget::slot_templates_clicked()
+//{
+//    SSTimeSeriesView *X=(SSTimeSeriesView *)sender();
+//    int clip_size=d->m_control_panel->getParameterValue("clip_size").toInt();
+//    int x=X->currentX();
+//    int clip_num=(x/clip_size)+1;
+//	d->m_current_k=clip_num;
+//	d->set_cross_correlograms_current_number(clip_num);
+//}
 
 void MVOverview2Widget::slot_details_current_k_changed()
 {
@@ -371,54 +396,54 @@ void MVOverview2WidgetPrivate::create_cross_correlograms_data()
 	set_progress("Computing","Creating cross correlograms data",1);
 }
 
-void MVOverview2WidgetPrivate::create_templates_data()
-{
-	set_progress("Computing","Creating templates",0);
-	QList<long> times,labels;
-	long L=m_firings.N2();
-	int M=m_raw.N1();
-	int T=m_control_panel->getParameterValue("clip_size").toInt();
+//void MVOverview2WidgetPrivate::create_templates_data()
+//{
+//	set_progress("Computing","Creating templates",0);
+//	QList<long> times,labels;
+//	long L=m_firings.N2();
+//	int M=m_raw.N1();
+//	int T=m_control_panel->getParameterValue("clip_size").toInt();
 
-	printf("Setting up times and labels...\n");
-	for (int n=0; n<L; n++) {
-		times << (long)m_firings.value(1,n)-1; //convert to 0-based indexing
-		labels << (long)m_firings.value(2,n);
-	}
-	int K=0;
-	for (int n=0; n<labels.count(); n++) {
-		if (labels[n]>K) K=labels[n];
-	}
+//	printf("Setting up times and labels...\n");
+//	for (int n=0; n<L; n++) {
+//		times << (long)m_firings.value(1,n)-1; //convert to 0-based indexing
+//		labels << (long)m_firings.value(2,n);
+//	}
+//	int K=0;
+//	for (int n=0; n<labels.count(); n++) {
+//		if (labels[n]>K) K=labels[n];
+//	}
 
-	printf("Creating mda...\n");
-	Mda ret; ret.allocate(M,T,K);
-	for (int k=1; k<=K; k++) {
-		set_progress("Computing","Creating templates",k*1.0/(K+1));
-		QList<long> times_k;
-		for (int ii=0; ii<times.count(); ii++) {
-			if (labels[ii]==k) times_k << times[ii];
-		}
-		Mda clips_k=extract_clips(m_raw,times_k,T);
-		Mda template_k;
-		if (m_control_panel->getParameterValue("template_method").toString()=="centroids") {
-			template_k=compute_centroid(clips_k);
-		}
-		else if (m_control_panel->getParameterValue("template_method").toString()=="geometric medians") {
-			int num_iterations=10;
-			template_k=compute_geometric_median(clips_k,num_iterations);
-		}
-		for (int t=0; t<T; t++) {
-			for (int m=0; m<M; m++) {
-				double val=template_k.value(m,t);
-				ret.setValue(val,m,t,k-1);
-			}
-		}
-	}
-	printf(".\n");
+//	printf("Creating mda...\n");
+//	Mda ret; ret.allocate(M,T,K);
+//	for (int k=1; k<=K; k++) {
+//		set_progress("Computing","Creating templates",k*1.0/(K+1));
+//		QList<long> times_k;
+//		for (int ii=0; ii<times.count(); ii++) {
+//			if (labels[ii]==k) times_k << times[ii];
+//		}
+//		Mda clips_k=extract_clips(m_raw,times_k,T);
+//		Mda template_k;
+//		if (m_control_panel->getParameterValue("template_method").toString()=="centroids") {
+//			template_k=compute_centroid(clips_k);
+//		}
+//		else if (m_control_panel->getParameterValue("template_method").toString()=="geometric medians") {
+//			int num_iterations=10;
+//			template_k=compute_geometric_median(clips_k,num_iterations);
+//		}
+//		for (int t=0; t<T; t++) {
+//			for (int m=0; m<M; m++) {
+//				double val=template_k.value(m,t);
+//				ret.setValue(val,m,t,k-1);
+//			}
+//		}
+//	}
+//	printf(".\n");
 
-	m_templates_data=ret;
+//	m_templates_data=ret;
 
-	set_progress("Computing","Creating templates closing",1);
-}
+//	set_progress("Computing","Creating templates closing",1);
+//}
 
 void MVOverview2WidgetPrivate::update_sizes()
 {
@@ -443,22 +468,22 @@ void MVOverview2WidgetPrivate::update_sizes()
 
 }
 
-void MVOverview2WidgetPrivate::update_templates()
-{
-	create_templates_data();
-	QList<QWidget *> list=get_all_widgets();
-	foreach (QWidget *W,list) {
-		if (W->property("widget_type")=="templates") {
-			update_widget(W);
-		}
-        if (W->property("widget_type")=="cluster_details") {
-            update_widget(W);
-        }
-		if (W->property("widget_type")=="clips") {
-			update_widget(W);
-		}
-	}
-}
+//void MVOverview2WidgetPrivate::update_templates()
+//{
+//	create_templates_data();
+//	QList<QWidget *> list=get_all_widgets();
+//	foreach (QWidget *W,list) {
+//		if (W->property("widget_type")=="templates") {
+//			update_widget(W);
+//		}
+//        if (W->property("widget_type")=="cluster_details") {
+//            update_widget(W);
+//        }
+//		if (W->property("widget_type")=="clips") {
+//			update_widget(W);
+//		}
+//	}
+//}
 
 void MVOverview2WidgetPrivate::update_cluster_details()
 {
@@ -467,7 +492,17 @@ void MVOverview2WidgetPrivate::update_cluster_details()
 		if (W->property("widget_type")=="cluster_details") {
 			update_widget(W);
 		}
-	}
+    }
+}
+
+void MVOverview2WidgetPrivate::update_clips()
+{
+    QList<QWidget *> list=get_all_widgets();
+    foreach (QWidget *W,list) {
+        if (W->property("widget_type")=="clips") {
+            update_widget(W);
+        }
+    }
 }
 
 double get_max(QList<double> &list) {
@@ -827,15 +862,15 @@ void MVOverview2WidgetPrivate::open_cross_correlograms(int k)
 	update_widget(X);
 }
 
-void MVOverview2WidgetPrivate::open_templates()
-{
-	SSTimeSeriesView *X=new SSTimeSeriesView;
-	X->initialize();
-	X->setProperty("widget_type","templates");
-	add_tab(X,QString("Templates"));
-    QObject::connect(X,SIGNAL(currentXChanged()),q,SLOT(slot_templates_clicked()));
-	update_widget(X);
-}
+//void MVOverview2WidgetPrivate::open_templates()
+//{
+//	SSTimeSeriesView *X=new SSTimeSeriesView;
+//	X->initialize();
+//	X->setProperty("widget_type","templates");
+//	add_tab(X,QString("Templates"));
+//    QObject::connect(X,SIGNAL(currentXChanged()),q,SLOT(slot_templates_clicked()));
+//	update_widget(X);
+//}
 
 void MVOverview2WidgetPrivate::open_cluster_details()
 {
@@ -934,7 +969,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
         WW->setLabels(labels);
 		WW->updateWidget();
 	}
-	else if (widget_type=="templates") {
+    /*else if (widget_type=="templates") {
 		printf("Setting templates data...\n");
 		SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
 		Mda TD=m_templates_data;
@@ -955,9 +990,12 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		WW->setTimesLabels(times,labels);
 		WW->setMarkerLinesVisible(false);
 		printf(".\n");
-	}
+    }*/
 	else if (widget_type=="cluster_details") {
 		MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
+        int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
+        WW->setRaw(m_raw);
+        WW->setClipSize(clip_size);
         WW->setFirings(DiskReadMda(m_firings));
         WW->setGroupNumbers(m_original_cluster_numbers);
 	}
@@ -987,7 +1025,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 	else if (widget_type=="raw_data") {
         SSTimeSeriesWidget *WW=(SSTimeSeriesWidget *)W;
 		DiskArrayModel *X=new DiskArrayModel;
-        X->setPath(m_raw_data_path);
+        X->setPath(m_raw_data_paths[m_current_raw_data_name]);
         ((SSTimeSeriesView *)(WW->view()))->setData(X,true);
         set_times_labels();
     }
@@ -1022,12 +1060,12 @@ void MVOverview2WidgetPrivate::set_templates_current_number(int kk)
     QList<QWidget *> widgets=get_all_widgets();
     foreach (QWidget *W,widgets) {
         QString widget_type=W->property("widget_type").toString();
-        if (widget_type=="templates") {
-            int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
-            SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
-            WW->setCurrentX((int)(clip_size*(kk-1+0.5)));
-        }
-		else if (widget_type=="cluster_details") {
+//        if (widget_type=="templates") {
+//            int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
+//            SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+//            WW->setCurrentX((int)(clip_size*(kk-1+0.5)));
+//        }
+        if (widget_type=="cluster_details") {
 			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
 			WW->setCurrentK(kk);
 		}
@@ -1039,14 +1077,14 @@ void MVOverview2WidgetPrivate::set_templates_selected_numbers(const QList<int> &
 	QList<QWidget *> widgets=get_all_widgets();
 	foreach (QWidget *W,widgets) {
 		QString widget_type=W->property("widget_type").toString();
-		if (widget_type=="templates") {
-			int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
-			SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
-			/////// NA
-			Q_UNUSED(clip_size)
-			Q_UNUSED(WW)
-		}
-		else if (widget_type=="cluster_details") {
+//		if (widget_type=="templates") {
+//			int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
+//			SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+//			/////// NA
+//			Q_UNUSED(clip_size)
+//			Q_UNUSED(WW)
+//		}
+        if (widget_type=="cluster_details") {
 			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
 			WW->setSelectedKs(kks);
 		}

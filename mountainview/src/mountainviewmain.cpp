@@ -86,6 +86,8 @@ int main(int argc, char *argv[]) {
     QString templates_path=CLP.named_parameters.value("templates");
     QString locations_path=CLP.named_parameters.value("locations");
     QString raw_path=CLP.named_parameters.value("raw");
+    QString filt_path=CLP.named_parameters.value("filt");
+    QString pre_path=CLP.named_parameters.value("pre");
     QString times_path=CLP.named_parameters.value("times");
     QString labels_path=CLP.named_parameters.value("labels");
 	QString firings_path=CLP.named_parameters.value("firings");
@@ -168,7 +170,15 @@ int main(int argc, char *argv[]) {
 	else if (mode=="overview2") {
 		printf("overview2...\n");
 		MVOverview2Widget *W=new MVOverview2Widget;
-		W->setRawPath(raw_path);
+        if (!pre_path.isEmpty()) {
+            W->addRawPath("Preprocessed Data",pre_path);
+        }
+        if (!filt_path.isEmpty()) {
+            W->addRawPath("Filtered Data",filt_path);
+        }
+        if (!raw_path.isEmpty()) {
+            W->addRawPath("Raw Data",raw_path);
+        }
 		W->setFiringsPath(firings_path);
 		W->show();
 		W->setSamplingFrequency(sampling_freq);

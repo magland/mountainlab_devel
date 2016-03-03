@@ -90,6 +90,7 @@ DiskReadMda::~DiskReadMda()
 
 void DiskReadMda::setPath(const QString &path)
 {
+    if (path==d->m_path) return; //added 3/3/2016
 	d->clear_chunks();
 	if (d->m_file) jfclose(d->m_file); d->m_file=0;
 	d->m_path=path;

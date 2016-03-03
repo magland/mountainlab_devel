@@ -9,6 +9,7 @@
 #include <QCheckBox>
 #include <QRadioButton>
 #include <QGroupBox>
+#include <QComboBox>
 
 class MVOverview2WidgetControlPanelPrivate {
 public:
@@ -17,10 +18,12 @@ public:
 	QMap<QString,QLineEdit *> m_lineedit_parameters;
     QMap<QString,QCheckBox *> m_checkbox_parameters;
 	QMap<QString,QGroupBox *> m_groupbox_parameters;
+    QMap<QString,QComboBox *> m_combobox_parameters;
     QMap<QString,QPushButton *> m_buttons;
 
 	void add_group_label(QGridLayout *G,QString label);
     QCheckBox *add_check_box(QGridLayout *G,QString name,QString label,bool val);
+    QComboBox *add_combo_box(QGridLayout *G, QString name, QString label);
 	QLineEdit *add_int_box(QGridLayout *G,QString name,QString label,int val,int minval,int maxval);
 	QLineEdit *add_float_box(QGridLayout *G,QString name,QString label,float val,float minval,float maxval);
 	QGroupBox *add_radio_button_group(QGridLayout *G,QString name,QStringList options,QString val);
@@ -45,8 +48,20 @@ QCheckBox *MVOverview2WidgetControlPanelPrivate::add_check_box(QGridLayout *G, Q
     X->setText(QString("%1").arg(label));
     G->addWidget(X,r,1);
     m_checkbox_parameters[name]=X;
-    X->setProperty("signal",name);
+    X->setProperty("name",name);
     q->connect(X,SIGNAL(toggled(bool)),q,SLOT(slot_checkbox_clicked(bool)));
+    return X;
+}
+
+QComboBox *MVOverview2WidgetControlPanelPrivate::add_combo_box(QGridLayout *G, QString name, QString label)
+{
+    int r=G->rowCount();
+    QComboBox *X=new QComboBox;
+    X->setProperty("name",name);
+    G->addWidget(new QLabel(label),r,0);
+    G->addWidget(X,r,1);
+    m_combobox_parameters[name]=X;
+    q->connect(X,SIGNAL(activated(QString)),q,SLOT(slot_combobox_activated()));
     return X;
 }
 
@@ -84,7 +99,7 @@ QGroupBox *MVOverview2WidgetControlPanelPrivate::add_radio_button_group(QGridLay
 		QRadioButton *B=new QRadioButton(option);
 		if (option==val) B->setChecked(true);
 		else B->setChecked(false);
-		B->setProperty("signal",name);
+        B->setProperty("name",name);
 		hlayout->addWidget(B);
 	}
 	hlayout->addStretch();
@@ -99,7 +114,7 @@ QPushButton *MVOverview2WidgetControlPanelPrivate::add_button(QGridLayout *G,QSt
 	int r=G->rowCount();
 	QPushButton *X=new QPushButton(label);
 	G->addWidget(X,r,1);
-	X->setProperty("signal",name);
+    X->setProperty("name",name);
 	q->connect(X,SIGNAL(clicked(bool)),q,SLOT(slot_button_clicked()));
     m_buttons[name]=X;
     return X;
@@ -122,6 +137,14 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
 
 	QVBoxLayout *layout=new QVBoxLayout;
 
+    { // Raw/Preprocessed Data
+        QGridLayout *G=new QGridLayout;
+        layout->addLayout(G);
+        d->add_group_label(G,"Raw/Preprocessed Data");
+        d->add_combo_box(G,"raw_data_name","Use data:");
+        d->add_horizontal_divider(layout);
+    }
+
 	{ // Cross-correlograms
 		QGridLayout *G=new QGridLayout;
         layout->addLayout(G);
@@ -136,7 +159,7 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
         layout->addLayout(G);
 
 		d->add_group_label(G,"Templates");
-        d->add_int_box(G,"clip_size","Clip Size",100,20,10000)->setToolTip("Number of time points in clips");
+        d->add_int_box(G,"clip_size","Clip Size",150,20,10000)->setToolTip("Number of time points in clips");
 		QStringList options; options << "centroids" << "geometric medians";
 		d->add_radio_button_group(G,"template_method",options,"centroids");
 		d->add_button(G,"update_templates","Update");
@@ -162,7 +185,7 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
 
         d->add_group_label(G,"Actions");
 		d->add_button(G,"open_cluster_details","Open Details")->setToolTip("Open a new window with auto-computed cluster details");
-        d->add_button(G,"open_templates","Open Templates")->setToolTip("Open a new window with auto-computed templates");
+        //d->add_button(G,"open_templates","Open Templates")->setToolTip("Open a new window with auto-computed templates");
         d->add_button(G,"open_auto_correlograms","Open Auto-Correlograms")->setToolTip("Open a new auto-correlograms window");
         d->add_button(G,"open_raw_data","Open Raw Data")->setToolTip("Open a window of raw data");
         d->add_button(G,"open_clips","Open Clips")->setToolTip("Open clips for currently selected neuron.");
@@ -183,6 +206,7 @@ QVariant MVOverview2WidgetControlPanel::getParameterValue(QString name)
 {
 	if (d->m_lineedit_parameters.contains(name)) return d->m_lineedit_parameters[name]->text();
     if (d->m_checkbox_parameters.contains(name)) return d->m_checkbox_parameters[name]->isChecked();
+    if (d->m_combobox_parameters.contains(name)) return d->m_combobox_parameters[name]->currentText();
 	if (d->m_groupbox_parameters.contains(name)) {
 		QGroupBox *G=d->m_groupbox_parameters[name];
 		QList<QObject *> ch=G->children();
@@ -200,6 +224,7 @@ void MVOverview2WidgetControlPanel::setParameterValue(QString name, QVariant val
 {
     if (d->m_lineedit_parameters.contains(name)) return d->m_lineedit_parameters[name]->setText(val.toString());
     if (d->m_checkbox_parameters.contains(name)) return d->m_checkbox_parameters[name]->setChecked(val.toBool());
+    if (d->m_combobox_parameters.contains(name)) return d->m_combobox_parameters[name]->setCurrentText(val.toString());
 	if (d->m_groupbox_parameters.contains(name)) {
 		QGroupBox *G=d->m_groupbox_parameters[name];
 		QList<QObject *> ch=G->children();
@@ -220,19 +245,37 @@ void MVOverview2WidgetControlPanel::setParameterLabel(QString name, QString text
     if (d->m_buttons.contains(name)) return d->m_buttons[name]->setText(text);
 }
 
+void MVOverview2WidgetControlPanel::setParameterChoices(QString name, QStringList choices)
+{
+    if (d->m_combobox_parameters.contains(name)) {
+        QComboBox *CB=d->m_combobox_parameters[name];
+        QString txt=CB->currentText();
+        CB->clear();
+        foreach (QString choice,choices) {
+            CB->addItem(choice);
+        }
+        CB->setCurrentText(txt);
+    }
+}
+
 void MVOverview2WidgetControlPanel::slot_button_clicked()
 {
-    emit signalButtonClicked(sender()->property("signal").toString());
+    emit signalButtonClicked(sender()->property("name").toString());
 }
 
 void MVOverview2WidgetControlPanel::slot_checkbox_clicked(bool val)
 {
     ((QCheckBox *)sender())->setChecked(val); //make sure this is set before we emit the signal
-	emit signalButtonClicked(sender()->property("signal").toString());
+    emit signalButtonClicked(sender()->property("name").toString());
 }
 
 void MVOverview2WidgetControlPanel::slot_radio_button_clicked()
 {
-	emit signalButtonClicked(sender()->property("signal").toString());
+    emit signalButtonClicked(sender()->property("name").toString());
+}
+
+void MVOverview2WidgetControlPanel::slot_combobox_activated()
+{
+    emit signalComboBoxActivated(sender()->property("name").toString());
 }
 
