@@ -147,6 +147,7 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 	d->m_colors["view_background_highlighted"]=QColor(250,220,200);
 	d->m_colors["view_background_hovered"]=QColor(240,245,240);
 	d->m_colors["view_frame_selected"]=QColor(50,20,20);
+    d->m_colors["divider_line"]=QColor(255,100,150);
 }
 
 MVOverview2Widget::~MVOverview2Widget()
@@ -450,6 +451,9 @@ void MVOverview2WidgetPrivate::update_templates()
 		if (W->property("widget_type")=="templates") {
 			update_widget(W);
 		}
+        if (W->property("widget_type")=="cluster_details") {
+            update_widget(W);
+        }
 		if (W->property("widget_type")=="clips") {
 			update_widget(W);
 		}
@@ -839,7 +843,7 @@ void MVOverview2WidgetPrivate::open_cluster_details()
 	X->setChannelColors(m_channel_colors);
 	X->setColors(m_colors);
 	X->setRaw(m_raw);
-	X->setFirings(m_firings_original);
+    //X->setFirings(DiskReadMda(m_firings)); //done in update_widget
 	X->setSamplingFrequency(m_sampling_frequency);
 	QObject::connect(X,SIGNAL(signalCurrentKChanged()),q,SLOT(slot_details_current_k_changed()));
 	QObject::connect(X,SIGNAL(signalSelectedKsChanged()),q,SLOT(slot_details_selected_ks_changed()));
@@ -954,7 +958,8 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 	}
 	else if (widget_type=="cluster_details") {
 		MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
-		Q_UNUSED(WW)
+        WW->setFirings(DiskReadMda(m_firings));
+        WW->setGroupNumbers(m_original_cluster_numbers);
 	}
     else if (widget_type=="clips") {
         printf("Extracting clips...\n");
