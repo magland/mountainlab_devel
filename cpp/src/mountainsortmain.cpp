@@ -249,7 +249,7 @@ void register_processors(ProcessTracker &PT) {
         P.command="mda2txt";
         P.input_file_pnames << "input";
         P.output_file_pnames << "output";
-        P.version="0.1";
+        P.version="0.2";
         PT.registerProcessor(P);
     }
 }
@@ -959,8 +959,9 @@ int main(int argc,char *argv[]) {
         if (delim=="tab") opts.delimiter='\t';
         else if (delim=="comma") opts.delimiter=',';
         opts.transpose=CLP.named_parameters.value("transpose","1").toInt();
-        opts.max_rows=CLP.named_parameters.value("max_rows","1e9").toLong();
-        opts.max_cols=CLP.named_parameters.value("max_cols","100").toLong();
+        opts.max_rows=(long)CLP.named_parameters.value("max_rows","1e9").toDouble();
+        opts.max_cols=(long)CLP.named_parameters.value("max_cols","100").toDouble();
+        qDebug() << opts.transpose;
         if (!mda2txt(input_path.toLatin1().data(),output_path.toLatin1().data(),opts)) {
             return -1;
         }
