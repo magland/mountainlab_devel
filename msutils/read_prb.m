@@ -1,9 +1,9 @@
-function [X,json]=read_python_dict(fname)
-%READ_PYTHON_DICT - read a python dict file, returning a matlab structure,
+function [X,json]=read_prb(fname)
+%READ_PRB - read a python dict file, returning a matlab structure,
 %cell array, or numerical array. This is probably VERY buggy, but should
 %read .prb files for spike sorting
 %
-% Syntax:  [X] = read_python_dict(fname)
+% Syntax:  [X] = read_prb(fname)
 %
 % Inputs:
 %    fname - the file name for the python dict, e.g., *.prb
@@ -245,7 +245,7 @@ end
 
 function test_read_dict
 mfile_path=fileparts(mfilename('fullpath'));
-[X,json]=read_python_dict([mfile_path,'/sample.prb']);
+[X,json]=read_prb([mfile_path,'/sample.prb']);
 json
 X
 X_from_json=JSON.parse(json)
