@@ -18,6 +18,14 @@ int compute_max(const QList<int> &X) {
 	return ret;
 }
 
+Mda extract_clips(DiskReadMda &X,const QList<double> &times,int clip_size) {
+    QList<long> times2;
+    for (int i=0; i<times.count(); i++) {
+        times2 << times[i];
+    }
+    return extract_clips(X,times2,clip_size);
+}
+
 Mda extract_clips(DiskReadMda &X,const QList<long> &times,int clip_size) {
 	int N=X.N2();
 	int M=X.N1();

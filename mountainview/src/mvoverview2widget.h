@@ -37,6 +37,7 @@ private slots:
 	void slot_details_selected_ks_changed();
     void slot_cross_correlogram_current_unit_changed();
 	void slot_cross_correlogram_selected_units_changed();
+    void slot_clips_view_time_clicked();
 
 private:
 	MVOverview2WidgetPrivate *d;

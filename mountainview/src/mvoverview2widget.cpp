@@ -7,6 +7,7 @@
 #include "get_principal_components.h"
 #include "get_sort_indices.h"
 #include "mvclusterdetailwidget.h"
+#include "mvclipsview.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -67,6 +68,7 @@ public:
 
 	void update_cross_correlograms();
 	void update_raw_views();
+    void move_to_timepoint(double tp);
 	void update_widget(QWidget *W);
 
     void set_cross_correlograms_current_number(int kk);
@@ -305,7 +307,13 @@ void MVOverview2Widget::slot_cross_correlogram_selected_units_changed()
 	MVCrossCorrelogramsWidget *X=(MVCrossCorrelogramsWidget *)sender();
 	d->m_selected_ks=X->selectedUnits().toSet();
 	d->set_cross_correlograms_selected_numbers(X->selectedUnits());
-	d->set_templates_selected_numbers(X->selectedUnits());
+    d->set_templates_selected_numbers(X->selectedUnits());
+}
+
+void MVOverview2Widget::slot_clips_view_time_clicked()
+{
+    MVClipsView *W=(MVClipsView *)sender();
+    d->move_to_timepoint(W->currentClipTimepoint());
 }
 
 typedef QList<long> IntList;
@@ -907,10 +915,10 @@ void MVOverview2WidgetPrivate::open_clips()
         QMessageBox::information(q,"Unable to open clips","You must first select a neuron.");
         return;
     }
-    SSTimeSeriesView *X=new SSTimeSeriesView;
-	X->initialize();
+    MVClipsView *X=new MVClipsView;
     X->setProperty("widget_type","clips");
     X->setProperty("kk",kk);
+    q->connect(X,SIGNAL(currentClipTimepointChanged()),q,SLOT(slot_clips_view_time_clicked()));
     add_tab(X,QString("Clips %1(%2)").arg(m_original_cluster_numbers.value(kk)).arg(m_original_cluster_offsets.value(kk)+1));
     update_widget(X);
 }
@@ -935,7 +943,19 @@ void MVOverview2WidgetPrivate::update_raw_views()
 		if (widget_type=="raw_data") {
 			update_widget(W);
 		}
-	}
+    }
+}
+
+void MVOverview2WidgetPrivate::move_to_timepoint(double tp)
+{
+    QList<QWidget *> widgets=get_all_widgets();
+    foreach (QWidget *W,widgets) {
+        QString widget_type=W->property("widget_type").toString();
+        if (widget_type=="raw_data") {
+            SSTimeSeriesWidget *V=(SSTimeSeriesWidget *)W;
+            V->view(0)->setCurrentTimepoint(tp);
+        }
+    }
 }
 
 void MVOverview2WidgetPrivate::update_widget(QWidget *W)
@@ -1001,25 +1021,28 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 	}
     else if (widget_type=="clips") {
         printf("Extracting clips...\n");
-        SSTimeSeriesView *WW=(SSTimeSeriesView *)W;
+        MVClipsView *WW=(MVClipsView *)W;
         int kk=WW->property("kk").toInt();
 
-        QList<long> times,labels;
+        QList<int> labels;
+        QList<double> times;
         for (int n=0; n<m_firings.N2(); n++) {
-            times << (long)m_firings.value(1,n);
-			labels << (long)m_firings.value(2,n);
+            times << m_firings.value(1,n);
+            labels << (int)m_firings.value(2,n);
         }
 
-        QList<long> times_kk;
+        QList<double> times_kk;
 		for (int n=0; n<labels.count(); n++) {
             if (labels[n]==kk) times_kk << times[n];
         }
 		int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
 		Mda clips=extract_clips(m_raw,times_kk,clip_size);
 		printf("Setting data...\n");
-		DiskArrayModel *DAM=new DiskArrayModel;
-		DAM->setFromMda(clips);
-		WW->setData(DAM,true);
+        //DiskArrayModel *DAM=new DiskArrayModel;
+        //DAM->setFromMda(clips);
+        //WW->setData(DAM,true);
+        WW->setClips(clips);
+        WW->setTimes(times_kk);
 		printf(".\n");
     }
 	else if (widget_type=="raw_data") {
