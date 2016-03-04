@@ -17,7 +17,7 @@ function CC=mda_to_cross_correlograms(CCmda)
 % ms_mountainview
 
 % Author: Jeremy Magland
-% Jan 2015; Last revision: 15-Feb-2106
+% Jan 2016; Last revision: 15-Feb-2016
 
 K=max(CCmda(1,:));
 CC=cell(K,K);
