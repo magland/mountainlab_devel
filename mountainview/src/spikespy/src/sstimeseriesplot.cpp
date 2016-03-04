@@ -111,7 +111,8 @@ SSTimeSeriesPlot::SSTimeSeriesPlot(QWidget *parent) : SSAbstractPlot(parent) {
             << "#D08080";
     */
     //color_strings << "#CCBBFF";
-	color_strings << "#AA0000";
+    //color_strings << "#AA0000";
+    color_strings << "#CCAAAA";
 
 	for (int i=0; i<color_strings.size(); i++) {
 		d->m_label_colors << QColor(color_strings[i]);

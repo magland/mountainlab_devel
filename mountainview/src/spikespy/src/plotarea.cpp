@@ -187,7 +187,8 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
                     marker_x_positions.insert(x0);
                     //float tmp=qMin(200.0F,(pixels_per_marker-1)*1.0F/6*255);
                     //P->setPen(QPen(QColor(255-tmp,255-tmp,255-tmp),0));
-                    QColor color_of_text=col;
+                    //QColor color_of_text=col;
+                    QColor color_of_text=QColor(20,20,20);
                     color_of_text.setAlpha((int)qMin(255.0F,pixels_per_marker*256.0F/20));
                     P->setPen(color_of_text);
                     P->drawText(RR,Qt::AlignCenter|Qt::AlignVCenter,m_marker_labels[l0]);

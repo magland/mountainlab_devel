@@ -32,8 +32,10 @@ protected:
 	void mousePressEvent(QMouseEvent *evt);
 	void mouseReleaseEvent(QMouseEvent *evt);
 	void mouseMoveEvent(QMouseEvent *evt);
+    void mouseDoubleClickEvent(QMouseEvent *evt);
 	void wheelEvent(QWheelEvent *evt);
 signals:
+    void signalTemplateActivated();
 	void signalCurrentKChanged();
 	void signalSelectedKsChanged();
 	void signalZoomedIn();

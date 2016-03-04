@@ -382,6 +382,12 @@ void MVClusterDetailWidget::mouseMoveEvent(QMouseEvent *evt)
 
 }
 
+void MVClusterDetailWidget::mouseDoubleClickEvent(QMouseEvent *evt)
+{
+    Q_UNUSED(evt);
+    emit this->signalTemplateActivated();
+}
+
 void MVClusterDetailWidget::wheelEvent(QWheelEvent *evt)
 {
 	int delta=evt->delta();

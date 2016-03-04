@@ -35,6 +35,7 @@ private slots:
     //void slot_templates_clicked();
 	void slot_details_current_k_changed();
 	void slot_details_selected_ks_changed();
+    void slot_details_template_activated();
     void slot_cross_correlogram_current_unit_changed();
 	void slot_cross_correlogram_selected_units_changed();
     void slot_clips_view_time_clicked();

@@ -184,11 +184,12 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
 		layout->addLayout(G);
 
         d->add_group_label(G,"Actions");
-		d->add_button(G,"open_cluster_details","Open Details")->setToolTip("Open a new window with auto-computed cluster details");
+        d->add_button(G,"open_cluster_details","Details")->setToolTip("Open a new window with auto-computed cluster details");
         //d->add_button(G,"open_templates","Open Templates")->setToolTip("Open a new window with auto-computed templates");
-        d->add_button(G,"open_auto_correlograms","Open Auto-Correlograms")->setToolTip("Open a new auto-correlograms window");
-        d->add_button(G,"open_raw_data","Open Raw Data")->setToolTip("Open a window of raw data");
-        d->add_button(G,"open_clips","Open Clips")->setToolTip("Open clips for currently selected neuron.");
+        d->add_button(G,"open_auto_correlograms","Auto-Correlograms")->setToolTip("Open a new auto-correlograms window");
+        d->add_button(G,"open_matrix_of_cross_correlograms","Matrix of Cross-Correlograms")->setToolTip("Open a matrix of cross-correlograms for the set of selected clusters");
+        d->add_button(G,"open_raw_data","Raw Data")->setToolTip("Open a window of raw data");
+        d->add_button(G,"open_clips","Clips")->setToolTip("Open clips for currently selected cluster.");
         d->add_horizontal_divider(layout);
 	}
 
