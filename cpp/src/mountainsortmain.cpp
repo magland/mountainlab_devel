@@ -36,6 +36,7 @@
 #include "remove_noise_subclusters.h"
 #include <vector>
 #include <iostream>
+#include "mda2txt.h"
 
 void register_processors(ProcessTracker &PT) {
 	{
@@ -243,6 +244,14 @@ void register_processors(ProcessTracker &PT) {
 		P.version="0.1";
 		PT.registerProcessor(P);
 	}
+    {
+        PTProcessor P;
+        P.command="mda2txt";
+        P.input_file_pnames << "input";
+        P.output_file_pnames << "output";
+        P.version="0.1";
+        PT.registerProcessor(P);
+    }
 }
 
 void extract_usage() {
@@ -340,6 +349,10 @@ void isosplit2_usage() {
 
 void copy_usage() {
 	printf("mountainsort copy --input=in.mda --output=out.mda \n");
+}
+
+void mda2txt_usage() {
+    printf("mountainsort mda2txt --input=in.mda --output=out.txt --transpose=1 --max_rows=1e9 --max_cols=100 --delim=tab \n");
 }
 
 void test_svd() {
@@ -931,6 +944,27 @@ int main(int argc,char *argv[]) {
 			}
 		}
 	}
+    else if (command=="mda2txt") {
+        QString input_path=CLP.named_parameters["input"];
+        QString output_path=CLP.named_parameters["output"];
+
+        if ((input_path.isEmpty())||(output_path.isEmpty())) {mda2txt_usage(); return -1;}
+        if (!QFile::exists(input_path)) {
+            printf("Error in mda2txt... input file does not exist.\n");
+            return -1;
+        }
+        mda2txt_opts opts;
+        opts.delimiter='\t';
+        QString delim=CLP.named_parameters.value("delim","tab");
+        if (delim=="tab") opts.delimiter='\t';
+        else if (delim=="comma") opts.delimiter=',';
+        opts.transpose=CLP.named_parameters.value("transpose","1").toInt();
+        opts.max_rows=CLP.named_parameters.value("max_rows","1e9").toLong();
+        opts.max_cols=CLP.named_parameters.value("max_cols","100").toLong();
+        if (!mda2txt(input_path.toLatin1().data(),output_path.toLatin1().data(),opts)) {
+            return -1;
+        }
+    }
 	else {
 		printf("Unknown command: %s\n",command.toLatin1().data());
 		return -1;

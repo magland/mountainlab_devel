@@ -18,8 +18,10 @@ TEMPLATE = app
 INCLUDEPATH += ../../mountainview/src/spikespy/src
 DEPENDPATH += ../../mountainview/src/spikespy/src
 VPATH += ../../mountainview/src/spikespy/src
-HEADERS += diskreadmda.h
-SOURCES += diskreadmda.cpp
+HEADERS += diskreadmda.h \
+    mda2txt.h
+SOURCES += diskreadmda.cpp \
+    mda2txt.cpp
 
 HEADERS += \
     bandpass_filter.h \
