@@ -23,6 +23,7 @@ function mscmd_detect(input_path,output_path,opts)
 %    opts.detect_threshold - detect events where the absolute value of the
 %                            signal exceeds this threshold.
 %    opts.outer_window_width  ... to be documented.
+%    opts.clip_size - don't get too close to the edges!!
 %
 % Other m-files required: mscmd_exe
 %
@@ -39,9 +40,10 @@ if ~isfield(opts,'inner_window_width') opts.inner_window_width=10; end;
 if isfield(opts,'detect_interval') opts.inner_window_width=opts.detect_interval; end;
 if isfield(opts,'detect_threshold') opts.threshold=opts.detect_threshold; end;
 if ~isfield(opts,'outer_window_width') opts.outer_window_width=1000; end;
+if ~isfield(opts,'clip_size') opts.clip_size=100; end;
 
 cmd=sprintf('%s detect --input=%s --output=%s ',mscmd_exe,input_path,output_path);
-cmd=[cmd,sprintf('--inner_window_width=%d --outer_window_width=%d --individual_channels=%d ',opts.inner_window_width,opts.outer_window_width,opts.individual_channels)];
+cmd=[cmd,sprintf('--inner_window_width=%d --outer_window_width=%d --individual_channels=%d --clip_size=%d ',opts.inner_window_width,opts.outer_window_width,opts.individual_channels,opts.clip_size)];
 cmd=[cmd,sprintf('--threshold=%g --normalize=%d ',opts.threshold,opts.normalize)];
 
 fprintf('\n*** DETECT ***\n');

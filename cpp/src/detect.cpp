@@ -6,7 +6,7 @@
 
 int detect_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE *output_file,long timepoint1,long timepoint2,long overlap,int inner_window_width,int outer_window_width,double threshold,bool normalize,bool individual_channels);
 
-bool detect(const char *input_path,const char *output_path,int inner_window_width,int outer_window_width,double threshold,bool normalize,bool individual_channels) {
+bool detect(const char *input_path,const char *output_path,int inner_window_width,int outer_window_width,double threshold,bool normalize,bool individual_channels,int clip_size) {
 	printf("detect %s %s %d %d %g...\n",input_path,output_path,inner_window_width,outer_window_width,threshold);
 	FILE *input_file=fopen(input_path,"rb");
 	if (!input_file) {
@@ -47,9 +47,11 @@ bool detect(const char *input_path,const char *output_path,int inner_window_widt
 			printf("Processing chunk %ld/%ld (%d%%)\n",(tt/chunk_size)+1,(N/chunk_size)+1,(int)(pct*100));
 			timer.restart();
 		}
+		long tt1=tt;
 		long tt2=tt+chunk_size;
-		if (tt2>N) tt2=N;
-        total_num_events+=detect_2(H,input_file,H_out,output_file,tt,tt2,overlap,inner_window_width,outer_window_width,threshold,normalize,individual_channels);
+		if (tt1<clip_size) tt1=clip_size;
+		if (tt2>N-clip_size) tt2=N-clip_size;
+		total_num_events+=detect_2(H,input_file,H_out,output_file,tt1,tt2,overlap,inner_window_width,outer_window_width,threshold,normalize,individual_channels);
 	}
 	printf("total_num_events=%d\n",total_num_events);
 	fseek(output_file,0,SEEK_SET);

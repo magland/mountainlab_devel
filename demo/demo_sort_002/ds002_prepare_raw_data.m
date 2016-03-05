@@ -1,4 +1,4 @@
-function ds001_prepare_raw_data
+function ds002_prepare_raw_data
 
 prepare_hippocampal_tetrode_data(1);
 prepare_hippocampal_tetrode_data(2);

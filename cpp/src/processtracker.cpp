@@ -7,8 +7,10 @@
 
 struct ProcessRecord {
 	PTProcessor processor;
+	QStringList input_file_paths;
 	QStringList input_file_codes;
 	QMap<QString,QString> input_parameters;
+	QStringList output_file_paths;
 	QStringList output_file_codes;
 };
 
@@ -21,12 +23,15 @@ public:
 	PTProcessor find_processor_by_command_only(const QString &command);
 	QStringList compute_process_code_string_list(const PTProcessor &P,const CLParams &CLP);
 	ProcessRecord find_process_record(const QString &code);
+	ProcessRecord read_process_record(const QString &fname);
 	QString compute_file_code(const QString &path);
 	bool compare_string_lists(const QStringList &list1,const QStringList &list2);
 	QString compute_hash_of_string_list(const QStringList &list);
 	QString compute_hash_of_string(const QString &str);
 	QString get_working_path();
-	void store_process_record(const QString &code,const ProcessRecord &PR,const QStringList &input_file_paths,const QStringList &output_file_paths);
+	void store_process_record(const QString &code,const ProcessRecord &PR);
+	void clean_up_process_file(const QString &fname);
+	bool file_exists_and_has_code(const QString &fname,const QString &code);
 };
 
 ProcessTracker::ProcessTracker()
@@ -112,6 +117,7 @@ void ProcessTracker::reportProcessCompleted(const CLParams &CLP)
 	QStringList input_file_paths;
 	for (int i=0; i<P.input_file_pnames.count(); i++) {
 		QString path0=CLP.named_parameters[P.input_file_pnames[i]];
+		path0=QFileInfo(path0).canonicalFilePath();
 		if (path0.isEmpty()) {
 			printf("Warning: unable to report process completed: input file name is empty: %s.\n",P.input_file_pnames[i].toLatin1().data());
 			return;
@@ -122,11 +128,13 @@ void ProcessTracker::reportProcessCompleted(const CLParams &CLP)
 			return;
 		}
 		input_file_paths << path0;
+		PR.input_file_paths << path0;
 		PR.input_file_codes << code0;
 	}
 	QStringList output_file_paths;
 	for (int i=0; i<P.output_file_pnames.count(); i++) {
 		QString path0=CLP.named_parameters[P.output_file_pnames[i]];
+		path0=QFileInfo(path0).canonicalFilePath();
 		if (path0.isEmpty()) {
 			printf("Warning: unable to report process completed: output file name is empty: %s.\n",P.output_file_pnames[i].toLatin1().data());
 			return;
@@ -137,6 +145,7 @@ void ProcessTracker::reportProcessCompleted(const CLParams &CLP)
 			return;
 		}
 		output_file_paths << path0;
+		PR.output_file_paths << path0;
 		PR.output_file_codes << code0;
 	}
 
@@ -147,7 +156,7 @@ void ProcessTracker::reportProcessCompleted(const CLParams &CLP)
 	}
 	QString code=d->compute_hash_of_string_list(code_string_list);
 
-	d->store_process_record(code,PR,input_file_paths,output_file_paths);
+	d->store_process_record(code,PR);
 }
 
 int ProcessTracker::processorCount()
@@ -163,6 +172,15 @@ PTProcessor ProcessTracker::processor(int i)
 PTProcessor ProcessTracker::findProcessor(const QString &command)
 {
 	return d->find_processor_by_command_only(command);
+}
+
+void ProcessTracker::cleanUpProcessFiles()
+{
+	QString path0=d->get_working_path();
+	QStringList fnames=QDir(path0).entryList(QStringList("*.process"),QDir::Files,QDir::Name);
+	foreach (QString fname,fnames) {
+		d->clean_up_process_file(path0+"/"+fname);
+	}
 }
 
 
@@ -257,33 +275,42 @@ ProcessRecord ProcessTrackerPrivate::find_process_record(const QString &code)
 	ProcessRecord PR;
 	QString path1=QString("%1/%2.process").arg(path0).arg(code);
 	if (QFile::exists(path1)) {
-		QString txt=read_text_file(path1);
-		QVariant json=parseJSON(txt);
-		QMap<QString,QVariant> X=json.toMap();
-		QString command=X.value("command").toString();
-		QString version=X.value("version").toString();
-		PR.processor=find_processor_by_command(command,version);
-		if (PR.processor.command.isEmpty()) return PR;
-		if (PR.processor.command!=command) return PR;
-		PR.input_file_codes=to_string_list(X.value("input_file_codes").toList());
-		PR.input_parameters=to_string_map(X.value("input_parameters").toMap());
-		PR.output_file_codes=to_string_list(X.value("output_file_codes").toList());
+		return read_process_record(path1);
 	}
 	return PR;
 }
 
-void ProcessTrackerPrivate::store_process_record(const QString &code,const ProcessRecord &PR,const QStringList &input_file_paths,const QStringList &output_file_paths)
+ProcessRecord ProcessTrackerPrivate::read_process_record(const QString &fname)
+{
+	ProcessRecord PR;
+	QString txt=read_text_file(fname);
+	QVariant json=parseJSON(txt);
+	QMap<QString,QVariant> X=json.toMap();
+	QString command=X.value("command").toString();
+	QString version=X.value("version").toString();
+	PR.processor=find_processor_by_command(command,version);
+	if (PR.processor.command.isEmpty()) return PR;
+	if (PR.processor.command!=command) return PR;
+	PR.input_file_paths=to_string_list(X.value("input_file_paths").toList());
+	PR.input_file_codes=to_string_list(X.value("input_file_codes").toList());
+	PR.input_parameters=to_string_map(X.value("input_parameters").toMap());
+	PR.output_file_paths=to_string_list(X.value("output_file_paths").toList());
+	PR.output_file_codes=to_string_list(X.value("output_file_codes").toList());
+	return PR;
+}
+
+void ProcessTrackerPrivate::store_process_record(const QString &code,const ProcessRecord &PR)
 {
 	QString path0=get_working_path();
 	QString path1=QString("%1/%2.process").arg(path0).arg(code);
 	QMap<QString,QVariant> X;
 	X["command"]=PR.processor.command;
 	X["version"]=PR.processor.version;
+	X["input_file_paths"]=to_variant_list(PR.input_file_paths);
 	X["input_file_codes"]=to_variant_list(PR.input_file_codes);
 	X["input_parameters"]=to_variant_map(PR.input_parameters);
+	X["output_file_paths"]=to_variant_list(PR.output_file_paths);
 	X["output_file_codes"]=to_variant_list(PR.output_file_codes);
-	X["input_file_paths"]=to_variant_list(input_file_paths);
-	X["output_file_paths"]=to_variant_list(output_file_paths);
 	QString txt=toJSON(X);
 	write_text_file(path1,txt);
 }
@@ -332,5 +359,44 @@ QString ProcessTrackerPrivate::get_working_path()
 		QDir(path0).mkdir(".process_tracker");
 	}
 	return path0+"/.process_tracker";
+}
+
+void ProcessTrackerPrivate::clean_up_process_file(const QString &fname)
+{
+	bool okay=true;
+	ProcessRecord PR=read_process_record(fname);
+	for (int i=0; i<PR.input_file_paths.count(); i++) {
+		QString path0=PR.input_file_paths.value(i);
+		QString code0=PR.input_file_codes.value(i);
+		if (!file_exists_and_has_code(path0,code0)) {
+			okay=false;
+			break;
+		}
+	}
+	if (okay) {
+		for (int i=0; i<PR.output_file_paths.count(); i++) {
+			QString path0=PR.output_file_paths.value(i);
+			QString code0=PR.output_file_codes.value(i);
+			if (!file_exists_and_has_code(path0,code0)) {
+				okay=false;
+				break;
+			}
+		}
+	}
+	if (!okay) {
+		printf("Removing process file: %s\n",fname.toLatin1().data());
+		QFile::remove(fname);
+	}
+}
+
+bool ProcessTrackerPrivate::file_exists_and_has_code(const QString &fname,const QString &code)
+{
+	if (!QFile::exists(fname)) {
+		return false;
+	}
+	if (compute_file_code(fname)!=code) {
+		return false;
+	}
+	return true;
 }
 

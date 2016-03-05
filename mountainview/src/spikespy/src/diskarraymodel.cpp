@@ -32,6 +32,7 @@ public:
 	QString get_code(int scale,int chunk_size,int chunk_ind);
 	QString get_multiscale_file_name(int scale);
 	bool file_exists(QString path);
+	void clean_up_file_hierarchies_in_path(const QString &path);
 };
 
 DiskArrayModel::DiskArrayModel(QObject *parent) : QObject(parent)
@@ -59,6 +60,8 @@ DiskArrayModel::~DiskArrayModel()
 void DiskArrayModel::setPath(QString path) {
 	d->m_path=path;
 	d->read_header();
+
+	d->clean_up_file_hierarchies_in_path(QFileInfo(d->m_path).path());
 
 	d->m_chunk_size=qMax(10000/d->m_num_channels,1000);
 }
@@ -705,10 +708,14 @@ int DiskArrayModel::dim3() {
 	return d->m_dim3;
 }
 
+QString get_timestamp(QDateTime time) {
+	return time.toString("yyyy-mm-dd-hh-mm-ss");
+}
+
 QString DiskArrayModelPrivate::get_multiscale_file_name(int scale) {
 	QString str=QString(".%1").arg(scale);
 	QDateTime time=QFileInfo(m_path).lastModified();
-	QString timestamp=time.toString("yyyy-mm-dd-hh-mm-ss");
+	QString timestamp=get_timestamp(time);
 	QString subdir="spikespy."+QFileInfo(m_path).baseName()+"."+timestamp+"/";
 	if (scale==1) {
 		str="";
@@ -718,4 +725,47 @@ QString DiskArrayModelPrivate::get_multiscale_file_name(int scale) {
 }
 bool DiskArrayModelPrivate::file_exists(QString path) {
 	return QFileInfo(path).exists();
+}
+
+void remove_spikespy_directory(QString path) {
+	//for safety!!
+	if (!QFileInfo(path).fileName().startsWith("spikespy.")) {
+	qWarning() << "This is dangerous, tried to remove: " << path;
+	return;
+	}
+
+	QStringList list=QDir(path).entryList(QStringList("*.mda"),QDir::Files,QDir::Name);
+	foreach (QString fname,list) {
+	if (!QFile::remove(path+"/"+fname)) {
+		qWarning() << "Problem removing file: " << fname;
+	}
+	}
+	if (!QDir(QFileInfo(path).path()).rmdir(QFileInfo(path).fileName())) {
+		qWarning() << "Problem removing directory: " << path;
+	}
+}
+
+void DiskArrayModelPrivate::clean_up_file_hierarchies_in_path(const QString &path)
+{
+	QStringList list=QDir(path).entryList(QStringList("spikespy.*"));
+	foreach (QString dirname,list) {
+	int ind1=dirname.indexOf(".");
+	int ind2=dirname.lastIndexOf(".");
+	if ((ind1>0)&&(ind2>ind1)) {
+		QString base_name=dirname.mid(ind1+1,ind2-ind1-1);
+		QString timestamp0=dirname.mid(ind2+1);
+		bool okay=false;
+		QString file_path=path+"/"+base_name+".mda";
+		if (QFile::exists(file_path)) {
+		QDateTime time0=QFileInfo(file_path).lastModified();
+		QString timestamp1=get_timestamp(time0);
+		if (timestamp0==timestamp1) okay=true;
+		}
+		if (!okay) {
+		QString full_path=path+"/"+dirname;
+		printf("Removing directory: %s\n",full_path.toLatin1().data());
+		remove_spikespy_directory(full_path);
+		}
+	}
+	}
 }

@@ -44,7 +44,7 @@ echo "*** DETECT ***"
 mscmd detect
 	--input=$2/pre2.mda --output=$2/detect.mda
 	--inner_window_width=$detect_interval --outer_window_width=1000
-	--individual_channels=1 --threshold=$detect_threshold --normalize=0 
+	--individual_channels=1 --threshold=$detect_threshold --normalize=0 --clip_size=$clip_size
 
 echo "*** BRANCH CLUSTER ***"
 mscmd branch_cluster_v1

@@ -408,60 +408,60 @@ bool do_minmax_downsample(QString path1,QString path2,int factor,QProgressDialog
 }
 
 void DiskArrayModel::createFileHierarchyIfNeeded() {
-        if (d->m_set_from_mda) return;
-        if (fileHierarchyExists()) return;
+    if (d->m_set_from_mda) return;
+    if (fileHierarchyExists()) return;
 
-	QProgressDialog dlg("Creating file hierarchy","Cancel",0,100);
-	dlg.show();
-	qApp->processEvents();
+    QProgressDialog dlg("Creating file hierarchy","Cancel",0,100);
+    dlg.show();
+    qApp->processEvents();
 
-	QString last_path=d->m_path;
-	int scale0=MULTISCALE_FACTOR;
-	while (d->m_num_timepoints/scale0>1) {
-		dlg.setLabelText(QString("Creating file hierarchy %1").arg(d->m_num_timepoints/scale0));
-		qApp->processEvents();
-		QString new_path=d->get_multiscale_file_name(scale0);
-		if (!QDir(QFileInfo(new_path).path()).exists()) {
-			//the following line is crazy!!
-			QDir(QFileInfo(QFileInfo(new_path).path()).path()).mkdir(QFileInfo(QFileInfo(new_path).path()).fileName());
-		}
-		if (!do_minmax_downsample(last_path,new_path,MULTISCALE_FACTOR,&dlg,(scale0==MULTISCALE_FACTOR))) {
-			exit(-1);
-			return;
-		}
-		last_path=new_path;
-		scale0*=MULTISCALE_FACTOR;
-	}
+    QString last_path=d->m_path;
+    int scale0=MULTISCALE_FACTOR;
+    while (d->m_num_timepoints/scale0>1) {
+	    dlg.setLabelText(QString("Creating file hierarchy %1").arg(d->m_num_timepoints/scale0));
+	    qApp->processEvents();
+	    QString new_path=d->get_multiscale_file_name(scale0);
+	    if (!QDir(QFileInfo(new_path).path()).exists()) {
+		    //the following line is crazy!!
+		    QDir(QFileInfo(QFileInfo(new_path).path()).path()).mkdir(QFileInfo(QFileInfo(new_path).path()).fileName());
+	    }
+	    if (!do_minmax_downsample(last_path,new_path,MULTISCALE_FACTOR,&dlg,(scale0==MULTISCALE_FACTOR))) {
+		    exit(-1);
+		    return;
+	    }
+	    last_path=new_path;
+	    scale0*=MULTISCALE_FACTOR;
+    }
 
-	// This was the method that involves loading the whole thing into memory
+    // This was the method that involves loading the whole thing into memory
 
-	/*
-	Mda X; X.read(d->m_path.toLatin1().data());
-	int i3=0;
-	int scale0=MULTISCALE_FACTOR;
-	while (d->m_num_timepoints/scale0>1) {
-		int N2=X.size(1)/MULTISCALE_FACTOR; if (N2*MULTISCALE_FACTOR<X.size(1)) N2++;
-		Mda X2; X2.setDataType(d->m_data_type);
-		X2.allocate(d->m_num_channels,N2,2);
-		for (int tt=0; tt<N2; tt++) {
-			for (int ch=0; ch<d->m_num_channels; ch++) {
-				float minval=X.value(ch,tt*MULTISCALE_FACTOR,0);
-				float maxval=X.value(ch,tt*MULTISCALE_FACTOR,i3);
-				for (int dt=0; dt<MULTISCALE_FACTOR; dt++) {
-					minval=qMin(minval,X.value(ch,tt*MULTISCALE_FACTOR+dt,0));
-					maxval=qMax(maxval,X.value(ch,tt*MULTISCALE_FACTOR+dt,i3));
-				}
-				X2.setValue(minval,ch,tt,0);
-				X2.setValue(maxval,ch,tt,1);
-			}
-		}
-		QString path0=d->get_multiscale_file_name(scale0);
-		X2.write(path0.toLatin1().data());
-		i3=1;
-		scale0*=MULTISCALE_FACTOR;
-		X=X2;
-	}
-	*/
+    /*
+    Mda X; X.read(d->m_path.toLatin1().data());
+    int i3=0;
+    int scale0=MULTISCALE_FACTOR;
+    while (d->m_num_timepoints/scale0>1) {
+	    int N2=X.size(1)/MULTISCALE_FACTOR; if (N2*MULTISCALE_FACTOR<X.size(1)) N2++;
+	    Mda X2; X2.setDataType(d->m_data_type);
+	    X2.allocate(d->m_num_channels,N2,2);
+	    for (int tt=0; tt<N2; tt++) {
+		    for (int ch=0; ch<d->m_num_channels; ch++) {
+			    float minval=X.value(ch,tt*MULTISCALE_FACTOR,0);
+			    float maxval=X.value(ch,tt*MULTISCALE_FACTOR,i3);
+			    for (int dt=0; dt<MULTISCALE_FACTOR; dt++) {
+				    minval=qMin(minval,X.value(ch,tt*MULTISCALE_FACTOR+dt,0));
+				    maxval=qMax(maxval,X.value(ch,tt*MULTISCALE_FACTOR+dt,i3));
+			    }
+			    X2.setValue(minval,ch,tt,0);
+			    X2.setValue(maxval,ch,tt,1);
+		    }
+	    }
+	    QString path0=d->get_multiscale_file_name(scale0);
+	    X2.write(path0.toLatin1().data());
+	    i3=1;
+	    scale0*=MULTISCALE_FACTOR;
+	    X=X2;
+    }
+    */
 }
 
 void DiskArrayModelPrivate::read_header() {
@@ -632,11 +632,13 @@ int DiskArrayModel::size(int dim) {
 	else return 1;
 }
 
+
+
 QString DiskArrayModelPrivate::get_multiscale_file_name(int scale) {
 	QString str=QString(".%1").arg(scale);
 	QDateTime time=QFileInfo(m_path).lastModified();
-	QString timestamp=time.toString("yyyy-mm-dd-hh-mm-ss");
-	QString subdir="spikespy."+QFileInfo(m_path).baseName()+"."+timestamp+"/";
+	QString timestamp=get_timestamp(time);
+	QString subdir="spikespy."+QFileInfo(m_path).completeBaseName()+"."+timestamp+"/";
 	if (scale==1) {
 		str="";
 		subdir="";

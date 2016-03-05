@@ -91,6 +91,7 @@ int main(int argc, char *argv[]) {
     QString times_path=CLP.named_parameters.value("times");
     QString labels_path=CLP.named_parameters.value("labels");
 	QString firings_path=CLP.named_parameters.value("firings");
+	QString window_title=CLP.named_parameters.value("title");
 	if (firings_path.isEmpty()) firings_path=CLP.named_parameters.value("clusters"); //historical compatibility
 	if (firings_path.isEmpty()) firings_path=CLP.named_parameters.value("cluster"); //historical compatibility
     QString primary_channels_path=CLP.named_parameters.value("primary-channels");
@@ -179,12 +180,16 @@ int main(int argc, char *argv[]) {
         if (!raw_path.isEmpty()) {
             W->addRawPath("Raw Data",raw_path);
         }
+		if (window_title.isEmpty()) window_title=pre_path;
+		if (window_title.isEmpty()) window_title=filt_path;
+		if (window_title.isEmpty()) window_title=raw_path;
 		W->setFiringsPath(firings_path);
 		W->show();
 		W->setSamplingFrequency(sampling_freq);
 		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
 		W->resize(1800,1200);
         W->setDefaultInitialization();
+		W->setWindowTitle(window_title);
 	}
 	else if (mode=="spikespy") {
 		printf("spikespy...\n");

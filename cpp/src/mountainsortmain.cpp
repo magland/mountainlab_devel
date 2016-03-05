@@ -76,7 +76,7 @@ void register_processors(ProcessTracker &PT) {
 		P.command="detect";
 		P.input_file_pnames << "input";
 		P.output_file_pnames << "output";
-        P.version="0.18";
+		P.version="0.19";
 		PT.registerProcessor(P);
 	}
     {
@@ -272,7 +272,7 @@ void whiten_usage() {
 }
 
 void detect_usage() {
-    printf("mountainsort detect --input=in.mda --output=out.mda --inner_window_width=40 --outer_window_width=1000 --threshold=3 --normalize=0 --individual_channels=1\n");
+	printf("mountainsort detect --input=in.mda --output=out.mda --inner_window_width=40 --outer_window_width=1000 --threshold=3 --normalize=0 --individual_channels=1 --clip_size=100\n");
 }
 
 void features_usage() {
@@ -509,6 +509,7 @@ int main(int argc,char *argv[]) {
 
 	ProcessTracker PT;
 	register_processors(PT);
+	PT.cleanUpProcessFiles(); //do this every time?
 
     if (CLP.unnamed_parameters.value(0).endsWith(".msh")) {
         return process_msh(CLP.unnamed_parameters.value(0),argc,argv);
@@ -616,6 +617,7 @@ int main(int argc,char *argv[]) {
 		float threshold=CLP.named_parameters["threshold"].toFloat();
         int normalize=CLP.named_parameters["normalize"].toInt();
 		int individual_channels=1;
+		int clip_size=CLP.named_parameters.value("clip_size","100").toInt();
 		if (CLP.named_parameters.contains("individual_channels"))
 			individual_channels=CLP.named_parameters["individual_channels"].toInt();
 
@@ -624,7 +626,7 @@ int main(int argc,char *argv[]) {
 		if (outer_window_width==0) {detect_usage(); return -1;}
 		if (threshold==0) {detect_usage(); return -1;}
 
-        if (!detect(input_path.toLatin1().data(),output_path.toLatin1().data(),inner_window_width,outer_window_width,threshold,normalize,(individual_channels!=0))) {
+		if (!detect(input_path.toLatin1().data(),output_path.toLatin1().data(),inner_window_width,outer_window_width,threshold,normalize,(individual_channels!=0),clip_size)) {
 			printf("Error in detect.\n");
 			return -1;
 		}

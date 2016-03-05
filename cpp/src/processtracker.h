@@ -23,6 +23,7 @@ public:
 	int processorCount();
 	PTProcessor processor(int i);
 	PTProcessor findProcessor(const QString &command);
+	void cleanUpProcessFiles();
 
 private:
 	ProcessTrackerPrivate *d;
