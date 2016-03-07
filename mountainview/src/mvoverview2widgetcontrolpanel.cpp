@@ -190,6 +190,7 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
         d->add_button(G,"open_matrix_of_cross_correlograms","Matrix of Cross-Correlograms")->setToolTip("Open a matrix of cross-correlograms for the set of selected clusters");
         d->add_button(G,"open_raw_data","Raw Data")->setToolTip("Open a window of raw data");
         d->add_button(G,"open_clips","Clips")->setToolTip("Open clips for currently selected cluster.");
+		d->add_button(G,"open_clusters","Cluster(s)")->setToolTip("Open a view of cluster events in feature space.");
         d->add_horizontal_divider(layout);
 	}
 

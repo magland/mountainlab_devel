@@ -8,6 +8,7 @@
 #include "get_sort_indices.h"
 #include "mvclusterdetailwidget.h"
 #include "mvclipsview.h"
+#include "mvclusterview.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -68,6 +69,7 @@ public:
 	void open_cluster_details();
 	void open_raw_data();
     void open_clips();
+	void open_clusters();
 
 	void update_cross_correlograms();
 	void update_raw_views();
@@ -257,6 +259,9 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
     else if (str=="open_clips") {
         d->open_clips();
     }
+	else if (str=="open_clusters") {
+		d->open_clusters();
+	}
 	else if (str=="template_method") {
         d->update_cluster_details();
     }
@@ -974,7 +979,26 @@ void MVOverview2WidgetPrivate::open_clips()
     q->connect(X,SIGNAL(currentClipTimepointChanged()),q,SLOT(slot_clips_view_time_clicked()));
     add_tab(X,QString("Clips %1(%2)").arg(m_original_cluster_numbers.value(kk)).arg(m_original_cluster_offsets.value(kk)+1));
     update_widget(X);
-    X->setXRange(vec2(0,5000));
+	X->setXRange(vec2(0,5000));
+}
+
+void MVOverview2WidgetPrivate::open_clusters()
+{
+	qDebug() << __FUNCTION__ << __LINE__;
+	int kk=m_current_k;
+	if (kk<=0) {
+		QMessageBox::information(q,"Unable to open clusters","You must first select a neuron.");
+		return;
+	}
+	qDebug() << __FUNCTION__ << __LINE__;
+	MVClusterView *X=new MVClusterView;
+	qDebug() << __FUNCTION__ << __LINE__;
+	X->setProperty("widget_type","clusters");
+	X->setProperty("kk",kk);
+	qDebug() << __FUNCTION__ << __LINE__;
+	add_tab(X,QString("Clusters %1(%2)").arg(m_original_cluster_numbers.value(kk)).arg(m_original_cluster_offsets.value(kk)+1));
+	qDebug() << __FUNCTION__ << __LINE__;
+	update_widget(X);
 }
 
 void MVOverview2WidgetPrivate::update_cross_correlograms()
@@ -1118,6 +1142,35 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
         WW->setTimes(times_kk);
 		printf(".\n");
     }
+	else if (widget_type=="clusters") {
+		qDebug() << __FUNCTION__ << __LINE__;
+		set_progress("Extracting clips","Extracting clips",0);
+		MVClusterView *WW=(MVClusterView *)W;
+		int kk=WW->property("kk").toInt();
+
+		QList<int> labels;
+		QList<double> times;
+		for (int n=0; n<m_firings.N2(); n++) {
+			times << m_firings.value(1,n);
+			labels << (int)m_firings.value(2,n);
+		}
+
+		QList<double> times_kk;
+		for (int n=0; n<labels.count(); n++) {
+			if (labels[n]==kk) times_kk << times[n];
+		}
+		int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
+		Mda clips=extract_clips(m_raw,times_kk,clip_size);
+		int M=clips.N1(); int T=clips.N2(); int L=clips.N3();
+		Mda features; features.allocate(3,L);
+		qDebug() << __FUNCTION__ << __LINE__;
+		set_progress("Computing features","Computing features",0);
+		printf("Computing features...\n");
+		get_pca_features(M*T,L,3,features.dataPtr(),clips.dataPtr());
+		WW->setData(features);
+		set_progress("","",1);
+		printf(".\n");
+	}
 	else if (widget_type=="raw_data") {
         SSTimeSeriesWidget *WW=(SSTimeSeriesWidget *)W;
 		DiskArrayModel *X=new DiskArrayModel;
