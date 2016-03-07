@@ -15,6 +15,10 @@ public:
 	void setData(const Mda &X);
 protected:
 	void paintEvent(QPaintEvent *evt);
+	void mouseMoveEvent(QMouseEvent *evt);
+	void mousePressEvent(QMouseEvent *evt);
+	void mouseReleaseEvent(QMouseEvent *evt);
+	void wheelEvent(QWheelEvent *evt);
 private:
 	MVClusterViewPrivate *d;
 };

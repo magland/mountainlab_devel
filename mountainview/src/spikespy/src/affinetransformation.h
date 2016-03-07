@@ -15,11 +15,13 @@ public:
 
 	CVPoint map(const CVPoint &p);
 
-	void rotateX(float theta,bool left=true);
-	void rotateY(float theta,bool left=true);
-	void rotateZ(float theta,bool left=true);
+	void setIdentity();
+	void rotateX(double theta,bool left=true);
+	void rotateY(double theta,bool left=true);
+	void rotateZ(double theta,bool left=true);
 
-	void scale(float sx,float sy,float sz,bool left=true);
+	void scale(double sx,double sy,double sz,bool left=true);
+	void getMatrixData(double *data);
 
 	AffineTransformation inverse() const;
 

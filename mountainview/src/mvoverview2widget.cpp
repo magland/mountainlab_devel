@@ -892,7 +892,7 @@ void MVOverview2WidgetPrivate::open_cross_correlograms(int k)
     }
 	MVCrossCorrelogramsWidget *X=new MVCrossCorrelogramsWidget;
 	X->setProperty("widget_type","cross_correlograms");
-    X->setProperty("kk",k);
+	X->setProperty("kk",k);
 	X->setColors(m_colors);
     add_tab(X,QString("CC for %1(%2)").arg(m_original_cluster_numbers.value(k)).arg(m_original_cluster_offsets.value(k)+1));
     QObject::connect(X,SIGNAL(currentUnitChanged()),q,SLOT(slot_cross_correlogram_current_unit_changed()));
@@ -984,20 +984,16 @@ void MVOverview2WidgetPrivate::open_clips()
 
 void MVOverview2WidgetPrivate::open_clusters()
 {
-	qDebug() << __FUNCTION__ << __LINE__;
-	int kk=m_current_k;
-	if (kk<=0) {
-		QMessageBox::information(q,"Unable to open clusters","You must first select a neuron.");
+	QList<int> ks=m_selected_ks.toList();
+	qSort(ks);
+	if (ks.count()==0) {
+		QMessageBox::information(q,"Unable to open clusters","You must select at least one neuron.");
 		return;
 	}
-	qDebug() << __FUNCTION__ << __LINE__;
 	MVClusterView *X=new MVClusterView;
-	qDebug() << __FUNCTION__ << __LINE__;
 	X->setProperty("widget_type","clusters");
-	X->setProperty("kk",kk);
-	qDebug() << __FUNCTION__ << __LINE__;
-	add_tab(X,QString("Clusters %1(%2)").arg(m_original_cluster_numbers.value(kk)).arg(m_original_cluster_offsets.value(kk)+1));
-	qDebug() << __FUNCTION__ << __LINE__;
+	X->setProperty("ks",int_list_to_string_list(ks));
+	add_tab(X,QString("Clusters"));
 	update_widget(X);
 }
 
@@ -1037,6 +1033,23 @@ void MVOverview2WidgetPrivate::move_to_timepoint(double tp)
             V->view(0)->setCurrentTimepoint(tp);
         }
     }
+}
+
+void subtract_features_mean(Mda &F) {
+	if (F.N2()==0) return;
+	double mean[F.N1()];
+	for (int i=0; i<F.N1(); i++) mean[i]=0;
+	for (int i=0; i<F.N2(); i++) {
+		for (int j=0; j<F.N1(); j++) {
+			mean[j]+=F.value(j,i);
+		}
+	}
+	for (int i=0; i<F.N1(); i++) mean[i]/=F.N2();
+	for (int i=0; i<F.N2(); i++) {
+		for (int j=0; j<F.N1(); j++) {
+			F.setValue(F.value(j,i)-mean[j],j,i);
+		}
+	}
 }
 
 void MVOverview2WidgetPrivate::update_widget(QWidget *W)
@@ -1143,10 +1156,9 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		printf(".\n");
     }
 	else if (widget_type=="clusters") {
-		qDebug() << __FUNCTION__ << __LINE__;
 		set_progress("Extracting clips","Extracting clips",0);
 		MVClusterView *WW=(MVClusterView *)W;
-		int kk=WW->property("kk").toInt();
+		QList<int> ks=string_list_to_int_list(WW->property("ks").toStringList());
 
 		QList<int> labels;
 		QList<double> times;
@@ -1156,17 +1168,21 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		}
 
 		QList<double> times_kk;
-		for (int n=0; n<labels.count(); n++) {
-			if (labels[n]==kk) times_kk << times[n];
+		for (int ik=0; ik<ks.count(); ik++) {
+			int kk=ks[ik];
+			for (int n=0; n<labels.count(); n++) {
+				if (labels[n]==kk) times_kk << times[n];
+			}
 		}
 		int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
 		Mda clips=extract_clips(m_raw,times_kk,clip_size);
 		int M=clips.N1(); int T=clips.N2(); int L=clips.N3();
 		Mda features; features.allocate(3,L);
-		qDebug() << __FUNCTION__ << __LINE__;
 		set_progress("Computing features","Computing features",0);
 		printf("Computing features...\n");
 		get_pca_features(M*T,L,3,features.dataPtr(),clips.dataPtr());
+		subtract_features_mean(features);
+		features.write("/tmp/tmp_features.mda");
 		WW->setData(features);
 		set_progress("","",1);
 		printf(".\n");

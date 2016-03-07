@@ -3,7 +3,7 @@
 #include <math.h>
 
 struct matrix44 {
-	float d[4][4];
+	double d[4][4];
 };
 
 class AffineTransformationPrivate {
@@ -50,6 +50,11 @@ CVPoint AffineTransformation::map(const CVPoint &p)
 	return q;
 }
 
+void AffineTransformation::setIdentity()
+{
+	d->set_identity();
+}
+
 void set_identity0(matrix44 &M) {
 	for (int j=0; j<4; j++) {
 		for (int i=0; i<4; i++) {
@@ -67,7 +72,7 @@ void copy_matrix0(matrix44 &dst,const matrix44 &src) {
 	}
 }
 
-void AffineTransformation::rotateX(float theta,bool left)
+void AffineTransformation::rotateX(double theta,bool left)
 {
 	matrix44 M;
 	set_identity0(M);
@@ -76,7 +81,7 @@ void AffineTransformation::rotateX(float theta,bool left)
 	d->multiply_by(M,left);
 }
 
-void AffineTransformation::rotateY(float theta, bool left)
+void AffineTransformation::rotateY(double theta, bool left)
 {
 	matrix44 M;
 	set_identity0(M);
@@ -85,7 +90,7 @@ void AffineTransformation::rotateY(float theta, bool left)
 	d->multiply_by(M,left);
 }
 
-void AffineTransformation::rotateZ(float theta, bool left)
+void AffineTransformation::rotateZ(double theta, bool left)
 {
 	matrix44 M;
 	set_identity0(M);
@@ -94,7 +99,7 @@ void AffineTransformation::rotateZ(float theta, bool left)
 	d->multiply_by(M,left);
 }
 
-void AffineTransformation::scale(float sx, float sy, float sz, bool left)
+void AffineTransformation::scale(double sx, double sy, double sz, bool left)
 {
 	matrix44 M;
 	set_identity0(M);
@@ -104,9 +109,20 @@ void AffineTransformation::scale(float sx, float sy, float sz, bool left)
 	d->multiply_by(M,left);
 }
 
-QList<float> invert33(QList<float> &data33) {
-	float X1[3][3];
-	float X2[3][3];
+void AffineTransformation::getMatrixData(double *data)
+{
+	for (int r=0; r<4; r++) {
+		for (int c=0; c<4; c++) {
+			data[r*4+c]=d->m_matrix.d[r][c];
+		}
+	}
+}
+
+
+
+QList<double> invert33(QList<double> &data33) {
+	double X1[3][3];
+	double X2[3][3];
 	int ct=0;
 	for (int j=0; j<3; j++)
 	for (int i=0; i<3; i++) {
@@ -138,7 +154,7 @@ QList<float> invert33(QList<float> &data33) {
 			X2[i][j]/=det;
 	}
 
-	QList<float> ret;
+	QList<double> ret;
 	for (int j=0; j<3; j++)
 	for (int i=0; i<3; i++) {
 		ret << X2[i][j];
@@ -150,13 +166,13 @@ AffineTransformation AffineTransformation::inverse() const
 {
 	AffineTransformation T;
 
-	QList<float> data33;
+	QList<double> data33;
 	for (int j=0; j<3; j++)
 	for (int i=0; i<3; i++)
 		data33 << d->m_matrix.d[i][j];
 	data33=invert33(data33);
 
-	float tmp[4][4];
+	double tmp[4][4];
 	int ct=0;
 	for (int j=0; j<3; j++)
 	for (int i=0; i<3; i++) {
@@ -167,7 +183,7 @@ AffineTransformation AffineTransformation::inverse() const
 	tmp[1][3]=-(tmp[1][0]*d->m_matrix.d[0][3]+tmp[1][1]*d->m_matrix.d[1][3]+tmp[1][2]*d->m_matrix.d[2][3]);
 	tmp[2][3]=-(tmp[2][0]*d->m_matrix.d[0][3]+tmp[2][1]*d->m_matrix.d[1][3]+tmp[2][2]*d->m_matrix.d[2][3]);
 	tmp[3][0]=0; tmp[3][1]=0; tmp[3][2]=0; tmp[3][3]=1;
-	QList<float> data44;
+	QList<double> data44;
 	for (int i=0; i<4; i++)
 	for (int j=0; j<4; j++) {
 		T.d->m_matrix.d[i][j]=tmp[i][j];
@@ -186,7 +202,7 @@ void AffineTransformationPrivate::multiply_by(const matrix44 &M, bool left)
 	matrix44 tmp; copy_matrix0(tmp,m_matrix);
 	for (int j=0; j<4; j++) {
 		for (int i=0; i<4; i++) {
-			float val=0;
+			double val=0;
 			if (left) {
 				for (int k=0; k<4; k++) val+=M.d[i][k]*tmp.d[k][j];
 			}
