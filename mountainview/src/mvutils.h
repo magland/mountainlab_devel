@@ -5,6 +5,11 @@
 #include "diskreadmda.h"
 #include <QList>
 
+struct MVEvent {
+	double time;
+	int label;
+};
+
 Mda compute_mean_waveform(DiskArrayModel *C);
 Mda compute_mean_stdev_waveform(DiskArrayModel *C);
 Mda compute_features(DiskArrayModel *C);

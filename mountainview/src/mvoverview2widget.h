@@ -38,7 +38,8 @@ private slots:
     void slot_details_template_activated();
     void slot_cross_correlogram_current_unit_changed();
 	void slot_cross_correlogram_selected_units_changed();
-    void slot_clips_view_time_clicked();
+	void slot_clips_view_current_event_changed();
+	void slot_cluster_view_current_event_changed();
 
 private:
 	MVOverview2WidgetPrivate *d;

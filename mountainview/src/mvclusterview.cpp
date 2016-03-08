@@ -15,15 +15,22 @@ public:
 	bool m_data_proj_needed;
 	Mda m_data_trans;
 	bool m_data_trans_needed;
+	int m_current_event_index;
 
 	QImage m_grid_image;
+	QRectF m_image_target;
 	Mda m_heat_map_grid;
 	Mda m_point_grid;
 	int m_grid_N1,m_grid_N2;
 	double m_grid_delta;
 	bool m_grid_update_needed;
 	QPointF m_anchor_point;
+	QPointF m_last_mouse_release_point;
 	AffineTransformation m_anchor_transformation;
+	bool m_moved_from_anchor;
+	QList<double> m_times;
+	QList<int> m_labels;
+	QSet<int> m_closest_inds_to_exclude;
 
 	Mda proj_matrix; //3xnum_features
 	AffineTransformation m_transformation; //3x4
@@ -32,19 +39,27 @@ public:
 	void compute_data_trans();
 	void update_grid();
 	void coord2gridindex(double x0,double y0,double &i1,double &i2);
+	QPointF pixel2coord(QPointF pix);
+	QPointF coord2pixel(QPointF coord);
 	QColor get_heat_map_color(double val);
+	int find_closest_event_index(double x,double y,const QSet<int> &inds_to_exclude);
+	void set_current_event_index(int ind);
 };
 
 MVClusterView::MVClusterView(QWidget *parent) : QWidget(parent)
 {
 	d=new MVClusterViewPrivate;
+	d->q=this;
 	d->m_grid_N1=d->m_grid_N2=300;
 	d->m_grid_delta=0.2;
 	d->m_grid_update_needed=false;
 	d->m_data_proj_needed=true;
 	d->m_data_trans_needed=true;
 	d->m_anchor_point=QPointF(-1,-1);
+	d->m_last_mouse_release_point=QPointF(-1,-1);
 	d->m_transformation.setIdentity();
+	d->m_moved_from_anchor=false;
+	d->m_current_event_index=-1;
 	this->setMouseTracking(true);
 }
 
@@ -60,6 +75,41 @@ void MVClusterView::setData(const Mda &X)
 	d->m_data_trans_needed=true;
 	d->m_grid_update_needed=true;
 	update();
+}
+
+void MVClusterView::setTimes(const QList<double> &times)
+{
+	d->m_times=times;
+}
+
+void MVClusterView::setLabels(const QList<int> &labels)
+{
+	d->m_labels=labels;
+}
+
+void MVClusterView::setCurrentEvent(MVEvent evt)
+{
+	if ((d->m_times.isEmpty())||(d->m_labels.isEmpty())) return;
+	for (int i=0; i<d->m_times.count(); i++) {
+		if ((d->m_times[i]==evt.time)&&(d->m_labels.value(i)==evt.label)) {
+			d->set_current_event_index(i);
+			return;
+		}
+	}
+	d->set_current_event_index(-1);
+}
+
+MVEvent MVClusterView::currentEvent()
+{
+	MVEvent ret;
+	if (d->m_current_event_index<0) {
+		ret.time=-1;
+		ret.label=-1;
+		return ret;
+	}
+	ret.time=d->m_times.value(d->m_current_event_index);
+	ret.label=d->m_labels.value(d->m_current_event_index);
+	return ret;
 }
 
 QRectF compute_centered_square(QRectF R) {
@@ -86,9 +136,18 @@ void MVClusterView::paintEvent(QPaintEvent *evt)
 	painter.fillRect(0,0,width(),height(),QColor(40,40,40));
 	QRectF target=compute_centered_square(QRectF(0,0,width(),height()));
 	painter.drawImage(target,d->m_grid_image);
+	d->m_image_target=target;
 	//QPen pen; pen.setColor(Qt::yellow);
 	//painter.setPen(pen);
 	//painter.drawRect(target);
+
+	if (d->m_current_event_index>=0) {
+		double x=d->m_data_trans.value(0,d->m_current_event_index);
+		double y=d->m_data_trans.value(1,d->m_current_event_index);
+		QPointF pix=d->coord2pixel(QPointF(x,y));
+		painter.setBrush(QBrush(Qt::darkGreen));
+		painter.drawEllipse(pix,6,6);
+	}
 }
 
 void MVClusterView::mouseMoveEvent(QMouseEvent *evt)
@@ -97,15 +156,18 @@ void MVClusterView::mouseMoveEvent(QMouseEvent *evt)
 	if (d->m_anchor_point.x()>=0) {
 		//We have the mouse button down!
 		QPointF diff=pt-d->m_anchor_point;
-		double factor=1.0/2;
-		double deg_x=-diff.x()*factor;
-		double deg_y=diff.y()*factor;
-		d->m_transformation=d->m_anchor_transformation;
-		d->m_transformation.rotateY(deg_x*M_PI/180);
-		d->m_transformation.rotateX(deg_y*M_PI/180);
-		d->m_data_trans_needed=true;
-		d->m_grid_update_needed=true;
-		update();
+		if ((qAbs(diff.x())>=5)||(qAbs(diff.y())>=5)||(d->m_moved_from_anchor)) {
+			d->m_moved_from_anchor=true;
+			double factor=1.0/2;
+			double deg_x=-diff.x()*factor;
+			double deg_y=diff.y()*factor;
+			d->m_transformation=d->m_anchor_transformation;
+			d->m_transformation.rotateY(deg_x*M_PI/180);
+			d->m_transformation.rotateX(deg_y*M_PI/180);
+			d->m_data_trans_needed=true;
+			d->m_grid_update_needed=true;
+			update();
+		}
 	}
 
 }
@@ -115,12 +177,21 @@ void MVClusterView::mousePressEvent(QMouseEvent *evt)
 	QPointF pt=evt->pos();
 	d->m_anchor_point=pt;
 	d->m_anchor_transformation=d->m_transformation;
+	d->m_moved_from_anchor=false;
 }
 
 void MVClusterView::mouseReleaseEvent(QMouseEvent *evt)
 {
 	Q_UNUSED(evt)
 	d->m_anchor_point=QPointF(-1,-1);
+	if (evt->pos()!=d->m_last_mouse_release_point) d->m_closest_inds_to_exclude.clear();
+	if (!d->m_moved_from_anchor) {
+		QPointF coord=d->pixel2coord(evt->pos());
+		int ind=d->find_closest_event_index(coord.x(),coord.y(),d->m_closest_inds_to_exclude);
+		if (ind>=0) d->m_closest_inds_to_exclude.insert(ind);
+		d->set_current_event_index(ind);
+	}
+	d->m_last_mouse_release_point=evt->pos();
 }
 
 void MVClusterView::wheelEvent(QWheelEvent *evt)
@@ -266,6 +337,30 @@ void MVClusterViewPrivate::coord2gridindex(double x0, double y0, double &i1, dou
 	i2=N2mid+y0/m_grid_delta;
 }
 
+QPointF MVClusterViewPrivate::pixel2coord(QPointF pt)
+{
+	int N1=m_grid_N1; int N2=m_grid_N2;
+	int N1mid=(N1+1)/2-1; int N2mid=(N2+1)/2-1;
+	double pctx=(pt.x()-m_image_target.x())/(m_image_target.width());
+	double pcty=(pt.y()-m_image_target.y())/(m_image_target.height());
+	double xx=(-N1mid+pctx*N1)*m_grid_delta;
+	double yy=(-N2mid+pcty*N2)*m_grid_delta;
+	return QPointF(xx,yy);
+}
+
+QPointF MVClusterViewPrivate::coord2pixel(QPointF coord)
+{
+	int N1=m_grid_N1; int N2=m_grid_N2;
+	int N1mid=(N1+1)/2-1; int N2mid=(N2+1)/2-1;
+	double xx=coord.x();
+	double yy=coord.y();
+	double pctx=(xx/m_grid_delta+N1mid)/N1;
+	double pcty=(yy/m_grid_delta+N2mid)/N2;
+	double pt_x=pctx*m_image_target.width()+m_image_target.x();
+	double pt_y=pcty*m_image_target.height()+m_image_target.y();
+	return QPointF(pt_x,pt_y);
+}
+
 QColor MVClusterViewPrivate::get_heat_map_color(double val)
 {
 	double r=0,g=0,b=0;
@@ -302,3 +397,31 @@ QColor MVClusterViewPrivate::get_heat_map_color(double val)
 
 	return QColor((int)r,(int)g,(int)b);
 }
+
+int MVClusterViewPrivate::find_closest_event_index(double x, double y,const QSet<int> &inds_to_exclude)
+{
+	double best_distsqr=0;
+	int best_ind=0;
+	for (int i=0; i<m_data_trans.N2(); i++) {
+		if (!inds_to_exclude.contains(i)) {
+			double distx=m_data_trans.value(0,i)-x;
+			double disty=m_data_trans.value(1,i)-y;
+			double distsqr=distx*distx+disty*disty;
+			if ((distsqr<best_distsqr)||(i==0)) {
+				best_distsqr=distsqr;
+				best_ind=i;
+			}
+		}
+	}
+	return best_ind;
+}
+
+void MVClusterViewPrivate::set_current_event_index(int ind)
+{
+	if (m_current_event_index==ind) return;
+	qDebug() << "set_current_event_index" << ind;
+	m_current_event_index=ind;
+	emit q->currentEventChanged();
+	q->update();
+}
+

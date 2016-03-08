@@ -19,6 +19,7 @@
 #include <math.h>
 #include <QProgressDialog>
 #include "msutils.h"
+#include "mvutils.h"
 #include <QColor>
 #include <QStringList>
 #include <QSet>
@@ -36,6 +37,7 @@ public:
 	int m_current_k;
 	QSet<int> m_selected_ks;
 	float m_sampling_frequency;
+	MVEvent m_current_event;
 
 	MVOverview2WidgetControlPanel *m_control_panel;
 
@@ -95,6 +97,7 @@ public:
 	void compute_geometric_median(int M,int N,double *output,double *input,int num_iterations);
 
 	void set_progress(QString title,QString text,float frac);
+	void set_current_event(MVEvent evt);
 };
 
 QColor brighten(QColor col,int amount) {
@@ -117,6 +120,7 @@ MVOverview2Widget::MVOverview2Widget(QWidget *parent) : QWidget (parent)
 
 	d->m_progress_dialog=0;
     d->m_cross_correlograms_data_update_needed=true;
+	d->m_current_event.time=-1; d->m_current_event.label=-1;
 
 	d->m_control_panel=new MVOverview2WidgetControlPanel;
 	connect(d->m_control_panel,SIGNAL(signalButtonClicked(QString)),this,SLOT(slot_control_panel_button_clicked(QString)));
@@ -327,13 +331,21 @@ void MVOverview2Widget::slot_cross_correlogram_selected_units_changed()
 	MVCrossCorrelogramsWidget *X=(MVCrossCorrelogramsWidget *)sender();
 	d->m_selected_ks=X->selectedUnits().toSet();
 	d->set_cross_correlograms_selected_numbers(X->selectedUnits());
-    d->set_templates_selected_numbers(X->selectedUnits());
+	d->set_templates_selected_numbers(X->selectedUnits());
 }
 
-void MVOverview2Widget::slot_clips_view_time_clicked()
+void MVOverview2Widget::slot_clips_view_current_event_changed()
 {
-    MVClipsView *W=(MVClipsView *)sender();
-    d->move_to_timepoint(W->currentClipTimepoint());
+	MVClipsView *W=(MVClipsView *)sender();
+	MVEvent evt=W->currentEvent();
+	d->set_current_event(evt);
+}
+
+void MVOverview2Widget::slot_cluster_view_current_event_changed()
+{
+	MVClusterView *W=(MVClusterView *)sender();
+	MVEvent evt=W->currentEvent();
+	d->set_current_event(evt);
 }
 
 typedef QList<long> IntList;
@@ -968,16 +980,22 @@ void MVOverview2WidgetPrivate::open_raw_data()
 
 void MVOverview2WidgetPrivate::open_clips()
 {
-	int kk=m_current_k;
-    if (kk<=0) {
-        QMessageBox::information(q,"Unable to open clips","You must first select a neuron.");
-        return;
-    }
+	QList<int> ks=m_selected_ks.toList();
+	qSort(ks);
+	if (ks.count()==0) {
+		QMessageBox::information(q,"Unable to open clips","You must select at least one cluster.");
+		return;
+	}
     MVClipsView *X=new MVClipsView;
     X->setProperty("widget_type","clips");
-    X->setProperty("kk",kk);
-    q->connect(X,SIGNAL(currentClipTimepointChanged()),q,SLOT(slot_clips_view_time_clicked()));
-    add_tab(X,QString("Clips %1(%2)").arg(m_original_cluster_numbers.value(kk)).arg(m_original_cluster_offsets.value(kk)+1));
+	X->setProperty("ks",int_list_to_string_list(ks));
+	q->connect(X,SIGNAL(currentEventChanged()),q,SLOT(slot_clips_view_current_event_changed()));
+	QString tab_title="Clips";
+	if (ks.count()==1) {
+		int kk=ks[0];
+		tab_title=QString("Clips %1(%2)").arg(m_original_cluster_numbers.value(kk)).arg(m_original_cluster_offsets.value(kk)+1);
+	}
+	add_tab(X,tab_title);
     update_widget(X);
 	X->setXRange(vec2(0,5000));
 }
@@ -987,12 +1005,13 @@ void MVOverview2WidgetPrivate::open_clusters()
 	QList<int> ks=m_selected_ks.toList();
 	qSort(ks);
 	if (ks.count()==0) {
-		QMessageBox::information(q,"Unable to open clusters","You must select at least one neuron.");
+		QMessageBox::information(q,"Unable to open clusters","You must select at least one cluster.");
 		return;
 	}
 	MVClusterView *X=new MVClusterView;
 	X->setProperty("widget_type","clusters");
 	X->setProperty("ks",int_list_to_string_list(ks));
+	q->connect(X,SIGNAL(currentEventChanged()),q,SLOT(slot_cluster_view_current_event_changed()));
 	add_tab(X,QString("Clusters"));
 	update_widget(X);
 }
@@ -1132,19 +1151,27 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
     else if (widget_type=="clips") {
         printf("Extracting clips...\n");
         MVClipsView *WW=(MVClipsView *)W;
-        int kk=WW->property("kk").toInt();
+		QList<int> ks=string_list_to_int_list(WW->property("ks").toStringList());
 
         QList<int> labels;
         QList<double> times;
-        for (int n=0; n<m_firings.N2(); n++) {
-            times << m_firings.value(1,n);
-            labels << (int)m_firings.value(2,n);
-        }
+
+		for (int n=0; n<m_firings.N2(); n++) {
+			times << m_firings.value(1,n);
+			labels << (int)m_firings.value(2,n);
+		}
 
         QList<double> times_kk;
-		for (int n=0; n<labels.count(); n++) {
-            if (labels[n]==kk) times_kk << times[n];
-        }
+		QList<int> labels_kk;
+		for (int ik=0; ik<ks.count(); ik++) {
+			int kk=ks[ik];
+			for (int n=0; n<labels.count(); n++) {
+				if (labels[n]==kk) {
+					times_kk << times[n];
+					labels_kk << labels[n];
+				}
+			}
+		}
 		int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
 		Mda clips=extract_clips(m_raw,times_kk,clip_size);
 		printf("Setting data...\n");
@@ -1153,6 +1180,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
         //WW->setData(DAM,true);
         WW->setClips(clips);
         WW->setTimes(times_kk);
+		WW->setLabels(labels_kk);
 		printf(".\n");
     }
 	else if (widget_type=="clusters") {
@@ -1168,10 +1196,14 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		}
 
 		QList<double> times_kk;
+		QList<int> labels_kk;
 		for (int ik=0; ik<ks.count(); ik++) {
 			int kk=ks[ik];
 			for (int n=0; n<labels.count(); n++) {
-				if (labels[n]==kk) times_kk << times[n];
+				if (labels[n]==kk) {
+					times_kk << times[n];
+					labels_kk << labels[n];
+				}
 			}
 		}
 		int clip_size=m_control_panel->getParameterValue("clip_size").toInt();
@@ -1184,6 +1216,8 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		subtract_features_mean(features);
 		features.write("/tmp/tmp_features.mda");
 		WW->setData(features);
+		WW->setTimes(times_kk);
+		WW->setLabels(labels_kk);
 		set_progress("","",1);
 		printf(".\n");
 	}
@@ -1479,6 +1513,39 @@ void MVOverview2WidgetPrivate::set_progress(QString title, QString text, float f
 	if (frac>=1) {
 		delete m_progress_dialog;
 		m_progress_dialog=0;
+	}
+}
+
+void MVOverview2WidgetPrivate::set_current_event(MVEvent evt)
+{
+	if ((m_current_event.time==evt.time)&&(m_current_event.label==evt.label)) {
+		return;
+	}
+	m_current_event=evt;
+	QList<QWidget *> widgets=get_all_widgets();
+	foreach (QWidget *W,widgets) {
+		QString widget_type=W->property("widget_type").toString();
+		if (widget_type=="clips") {
+			MVClipsView *WW=(MVClipsView *)W;
+			WW->setCurrentEvent(evt);
+		}
+		else if (widget_type=="clusters") {
+			MVClusterView *WW=(MVClusterView *)W;
+			WW->setCurrentEvent(evt);
+		}
+		else if (widget_type=="cluster_details") {
+			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
+			if (evt.label>0) {
+				WW->setCurrentK(evt.label);
+			}
+		}
+		else if (widget_type=="raw_data") {
+			SSTimeSeriesWidget *WW=(SSTimeSeriesWidget *)W;
+			SSTimeSeriesView *VV=(SSTimeSeriesView *)WW->view(0);
+			if (evt.time>=0) {
+				VV->setCurrentX(evt.time);
+			}
+		}
 	}
 }
 
