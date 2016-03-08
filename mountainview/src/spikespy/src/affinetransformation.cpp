@@ -118,6 +118,16 @@ void AffineTransformation::getMatrixData(double *data)
 	}
 }
 
+bool AffineTransformation::equals(const AffineTransformation &other)
+{
+	for (int r=0; r<4; r++) {
+		for (int c=0; c<4; c++) {
+			if (d->m_matrix.d[r][c]!=other.d->m_matrix.d[r][c]) return false;
+		}
+	}
+	return true;
+}
+
 
 
 QList<double> invert33(QList<double> &data33) {

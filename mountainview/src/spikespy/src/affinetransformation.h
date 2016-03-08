@@ -23,6 +23,8 @@ public:
 	void scale(double sx,double sy,double sz,bool left=true);
 	void getMatrixData(double *data);
 
+	bool equals(const AffineTransformation &other);
+
 	AffineTransformation inverse() const;
 
 private:

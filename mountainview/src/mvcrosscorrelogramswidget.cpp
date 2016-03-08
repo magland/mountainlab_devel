@@ -46,6 +46,14 @@ MVCrossCorrelogramsWidget::MVCrossCorrelogramsWidget()
 	this->setLayout(GL);
 	d->m_grid_layout=GL;
 
+	d->m_colors["background"]=QColor(240,240,240);
+	d->m_colors["frame1"]=QColor(245,245,245);
+	d->m_colors["info_text"]=QColor(80,80,80);
+	d->m_colors["view_background"]=QColor(245,245,245);
+	d->m_colors["view_background_highlighted"]=QColor(250,220,200);
+	d->m_colors["view_background_selected"]=QColor(250,240,230);
+	d->m_colors["view_background_hovered"]=QColor(240,245,240);
+
 	this->setFocusPolicy(Qt::StrongFocus);
 }
 
@@ -72,6 +80,9 @@ void MVCrossCorrelogramsWidget::setLabels(const QStringList &labels)
 void MVCrossCorrelogramsWidget::setColors(const QMap<QString, QColor> &colors)
 {
 	d->m_colors=colors;
+	foreach (HistogramView *V,d->m_histogram_views) {
+		V->setColors(d->m_colors);
+	}
 }
 
 typedef QList<float> FloatList;

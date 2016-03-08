@@ -165,9 +165,9 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 	Q_UNUSED(evt)
 	QPainter painter(this);
 
-	d->m_colors["view_background"]=QColor(245,245,245);
-	d->m_colors["view_background_highlighted"]=QColor(250,220,200);
-	d->m_colors["view_background_hovered"]=QColor(240,245,240);
+	//d->m_colors["view_background"]=QColor(245,245,245);
+	//d->m_colors["view_background_highlighted"]=QColor(250,220,200);
+	//d->m_colors["view_background_hovered"]=QColor(240,245,240);
 
 //	QColor hover_color=QColor(150,150,150,80);
 //	QColor current_color=QColor(150,200,200,80);
@@ -177,6 +177,9 @@ void HistogramView::paintEvent(QPaintEvent *evt)
 
 	if (d->m_current) {
 		painter.fillRect(R,d->m_colors["view_background_highlighted"]);
+	}
+	else if (d->m_selected) {
+		painter.fillRect(R,d->m_colors["view_background_selected"]);
 	}
 	else if (d->m_hovered) {
 		painter.fillRect(R,d->m_colors["view_background_hovered"]);

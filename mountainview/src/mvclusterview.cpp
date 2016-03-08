@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <QMouseEvent>
 #include "affinetransformation.h"
+#include <QTimer>
 #include <math.h>
 
 class MVClusterViewPrivate {
@@ -16,6 +17,7 @@ public:
 	Mda m_data_trans;
 	bool m_data_trans_needed;
 	int m_current_event_index;
+	int m_mode;
 
 	QImage m_grid_image;
 	QRectF m_image_target;
@@ -31,6 +33,8 @@ public:
 	QList<double> m_times;
 	QList<int> m_labels;
 	QSet<int> m_closest_inds_to_exclude;
+	QList<QColor> m_label_colors;
+	bool m_emit_transformation_changed_scheduled;
 
 	Mda proj_matrix; //3xnum_features
 	AffineTransformation m_transformation; //3x4
@@ -42,8 +46,10 @@ public:
 	QPointF pixel2coord(QPointF pix);
 	QPointF coord2pixel(QPointF coord);
 	QColor get_heat_map_color(double val);
+	QColor get_label_color(int label);
 	int find_closest_event_index(double x,double y,const QSet<int> &inds_to_exclude);
-	void set_current_event_index(int ind);
+	void set_current_event_index(int ind,bool do_emit=true);
+	void schedule_emit_transformation_changed();
 };
 
 MVClusterView::MVClusterView(QWidget *parent) : QWidget(parent)
@@ -51,7 +57,7 @@ MVClusterView::MVClusterView(QWidget *parent) : QWidget(parent)
 	d=new MVClusterViewPrivate;
 	d->q=this;
 	d->m_grid_N1=d->m_grid_N2=300;
-	d->m_grid_delta=0.2;
+	d->m_grid_delta=8.0/d->m_grid_N1;
 	d->m_grid_update_needed=false;
 	d->m_data_proj_needed=true;
 	d->m_data_trans_needed=true;
@@ -60,7 +66,22 @@ MVClusterView::MVClusterView(QWidget *parent) : QWidget(parent)
 	d->m_transformation.setIdentity();
 	d->m_moved_from_anchor=false;
 	d->m_current_event_index=-1;
+	d->m_mode=MVCV_MODE_LABEL_COLORS;
+	d->m_emit_transformation_changed_scheduled=false;
 	this->setMouseTracking(true);
+
+	QList<QString> color_strings;
+	color_strings << "#F7977A" << "#FDC68A"
+				  << "#C4DF9B" << "#82CA9D"
+				  << "#6ECFF6" << "#8493CA"
+				  << "#A187BE" << "#F49AC2"
+				  << "#F9AD81" << "#FFF79A"
+				  << "#A2D39C" << "#7BCDC8"
+				  << "#7EA7D8" << "#8882BE"
+				  << "#BC8DBF" << "#F6989D";
+	for (int i=0; i<color_strings.size(); i++) {
+		d->m_label_colors << QColor(color_strings[i]);
+	}
 }
 
 MVClusterView::~MVClusterView()
@@ -87,12 +108,18 @@ void MVClusterView::setLabels(const QList<int> &labels)
 	d->m_labels=labels;
 }
 
-void MVClusterView::setCurrentEvent(MVEvent evt)
+void MVClusterView::setMode(int mode)
+{
+	d->m_mode=mode;
+	update();
+}
+
+void MVClusterView::setCurrentEvent(MVEvent evt,bool do_emit)
 {
 	if ((d->m_times.isEmpty())||(d->m_labels.isEmpty())) return;
 	for (int i=0; i<d->m_times.count(); i++) {
 		if ((d->m_times[i]==evt.time)&&(d->m_labels.value(i)==evt.label)) {
-			d->set_current_event_index(i);
+			d->set_current_event_index(i,do_emit);
 			return;
 		}
 	}
@@ -110,6 +137,21 @@ MVEvent MVClusterView::currentEvent()
 	ret.time=d->m_times.value(d->m_current_event_index);
 	ret.label=d->m_labels.value(d->m_current_event_index);
 	return ret;
+}
+
+AffineTransformation MVClusterView::transformation()
+{
+	return d->m_transformation;
+}
+
+void MVClusterView::setTransformation(const AffineTransformation &T)
+{
+	if (d->m_transformation.equals(T)) return;
+	d->m_transformation=T;
+	d->m_data_trans_needed=true;
+	d->m_grid_update_needed=true;
+	update();
+	//do not emit to avoid excessive signals
 }
 
 QRectF compute_centered_square(QRectF R) {
@@ -164,6 +206,7 @@ void MVClusterView::mouseMoveEvent(QMouseEvent *evt)
 			d->m_transformation=d->m_anchor_transformation;
 			d->m_transformation.rotateY(deg_x*M_PI/180);
 			d->m_transformation.rotateX(deg_y*M_PI/180);
+			d->schedule_emit_transformation_changed();
 			d->m_data_trans_needed=true;
 			d->m_grid_update_needed=true;
 			update();
@@ -208,8 +251,15 @@ void MVClusterView::wheelEvent(QWheelEvent *evt)
 		d->m_transformation.scale(factor,factor,factor);
 		d->m_data_trans_needed=true;
 		d->m_grid_update_needed=true;
+		d->schedule_emit_transformation_changed();
 		update();
 	}
+}
+
+void MVClusterView::slot_emit_transformation_changed()
+{
+	d->m_emit_transformation_changed_scheduled=false;
+	emit transformationChanged();
 }
 
 
@@ -281,13 +331,25 @@ void MVClusterViewPrivate::update_grid()
 		}
 	}
 	int N1=m_grid_N1,N2=m_grid_N2;
+
 	m_point_grid.allocate(N1,N2);
-	m_heat_map_grid.allocate(N1,N2);
 	double *m_point_grid_ptr=m_point_grid.dataPtr();
+
+	if (m_mode==MVCV_MODE_HEAT_DENSITY) {
+		m_heat_map_grid.allocate(N1,N2);
+	}
 	double *m_heat_map_grid_ptr=m_heat_map_grid.dataPtr();
+
+	Mda z_grid;
+	if (m_mode==MVCV_MODE_LABEL_COLORS) {
+		z_grid.allocate(N1,N2);
+	}
+	double *z_grid_ptr=z_grid.dataPtr();
+
 	for (int j=0; j<m_data_trans.N2(); j++) {
 		double x0=m_data_trans.value(0,j);
 		double y0=m_data_trans.value(1,j);
+		double z0=m_data_trans.value(2,j);
 		double factor=1;
 		//if (m_data_trans.value(2,j)>0) {
 			//factor=0.2;
@@ -297,33 +359,62 @@ void MVClusterViewPrivate::update_grid()
 		int ii1=(int)(i1+0.5);
 		int ii2=(int)(i2+0.5);
 		if ((ii1-kernel_rad>=0)&&(ii1+kernel_rad<N1)&&(ii2-kernel_rad>=0)&&(ii2+kernel_rad<N2)) {
-			m_point_grid_ptr[ii1+N1*ii2]=1;
-			int aa=0;
-			for (int dy=-kernel_rad; dy<=kernel_rad; dy++) {
-				int ii2b=ii2+dy;
-				for (int dx=-kernel_rad; dx<=kernel_rad; dx++) {
-					int ii1b=ii1+dx;
-					m_heat_map_grid_ptr[ii1b+N1*ii2b]+=kernel[aa]*factor;
-					aa++;
+			int iiii=ii1+N1*ii2;
+			if (m_mode==MVCV_MODE_LABEL_COLORS) {
+				if ((m_point_grid_ptr[iiii]==0)||(z_grid_ptr[iiii]>z0)) {
+					m_point_grid_ptr[iiii]=m_labels.value(j);
+					z_grid_ptr[iiii]=z0;
+				}
+			}
+			else {
+				m_point_grid_ptr[iiii]=1;
+			}
+
+			if (m_mode==MVCV_MODE_HEAT_DENSITY) {
+				int aa=0;
+				for (int dy=-kernel_rad; dy<=kernel_rad; dy++) {
+					int ii2b=ii2+dy;
+					for (int dx=-kernel_rad; dx<=kernel_rad; dx++) {
+						int ii1b=ii1+dx;
+						m_heat_map_grid_ptr[ii1b+N1*ii2b]+=kernel[aa]*factor;
+						aa++;
+					}
 				}
 			}
 		}
 	}
-	double max_heat_map_grid_val=compute_max(N1*N2,m_heat_map_grid.dataPtr());
+
 	m_grid_image=QImage(N1,N2,QImage::Format_ARGB32);
-	QColor white(255,255,255);
 	QColor dark(50,50,50);
-	for (int i2=0; i2<N2; i2++) {
-		for (int i1=0; i1<N1; i1++) {
-			double val=m_point_grid.value(i1,i2);
-			if (val) {
-				double val2=m_heat_map_grid.value(i1,i2)/max_heat_map_grid_val;
-				QColor CC=get_heat_map_color(val2);
-				//m_grid_image.setPixel(i1,i2,white.rgb());
-				m_grid_image.setPixel(i1,i2,CC.rgb());
+
+	if (m_mode==MVCV_MODE_HEAT_DENSITY) {
+		double max_heat_map_grid_val=compute_max(N1*N2,m_heat_map_grid.dataPtr());
+		for (int i2=0; i2<N2; i2++) {
+			for (int i1=0; i1<N1; i1++) {
+				double val=m_point_grid.value(i1,i2);
+				if (val) {
+					double val2=m_heat_map_grid.value(i1,i2)/max_heat_map_grid_val;
+					QColor CC=get_heat_map_color(val2);
+					//m_grid_image.setPixel(i1,i2,white.rgb());
+					m_grid_image.setPixel(i1,i2,CC.rgb());
+				}
+				else {
+					m_grid_image.setPixel(i1,i2,dark.rgb());
+				}
 			}
-			else {
-				m_grid_image.setPixel(i1,i2,dark.rgb());
+		}
+	}
+	else {
+		for (int i2=0; i2<N2; i2++) {
+			for (int i1=0; i1<N1; i1++) {
+				double val=m_point_grid.value(i1,i2);
+				if (val) {
+					QColor CC=get_label_color((int)val);
+					m_grid_image.setPixel(i1,i2,CC.rgb());
+				}
+				else {
+					m_grid_image.setPixel(i1,i2,dark.rgb());
+				}
 			}
 		}
 	}
@@ -398,6 +489,11 @@ QColor MVClusterViewPrivate::get_heat_map_color(double val)
 	return QColor((int)r,(int)g,(int)b);
 }
 
+QColor MVClusterViewPrivate::get_label_color(int label)
+{
+	return m_label_colors[label % m_label_colors.size()];
+}
+
 int MVClusterViewPrivate::find_closest_event_index(double x, double y,const QSet<int> &inds_to_exclude)
 {
 	double best_distsqr=0;
@@ -416,12 +512,20 @@ int MVClusterViewPrivate::find_closest_event_index(double x, double y,const QSet
 	return best_ind;
 }
 
-void MVClusterViewPrivate::set_current_event_index(int ind)
+void MVClusterViewPrivate::set_current_event_index(int ind,bool do_emit)
 {
 	if (m_current_event_index==ind) return;
-	qDebug() << "set_current_event_index" << ind;
 	m_current_event_index=ind;
-	emit q->currentEventChanged();
+	if (do_emit) {
+		emit q->currentEventChanged();
+	}
 	q->update();
+}
+
+void MVClusterViewPrivate::schedule_emit_transformation_changed()
+{
+	if (m_emit_transformation_changed_scheduled) return;
+	m_emit_transformation_changed_scheduled=true;
+	QTimer::singleShot(100,q,SLOT(slot_emit_transformation_changed()));
 }
 

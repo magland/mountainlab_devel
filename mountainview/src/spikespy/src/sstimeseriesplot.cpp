@@ -174,7 +174,9 @@ void SSTimeSeriesPlot::paintPlot(QPainter *painter) {
 	}
 
 	painter->drawPixmap(0,control_panel_height,d->m_image);
-	d->draw_control_panel(painter);
+	if (d->m_control_panel_height) {
+		d->draw_control_panel(painter);
+	}
 }
 
 void SSTimeSeriesPlot::mousePressEvent(QMouseEvent *evt)
@@ -272,7 +274,13 @@ bool SSTimeSeriesPlot::uniformVerticalChannelSpacing()
 
 void SSTimeSeriesPlot::setShowMarkerLines(bool val)
 {
-    d->m_plot_area.setShowMarkerLines(val);
+	d->m_plot_area.setShowMarkerLines(val);
+}
+
+void SSTimeSeriesPlot::setControlPanelVisible(bool val)
+{
+	if (val) d->m_control_panel_height=16;
+	else d->m_control_panel_height=0;
 }
 
 void SSTimeSeriesPlotPrivate::set_data2() {

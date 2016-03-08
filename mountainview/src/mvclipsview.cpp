@@ -17,6 +17,7 @@ MVClipsView::MVClipsView()
     d->q=this;
 	d->m_current_clip_index=-1;
     this->initialize();
+	this->plot()->setControlPanelVisible(false);
 	//connect(this,SIGNAL(currentXChanged()),this,SIGNAL(currentClipTimepointChanged()));
 	connect(this,SIGNAL(currentXChanged()),this,SLOT(slot_current_x_changed()));
 }

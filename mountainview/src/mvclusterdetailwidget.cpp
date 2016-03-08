@@ -83,6 +83,7 @@ public:
 	QSet<int> m_selected_ks;
 	int m_hovered_k;
 	double m_anchor_x; double m_anchor_scroll_x;
+	int m_anchor_view_index;
 
 	QList<ClusterView *> m_views;
 
@@ -116,12 +117,14 @@ MVClusterDetailWidget::MVClusterDetailWidget(QWidget *parent) : QWidget(parent)
 	d->m_scroll_x=0;
 	d->m_anchor_x=-1;
 	d->m_anchor_scroll_x=-1;
+	d->m_anchor_view_index=-1;
 
 	d->m_colors["background"]=QColor(240,240,240);
 	d->m_colors["frame1"]=QColor(245,245,245);
 	d->m_colors["info_text"]=QColor(80,80,80);
 	d->m_colors["view_background"]=QColor(245,245,245);
 	d->m_colors["view_background_highlighted"]=QColor(250,220,200);
+	d->m_colors["view_background_selected"]=QColor(250,240,230);
 	d->m_colors["view_background_hovered"]=QColor(240,245,240);
 	d->m_channel_colors << Qt::black;
 
@@ -322,6 +325,7 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent *evt)
 
 	if (evt->modifiers()&Qt::ControlModifier) {
 		int view_index=d->find_view_index_at(pt);
+		d->m_anchor_view_index=-1;
 		if (view_index>=0) {
 			int k=d->m_views[view_index]->clusterData()->k;
             if (d->m_current_k==k) {
@@ -333,15 +337,36 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent *evt)
 				update();
 			}
 			else {
+				d->m_anchor_view_index=view_index;
 				d->m_selected_ks.insert(k);
 				emit signalSelectedKsChanged();
 				update();
 			}
 		}
 	}
-	else {
+	else if (evt->modifiers()&Qt::ShiftModifier) {
 		int view_index=d->find_view_index_at(pt);
 		if (view_index>=0) {
+			if (d->m_anchor_view_index>=0) {
+				int min_index=qMin(d->m_anchor_view_index,view_index);
+				int max_index=qMax(d->m_anchor_view_index,view_index);
+				qDebug() << d->m_anchor_view_index << view_index << min_index << max_index;
+				for (int i=min_index; i<=max_index; i++) {
+					if (i<d->m_views.count()) {
+						int k=d->m_views[i]->clusterData()->k;
+						d->m_selected_ks.insert(k);
+					}
+				}
+				emit signalSelectedKsChanged();
+				update();
+			}
+		}
+	}
+	else {
+		d->m_anchor_view_index=-1;
+		int view_index=d->find_view_index_at(pt);
+		if (view_index>=0) {
+			d->m_anchor_view_index=view_index;
 			int k=d->m_views[view_index]->clusterData()->k;
 			if (d->m_current_k==k) {
 
@@ -577,6 +602,7 @@ void ClusterView::paint(QPainter *painter, QRectF rect)
 
 	QColor background_color=d->m_colors["view_background"];
 	if (m_highlighted) background_color=d->m_colors["view_background_highlighted"];
+	else if (m_selected) background_color=d->m_colors["view_background_selected"];
 	else if (m_hovered) background_color=d->m_colors["view_background_hovered"];
 	painter->fillRect(rect2,background_color);
 
