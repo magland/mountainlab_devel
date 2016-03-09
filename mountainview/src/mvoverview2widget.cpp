@@ -62,7 +62,7 @@ public:
 	void update_cluster_details();
     void update_clips();
 	void update_cluster_views();
-	void do_amplitude_split();
+	void do_shell_split();
 	void add_tab(QWidget *W,QString label);
 
 	void open_auto_correlograms();
@@ -205,7 +205,7 @@ void MVOverview2Widget::setFiringsPath(const QString &firings)
         labels << (long)d->m_firings.value(2,n);
     }
 	d->m_firings_original.setPath(firings);
-    d->do_amplitude_split();
+	d->do_shell_split();
 	d->update_cross_correlograms();
 	d->update_cluster_details();
 	d->update_raw_views();
@@ -243,13 +243,14 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 	else if (str=="update_cluster_details") {
 		d->update_cluster_details();
 	}
-    else if ((str=="update_amplitude_split")||(str=="use_amplitude_split")) {
-		d->do_amplitude_split();
+	else if ((str=="update_shell_split")||(str=="use_shell_split")) {
+		d->do_shell_split();
 		d->remove_widgets_of_type("cross_correlograms");
         d->remove_widgets_of_type("matrix_of_cross_correlograms");
 		d->remove_widgets_of_type("clips");
 		d->remove_widgets_of_type("clusters");
         d->update_cluster_details();
+		d->update_cross_correlograms();
 	}
 	else if (str=="open_auto_correlograms") {
 		d->open_auto_correlograms();
@@ -685,10 +686,10 @@ void define_shells(QList<double> &shell_mins,QList<double> &shell_maxs,QList<dou
 	}
 }
 
-void MVOverview2WidgetPrivate::do_amplitude_split() {
+void MVOverview2WidgetPrivate::do_shell_split() {
     m_cross_correlograms_data_update_needed=true;
 	m_current_k=0;
-	if (!m_control_panel->getParameterValue("use_amplitude_split").toBool()) {
+	if (!m_control_panel->getParameterValue("use_shell_split").toBool()) {
 		m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
 		for (int i2=0; i2<m_firings.N2(); i2++) {
 			for (int i1=0; i1<m_firings.N1(); i1++) {
@@ -711,14 +712,17 @@ void MVOverview2WidgetPrivate::do_amplitude_split() {
 
 	float shell_width=m_control_panel->getParameterValue("shell_width").toFloat();
 	int min_per_shell=m_control_panel->getParameterValue("min_per_shell").toInt();
-	float min_amplitude=m_control_panel->getParameterValue("min_amplitude").toInt();
+	float min_amplitude=m_control_panel->getParameterValue("min_amplitude").toFloat();
+	float max_outlier_score=m_control_panel->getParameterValue("max_outlier_score").toFloat();
 
 	QList<long> labels;
 	QList<double> peaks;
+	QList<double> outlier_scores;
 	for (int n=0; n<m_firings_original.N2(); n++) {
 		float peak=m_firings_original.value(3,n);
 		labels << (long)m_firings_original.value(2,n);
 		peaks << peak;
+		outlier_scores << m_firings_original.value(4,n);
 	}
 
 	int K=0;
@@ -770,7 +774,9 @@ void MVOverview2WidgetPrivate::do_amplitude_split() {
 		offset++;
 		for (int n=0; n<labels.count(); n++) {
 			if (labels[n]==k) {
-				if ((min0<=peaks[n])&&(peaks[n]<max0)&&(fabs(peaks[n])>=min_amplitude)) {
+				if ((min0<=peaks[n])&&(peaks[n]<max0)&&(fabs(peaks[n])>=min_amplitude)&&
+						((fabs(outlier_scores[n])<=max_outlier_score)||(max_outlier_score==0))
+						) {
 					m_firings.setValue(kk+1,2,n);
 				}
 			}
@@ -1229,19 +1235,23 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 
 		QList<int> labels;
 		QList<double> times;
+		QList<double> outlier_scores;
 		for (int n=0; n<m_firings.N2(); n++) {
 			times << m_firings.value(1,n);
 			labels << (int)m_firings.value(2,n);
+			outlier_scores << m_firings.value(4,n);
 		}
 
 		QList<double> times_kk;
 		QList<int> labels_kk;
+		QList<double> outlier_scores_kk;
 		for (int ik=0; ik<ks.count(); ik++) {
 			int kk=ks[ik];
 			for (int n=0; n<labels.count(); n++) {
 				if (labels[n]==kk) {
 					times_kk << times[n];
 					labels_kk << labels[n];
+					outlier_scores_kk << outlier_scores[n];
 				}
 			}
 		}
@@ -1259,6 +1269,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		WW->setData(features);
 		WW->setTimes(times_kk);
 		WW->setLabels(labels_kk);
+		WW->setOutlierScores(outlier_scores_kk);
 		set_progress("","",1);
 		printf(".\n");
 	}

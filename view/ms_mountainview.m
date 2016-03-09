@@ -10,7 +10,9 @@ function ms_mountainview(view_params)
 % Inputs:
 %    (Most are optional)
 %    view_params.mode - 'overview' , 'overview2' (default), or 'compare_labels'
-%    view_params.raw - MxN raw or preprocessed data (array or path to .mda)
+%    view_params.raw - MxN raw data (array or path to .mda)
+%    view_params.filt - MxN filtered data (array or path to .mda)
+%    view_params.pre - MxN preprocessed data (array or path to .mda)
 %    view_params.firings - RxL array of times/labels etc. according to
 %                           the docs. R is at least 3. The second row is 
 %                           the times, the third row is the labels. (array
@@ -48,6 +50,14 @@ end;
 if isfield(view_params,'raw')
     view_params.raw=create_temporary_path_if_array(view_params.raw);
     cmd=[cmd,sprintf('--raw=%s ',view_params.raw)];
+end;
+if isfield(view_params,'filt')
+    view_params.filt=create_temporary_path_if_array(view_params.filt);
+    cmd=[cmd,sprintf('--filt=%s ',view_params.filt)];
+end;
+if isfield(view_params,'pre')
+    view_params.pre=create_temporary_path_if_array(view_params.pre);
+    cmd=[cmd,sprintf('--pre=%s ',view_params.pre)];
 end;
 if isfield(view_params,'clusters') %for historical compatibility
     cmd=[cmd,sprintf('--firings=%s ',view_params.clusters)];

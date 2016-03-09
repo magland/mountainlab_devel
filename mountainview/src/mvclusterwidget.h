@@ -15,6 +15,7 @@ public:
 	void setData(const Mda &X);
 	void setTimes(const QList<double> &times);
 	void setLabels(const QList<int> &labels);
+	void setOutlierScores(const QList<double> &outlier_scores);
 	void setCurrentEvent(const MVEvent &evt);
 	void setClipSize(int clip_size);
 	void setRaw(const DiskReadMda &X);

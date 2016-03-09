@@ -23,6 +23,7 @@ public:
 	void setMode(int mode);
 	void setCurrentEvent(MVEvent evt,bool do_emit=false);
 	MVEvent currentEvent();
+	int currentEventIndex();
 	AffineTransformation transformation();
 	void setTransformation(const AffineTransformation &T);
 signals:

@@ -1,6 +1,7 @@
 #include "mvclusterwidget.h"
 #include "mvclusterview.h"
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QList>
 #include "mvclipsview.h"
 #include "msutils.h"
@@ -10,11 +11,14 @@ public:
 	MVClusterWidget *q;
 	QList<MVClusterView *> m_views;
 	MVClipsView *m_clips_view;
+	QLabel *m_info_bar;
 	DiskReadMda m_raw;
 	int m_clip_size;
+	QList<double> m_outlier_scores;
 
 	void connect_view(MVClusterView *V);
 	void update_clips_view();
+	int current_event_index();
 };
 
 MVClusterWidget::MVClusterWidget()
@@ -40,7 +44,11 @@ MVClusterWidget::MVClusterWidget()
 	QHBoxLayout *hlayout=new QHBoxLayout;
 	this->setLayout(hlayout);
 
-	hlayout->addWidget(d->m_clips_view);
+	QVBoxLayout *vlayout=new QVBoxLayout;
+	vlayout->addWidget(d->m_clips_view);
+	d->m_info_bar=new QLabel; d->m_info_bar->setFixedHeight(20);
+	vlayout->addWidget(d->m_info_bar);
+	hlayout->addLayout(vlayout);
 	d->m_clips_view->setFixedWidth(250);
 
 	foreach (MVClusterView *V,d->m_views) {
@@ -76,6 +84,11 @@ void MVClusterWidget::setLabels(const QList<int> &labels)
 	foreach (MVClusterView *V,d->m_views) {
 		V->setLabels(labels);
 	}
+}
+
+void MVClusterWidget::setOutlierScores(const QList<double> &outlier_scores)
+{
+	d->m_outlier_scores=outlier_scores;
 }
 
 void MVClusterWidget::setCurrentEvent(const MVEvent &evt)
@@ -128,12 +141,23 @@ void MVClusterWidgetPrivate::connect_view(MVClusterView *V)
 void MVClusterWidgetPrivate::update_clips_view()
 {
 	MVEvent evt=q->currentEvent();
+	QString info_txt;
 	if (evt.time>=0) {
 		QList<long> times; times << (long)evt.time;
 		Mda clip0=extract_clips(m_raw,times,m_clip_size);
+		double ppp=m_outlier_scores.value(current_event_index());
+		if (ppp) {
+			info_txt=QString("Outlier score: %1").arg(ppp);
+		}
 		m_clips_view->setClips(clip0);
 	}
 	else {
 		m_clips_view->setClips(Mda());
 	}
+	m_info_bar->setText(info_txt);
+}
+
+int MVClusterWidgetPrivate::current_event_index()
+{
+	return m_views[0]->currentEventIndex();
 }

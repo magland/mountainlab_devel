@@ -30,6 +30,7 @@ public:
 	friend class MVClusterDetailWidget;
 	ClusterView(MVClusterDetailWidget *q0,MVClusterDetailWidgetPrivate *d0) {q=q0; d=d0; m_T=1; m_CD=0; m_highlighted=false; m_hovered=false; x_position_before_scaling=0;}
 	void setClusterData(ClusterData *CD) {m_CD=CD;}
+	int k() {return this->clusterData()->k;}
 	void setChannelSpacingInfo(const ChannelSpacingInfo &csi) {m_csi=csi; m_T=0;}
 	void setHighlighted(bool val) {m_highlighted=val;}
 	void setHovered(bool val) {m_hovered=val;}
@@ -99,6 +100,7 @@ public:
 	void zoom(double factor);
     QString group_label_for_k(int k);
     bool has_nontrivial_group_numbers();
+	int get_current_view_index();
 };
 
 MVClusterDetailWidget::MVClusterDetailWidget(QWidget *parent) : QWidget(parent)
@@ -201,9 +203,21 @@ void MVClusterDetailWidget::setCurrentK(int k)
 	d->set_current_k(k);
 }
 
+bool sets_are_equal(const QSet<int> &S1,const QSet<int> &S2) {
+	foreach (int val,S1) {
+		if (!S2.contains(val)) return false;
+	}
+	foreach (int val,S2) {
+		if (!S1.contains(val)) return false;
+	}
+	return true;
+}
+
 void MVClusterDetailWidget::setSelectedKs(const QList<int> &ks)
 {
+	if (sets_are_equal(d->m_selected_ks,ks.toSet())) return;
 	d->m_selected_ks=ks.toSet();
+	emit this->signalSelectedKsChanged();
 	update();
 }
 
@@ -302,6 +316,39 @@ void MVClusterDetailWidget::keyPressEvent(QKeyEvent *evt)
 	else if (evt->key()==Qt::Key_Minus) {
 		d->zoom(1/1.1);
 	}
+	else if ((evt->key()==Qt::Key_A)&&(evt->modifiers()&Qt::ControlModifier)) {
+		QList<int> ks;
+		for (int i=0; i<d->m_views.count(); i++) {
+			ks << d->m_views[i]->k();
+		}
+		this->setSelectedKs(ks);
+	}
+	else if (evt->key()==Qt::Key_Left) {
+		int view_index=d->get_current_view_index();
+		if (view_index>0) {
+			int k=d->m_views[view_index-1]->k();
+			QList<int> ks;
+			if (evt->modifiers()&Qt::ShiftModifier) {
+				ks=this->selectedKs();
+				ks << k;
+			}
+			this->setSelectedKs(ks);
+			this->setCurrentK(k);
+		}
+	}
+	else if (evt->key()==Qt::Key_Right) {
+		int view_index=d->get_current_view_index();
+		if ((view_index>=0)&&(view_index+1<d->m_views.count())) {
+			int k=d->m_views[view_index+1]->k();
+			QList<int> ks;
+			if (evt->modifiers()&Qt::ShiftModifier) {
+				ks=this->selectedKs();
+				ks << k;
+			}
+			this->setSelectedKs(ks);
+			this->setCurrentK(k);
+		}
+	}
 }
 
 void MVClusterDetailWidget::mousePressEvent(QMouseEvent *evt)
@@ -327,7 +374,7 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent *evt)
 		int view_index=d->find_view_index_at(pt);
 		d->m_anchor_view_index=-1;
 		if (view_index>=0) {
-			int k=d->m_views[view_index]->clusterData()->k;
+			int k=d->m_views[view_index]->k();
             if (d->m_current_k==k) {
                 d->set_current_k(-1);
             }
@@ -353,7 +400,7 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent *evt)
 				qDebug() << d->m_anchor_view_index << view_index << min_index << max_index;
 				for (int i=min_index; i<=max_index; i++) {
 					if (i<d->m_views.count()) {
-						int k=d->m_views[i]->clusterData()->k;
+						int k=d->m_views[i]->k();
 						d->m_selected_ks.insert(k);
 					}
 				}
@@ -367,7 +414,7 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent *evt)
 		int view_index=d->find_view_index_at(pt);
 		if (view_index>=0) {
 			d->m_anchor_view_index=view_index;
-			int k=d->m_views[view_index]->clusterData()->k;
+			int k=d->m_views[view_index]->k();
 			if (d->m_current_k==k) {
 
 			}
@@ -399,7 +446,7 @@ void MVClusterDetailWidget::mouseMoveEvent(QMouseEvent *evt)
 
 	int view_index=d->find_view_index_at(pt);
 	if (view_index>=0) {
-		d->set_hovered_k(d->m_views[view_index]->clusterData()->k);
+		d->set_hovered_k(d->m_views[view_index]->k());
 	}
 	else {
 		d->set_hovered_k(-1);
@@ -510,6 +557,7 @@ void MVClusterDetailWidgetPrivate::set_current_k(int k)
 {
 	if (k==m_current_k) return;
 	m_current_k=k;
+	m_selected_ks.insert(k);
 	ClusterView *V=find_view_for_k(k);
 	if (V) ensure_view_visible(V);
 	q->update();
@@ -534,7 +582,7 @@ int MVClusterDetailWidgetPrivate::find_view_index_at(QPoint pos)
 ClusterView *MVClusterDetailWidgetPrivate::find_view_for_k(int k)
 {
 	for (int i=0; i<m_views.count(); i++) {
-		if (m_views[i]->clusterData()->k==k) return m_views[i];
+		if (m_views[i]->k()==k) return m_views[i];
 	}
 	return 0;
 }
@@ -542,7 +590,7 @@ ClusterView *MVClusterDetailWidgetPrivate::find_view_for_k(int k)
 int MVClusterDetailWidgetPrivate::find_view_index_for_k(int k)
 {
 	for (int i=0; i<m_views.count(); i++) {
-		if (m_views[i]->clusterData()->k==k) return i;
+		if (m_views[i]->k()==k) return i;
 	}
 	return -1;
 }
@@ -590,7 +638,14 @@ bool MVClusterDetailWidgetPrivate::has_nontrivial_group_numbers()
     for (int i=1; i<m_group_numbers.count(); i++) {
         if (m_group_numbers[i]!=i) return true;
     }
-    return false;
+	return false;
+}
+
+int MVClusterDetailWidgetPrivate::get_current_view_index()
+{
+	int k=m_current_k;
+	if (k<0) return -1;
+	return find_view_index_for_k(k);
 }
 
 

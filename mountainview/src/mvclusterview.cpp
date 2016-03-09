@@ -139,6 +139,11 @@ MVEvent MVClusterView::currentEvent()
 	return ret;
 }
 
+int MVClusterView::currentEventIndex()
+{
+	return d->m_current_event_index;
+}
+
 AffineTransformation MVClusterView::transformation()
 {
 	return d->m_transformation;
