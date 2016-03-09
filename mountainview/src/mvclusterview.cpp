@@ -24,7 +24,6 @@ public:
 	Mda m_heat_map_grid;
 	Mda m_point_grid;
 	int m_grid_N1,m_grid_N2;
-	double m_grid_delta;
 	bool m_grid_update_needed;
 	QPointF m_anchor_point;
 	QPointF m_last_mouse_release_point;
@@ -56,8 +55,7 @@ MVClusterView::MVClusterView(QWidget *parent) : QWidget(parent)
 {
 	d=new MVClusterViewPrivate;
 	d->q=this;
-	d->m_grid_N1=d->m_grid_N2=300;
-    d->m_grid_delta=2.0/d->m_grid_N1;
+    d->m_grid_N1=d->m_grid_N2=300;
 	d->m_grid_update_needed=false;
 	d->m_data_proj_needed=true;
 	d->m_data_trans_needed=true;
@@ -95,6 +93,7 @@ void MVClusterView::setData(const Mda &X)
 	d->m_data_proj_needed=true;
 	d->m_data_trans_needed=true;
 	d->m_grid_update_needed=true;
+
 	update();
 }
 
@@ -106,6 +105,12 @@ void MVClusterView::setTimes(const QList<double> &times)
 void MVClusterView::setLabels(const QList<int> &labels)
 {
 	d->m_labels=labels;
+    if (d->m_times.count()!=labels.count()) {
+        d->m_times.clear();
+        for (int i=0; i<labels.count(); i++) {
+            d->m_times << i;
+        }
+    }
 }
 
 void MVClusterView::setMode(int mode)
@@ -182,7 +187,7 @@ void MVClusterView::paintEvent(QPaintEvent *evt)
 	QPainter painter(this);
 	painter.fillRect(0,0,width(),height(),QColor(40,40,40));
 	QRectF target=compute_centered_square(QRectF(0,0,width(),height()));
-	painter.drawImage(target,d->m_grid_image);
+    painter.drawImage(target,d->m_grid_image.scaled(target.width(),target.height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation));
 	d->m_image_target=target;
 	//QPen pen; pen.setColor(Qt::yellow);
 	//painter.setPen(pen);
@@ -352,10 +357,50 @@ void MVClusterViewPrivate::update_grid()
 	}
 	double *z_grid_ptr=z_grid.dataPtr();
 
-	for (int j=0; j<m_data_trans.N2(); j++) {
-		double x0=m_data_trans.value(0,j);
-		double y0=m_data_trans.value(1,j);
-		double z0=m_data_trans.value(2,j);
+    double max_abs_val=0;
+    int NN=m_data.totalSize();
+    for (int i=0; i<NN; i++) {
+        if (fabs(m_data.value1(i))>max_abs_val) max_abs_val=fabs(m_data.value1(i));
+    }
+
+    QList<double> x0s,y0s,z0s;
+    QList<int> label0s;
+    for (int j=0; j<m_data_trans.N2(); j++) {
+        double x0=m_data_trans.value(0,j);
+        double y0=m_data_trans.value(1,j);
+        double z0=m_data_trans.value(2,j);
+        x0s << x0; y0s << y0; z0s << z0;
+        label0s << m_labels.value(j);
+    }
+
+
+
+    if (m_mode==MVCV_MODE_LABEL_COLORS) {
+        //3 axes
+
+
+        double factor=1.2;
+        for (double aa=-max_abs_val*factor; aa<=max_abs_val*factor; aa+=max_abs_val*factor/50) {
+            {
+                CVPoint pt1=cvpoint(aa,0,0);
+                CVPoint pt2=m_transformation.map(pt1);
+                x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
+            }
+            {
+                CVPoint pt1=cvpoint(0,aa,0);
+                CVPoint pt2=m_transformation.map(pt1);
+                x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
+            }
+            {
+                CVPoint pt1=cvpoint(0,0,aa);
+                CVPoint pt2=m_transformation.map(pt1);
+                x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
+            }
+        }
+    }
+    for (int i=0; i<x0s.count(); i++) {
+        double x0=x0s[i],y0=y0s[i],z0=z0s[i];
+        int label0=label0s[i];
 		double factor=1;
 		//if (m_data_trans.value(2,j)>0) {
 			//factor=0.2;
@@ -368,7 +413,7 @@ void MVClusterViewPrivate::update_grid()
 			int iiii=ii1+N1*ii2;
 			if (m_mode==MVCV_MODE_LABEL_COLORS) {
                 if ((m_point_grid_ptr[iiii]==-1)||(z_grid_ptr[iiii]>z0)) {
-					m_point_grid_ptr[iiii]=m_labels.value(j);
+                    m_point_grid_ptr[iiii]=label0;
 					z_grid_ptr[iiii]=z0;
 				}
 			}
@@ -391,7 +436,33 @@ void MVClusterViewPrivate::update_grid()
 	}
 
 	m_grid_image=QImage(N1,N2,QImage::Format_ARGB32);
-	QColor dark(50,50,50);
+
+    QColor dark(50,50,50);
+    QColor axes_color(150,150,150);
+
+    m_grid_image.fill(dark);
+
+    if (m_mode==MVCV_MODE_HEAT_DENSITY) {
+        //3 Axes
+        QPainter paintr(&m_grid_image);
+        paintr.setRenderHint(QPainter::Antialiasing);
+        paintr.setPen(QPen(axes_color));
+        double factor=1.2;
+        for (int pass=1; pass<=3; pass++) {
+            double a1=0,a2=0,a3=0;
+            if (pass==1) a1=max_abs_val*factor;
+            if (pass==2) a2=max_abs_val*factor;
+            if (pass==3) a3=max_abs_val*factor;
+            CVPoint pt1=cvpoint(-a1,-a2,-a3);
+            CVPoint pt2=cvpoint(a1,a2,a3);
+            CVPoint pt1b=m_transformation.map(pt1);
+            CVPoint pt2b=m_transformation.map(pt2);
+            double x1,y1,x2,y2;
+            coord2gridindex(pt1b.x,pt1b.y,x1,y1);
+            coord2gridindex(pt2b.x,pt2b.y,x2,y2);
+            paintr.drawLine(QPointF(x1,y1),QPointF(x2,y2));
+        }
+    }
 
 	if (m_mode==MVCV_MODE_HEAT_DENSITY) {
 		double max_heat_map_grid_val=compute_max(N1*N2,m_heat_map_grid.dataPtr());
@@ -403,9 +474,6 @@ void MVClusterViewPrivate::update_grid()
 					QColor CC=get_heat_map_color(val2);
 					//m_grid_image.setPixel(i1,i2,white.rgb());
 					m_grid_image.setPixel(i1,i2,CC.rgb());
-				}
-				else {
-					m_grid_image.setPixel(i1,i2,dark.rgb());
 				}
 			}
 		}
@@ -422,9 +490,9 @@ void MVClusterViewPrivate::update_grid()
                     QColor CC=Qt::white;
                     m_grid_image.setPixel(i1,i2,CC.rgb());
                 }
-				else {
-					m_grid_image.setPixel(i1,i2,dark.rgb());
-				}
+                else if (val==-2) {
+                    m_grid_image.setPixel(i1,i2,axes_color.rgb());
+                }
 			}
 		}
 	}
@@ -434,29 +502,35 @@ void MVClusterViewPrivate::coord2gridindex(double x0, double y0, double &i1, dou
 {
 	int N1=m_grid_N1; int N2=m_grid_N2;
 	int N1mid=(N1+1)/2-1; int N2mid=(N2+1)/2-1;
-	i1=N1mid+x0/m_grid_delta;
-	i2=N2mid+y0/m_grid_delta;
+    double delta1=2.0/N1;
+    double delta2=2.0/N2;
+    i1=N1mid+x0/delta1;
+    i2=N2mid+y0/delta2;
 }
 
 QPointF MVClusterViewPrivate::pixel2coord(QPointF pt)
 {
 	int N1=m_grid_N1; int N2=m_grid_N2;
+    double delta1=2.0/N1;
+    double delta2=2.0/N2;
 	int N1mid=(N1+1)/2-1; int N2mid=(N2+1)/2-1;
 	double pctx=(pt.x()-m_image_target.x())/(m_image_target.width());
 	double pcty=(pt.y()-m_image_target.y())/(m_image_target.height());
-	double xx=(-N1mid+pctx*N1)*m_grid_delta;
-	double yy=(-N2mid+pcty*N2)*m_grid_delta;
+    double xx=(-N1mid+pctx*N1)*delta1;
+    double yy=(-N2mid+pcty*N2)*delta2;
 	return QPointF(xx,yy);
 }
 
 QPointF MVClusterViewPrivate::coord2pixel(QPointF coord)
 {
 	int N1=m_grid_N1; int N2=m_grid_N2;
+    double delta1=2.0/N1;
+    double delta2=2.0/N2;
 	int N1mid=(N1+1)/2-1; int N2mid=(N2+1)/2-1;
 	double xx=coord.x();
 	double yy=coord.y();
-	double pctx=(xx/m_grid_delta+N1mid)/N1;
-	double pcty=(yy/m_grid_delta+N2mid)/N2;
+    double pctx=(xx/delta1+N1mid)/N1;
+    double pcty=(yy/delta2+N2mid)/N2;
 	double pt_x=pctx*m_image_target.width()+m_image_target.x();
 	double pt_y=pcty*m_image_target.height()+m_image_target.y();
 	return QPointF(pt_x,pt_y);
