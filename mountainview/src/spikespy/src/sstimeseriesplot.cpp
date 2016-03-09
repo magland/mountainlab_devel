@@ -212,7 +212,6 @@ void SSTimeSeriesPlot::mouseMoveEvent(QMouseEvent *evt)
 }
 
 void SSTimeSeriesPlot::setData(SSARRAY *data) {
-
 	if (!data) {
 		qWarning() << "Unexpected problem in SSTimeSeriesPlot::setData. data is null.";
 		return;
@@ -288,7 +287,9 @@ void SSTimeSeriesPlotPrivate::set_data2() {
 	int M = m_num_channels;
 	int N = m_max_timepoint+1;
 
-	q->setXRange(vec2(0,N-1));
+	if ((q->xRange().y>=N-1)||(q->xRange().y<200)) {
+		q->setXRange(vec2(0,N-1));
+	}
 
 	int scale0=1;
     while (N/scale0>100) scale0*=MULTISCALE_FACTOR;

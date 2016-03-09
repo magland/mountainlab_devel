@@ -397,7 +397,6 @@ void MVClusterDetailWidget::mouseReleaseEvent(QMouseEvent *evt)
 			if (d->m_anchor_view_index>=0) {
 				int min_index=qMin(d->m_anchor_view_index,view_index);
 				int max_index=qMax(d->m_anchor_view_index,view_index);
-				qDebug() << d->m_anchor_view_index << view_index << min_index << max_index;
 				for (int i=min_index; i<=max_index; i++) {
 					if (i<d->m_views.count()) {
 						int k=d->m_views[i]->k();

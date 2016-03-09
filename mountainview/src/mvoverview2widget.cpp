@@ -31,6 +31,7 @@ public:
     QString m_current_raw_data_name;
 	DiskReadMda m_raw;
 	DiskReadMda m_firings_original;
+	Mda m_firings_split;
 	Mda m_firings;
 	QList<int> m_original_cluster_numbers;
     QList<int> m_original_cluster_offsets;
@@ -59,10 +60,12 @@ public:
 
 	void update_sizes();
     //void update_templates();
+	void update_all_widgets();
 	void update_cluster_details();
     void update_clips();
 	void update_cluster_views();
 	void do_shell_split();
+	void do_event_filter();
 	void add_tab(QWidget *W,QString label);
 
 	void open_auto_correlograms();
@@ -198,12 +201,14 @@ void MVOverview2Widget::setCurrentRawDataName(const QString &name)
 
 void MVOverview2Widget::setFiringsPath(const QString &firings)
 {
+	/*
     QList<long> times;
     QList<long> labels;
     for (int n=0; n<d->m_firings.N2(); n++) {
         times << (long)d->m_firings.value(1,n);
         labels << (long)d->m_firings.value(2,n);
     }
+	*/
 	d->m_firings_original.setPath(firings);
 	d->do_shell_split();
 	d->update_cross_correlograms();
@@ -233,6 +238,7 @@ void MVOverview2Widget::resizeEvent(QResizeEvent *evt)
 void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 {
 	if (str=="update_cross_correlograms") {
+		d->m_cross_correlograms_data_update_needed=true;
 		d->update_cross_correlograms();
 	}
     else if (str=="update_templates") {
@@ -251,6 +257,11 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 		d->remove_widgets_of_type("clusters");
         d->update_cluster_details();
 		d->update_cross_correlograms();
+	}
+	else if ((str=="update_event_filter")||(str=="use_event_filter")) {
+		d->do_event_filter();
+		d->create_cross_correlograms_data();
+		d->update_all_widgets();
 	}
 	else if (str=="open_auto_correlograms") {
 		d->open_auto_correlograms();
@@ -515,6 +526,14 @@ void MVOverview2WidgetPrivate::update_sizes()
 
 }
 
+void MVOverview2WidgetPrivate::update_all_widgets()
+{
+	QList<QWidget *> list=get_all_widgets();
+	foreach (QWidget *W,list) {
+		update_widget(W);
+	}
+}
+
 //void MVOverview2WidgetPrivate::update_templates()
 //{
 //	create_templates_data();
@@ -690,39 +709,36 @@ void MVOverview2WidgetPrivate::do_shell_split() {
     m_cross_correlograms_data_update_needed=true;
 	m_current_k=0;
 	if (!m_control_panel->getParameterValue("use_shell_split").toBool()) {
-		m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
-		for (int i2=0; i2<m_firings.N2(); i2++) {
-			for (int i1=0; i1<m_firings.N1(); i1++) {
-				m_firings.setValue(m_firings_original.value(i1,i2),i1,i2);
+		m_firings_split.allocate(m_firings_original.N1(),m_firings_original.N2());
+		for (int i2=0; i2<m_firings_split.N2(); i2++) {
+			for (int i1=0; i1<m_firings_split.N1(); i1++) {
+				m_firings_split.setValue(m_firings_original.value(i1,i2),i1,i2);
 			}
 		}
 		m_original_cluster_numbers.clear();
 		m_original_cluster_offsets.clear();
 		int K=0;
-		for (int n=0; n<m_firings.N2(); n++) {
-			if (m_firings.value(2,n)>K) K=(int)m_firings.value(2,n);
+		for (int n=0; n<m_firings_split.N2(); n++) {
+			if (m_firings_split.value(2,n)>K) K=(int)m_firings_split.value(2,n);
 		}
 		for (int k=0; k<=K; k++) {
 			m_original_cluster_numbers << k;
 			m_original_cluster_offsets << 0;
 		}
 
+		do_event_filter();
 		return;
 	}
 
 	float shell_width=m_control_panel->getParameterValue("shell_width").toFloat();
 	int min_per_shell=m_control_panel->getParameterValue("min_per_shell").toInt();
-	float min_amplitude=m_control_panel->getParameterValue("min_amplitude").toFloat();
-	float max_outlier_score=m_control_panel->getParameterValue("max_outlier_score").toFloat();
 
-	QList<long> labels;
+	QList<int> labels;
 	QList<double> peaks;
-	QList<double> outlier_scores;
 	for (int n=0; n<m_firings_original.N2(); n++) {
 		float peak=m_firings_original.value(3,n);
-		labels << (long)m_firings_original.value(2,n);
+		labels << (int)m_firings_original.value(2,n);
 		peaks << peak;
-		outlier_scores << m_firings_original.value(4,n);
 	}
 
 	int K=0;
@@ -750,11 +766,11 @@ void MVOverview2WidgetPrivate::do_shell_split() {
 	}
 
 	int KK=nums.count();
-	m_firings.allocate(m_firings_original.N1(),m_firings_original.N2());
-	for (int i2=0; i2<m_firings.N2(); i2++) {
-		for (int i1=0; i1<m_firings.N1(); i1++) {
+	m_firings_split.allocate(m_firings_original.N1(),m_firings_original.N2());
+	for (int i2=0; i2<m_firings_split.N2(); i2++) {
+		for (int i1=0; i1<m_firings_split.N1(); i1++) {
 			if (i1!=2) { //don't set the labels!
-				m_firings.setValue(m_firings_original.value(i1,i2),i1,i2);
+				m_firings_split.setValue(m_firings_original.value(i1,i2),i1,i2);
 			}
 		}
 	}
@@ -774,12 +790,42 @@ void MVOverview2WidgetPrivate::do_shell_split() {
 		offset++;
 		for (int n=0; n<labels.count(); n++) {
 			if (labels[n]==k) {
-				if ((min0<=peaks[n])&&(peaks[n]<max0)&&(fabs(peaks[n])>=min_amplitude)&&
-						((fabs(outlier_scores[n])<=max_outlier_score)||(max_outlier_score==0))
-						) {
-					m_firings.setValue(kk+1,2,n);
+				if ((min0<=peaks[n])&&(peaks[n]<max0)) {
+					m_firings_split.setValue(kk+1,2,n);
 				}
 			}
+		}
+	}
+
+	do_event_filter();
+}
+
+void MVOverview2WidgetPrivate::do_event_filter()
+{
+	if (!m_control_panel->getParameterValue("use_event_filter").toBool()) {
+		m_firings=m_firings_split;
+		return;
+	}
+	float min_amplitude=m_control_panel->getParameterValue("min_amplitude").toFloat();
+	float max_outlier_score=m_control_panel->getParameterValue("max_outlier_score").toFloat();
+
+	QList<int> inds;
+	for (int i=0; i<m_firings_split.N2(); i++) {
+		if (fabs(m_firings_split.value(3,i))>=min_amplitude) {
+			if (max_outlier_score) {
+				if (m_firings_split.value(4,i)<=max_outlier_score) {
+					inds << i;
+				}
+			}
+			else inds << i;
+		}
+	}
+
+	int N2=inds.count();
+	m_firings.allocate(m_firings_split.N1(),N2);
+	for (int i=0; i<N2; i++) {
+		for (int j=0; j<m_firings_split.N1(); j++) {
+			m_firings.setValue(m_firings_split.value(j,inds[i]),j,i); //speed this up?
 		}
 	}
 }

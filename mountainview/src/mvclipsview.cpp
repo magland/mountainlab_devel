@@ -1,4 +1,5 @@
 #include "mvclipsview.h"
+#include <QDebug>
 
 class MVClipsViewPrivate {
 public:

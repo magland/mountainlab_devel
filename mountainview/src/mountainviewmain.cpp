@@ -12,6 +12,7 @@
 #include "cvcommon.h"
 #include "mountainviewwidget.h"
 #include "mda.h"
+#include <QDesktopServices>
 #include <QDesktopWidget>
 #include "get_command_line_params.h"
 #include "diskarraymodel.h"
@@ -187,7 +188,14 @@ int main(int argc, char *argv[]) {
 		W->show();
 		W->setSamplingFrequency(sampling_freq);
 		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
-		W->resize(1800,1200);
+		int W0=1800,H0=1200;
+		QRect geom=QApplication::desktop()->geometry();
+		if ((geom.width()-100<W0)||(geom.height()-100<H0)) {
+			W->showMaximized();
+		}
+		else {
+			W->resize(W0,H0);
+		}
         W->setDefaultInitialization();
 		W->setWindowTitle(window_title);
 	}
