@@ -5,6 +5,7 @@
 #include <math.h>
 #include "isosplit2.h"
 #include "msutils.h"
+#include <QDebug>
 
 QList<int> do_branch_cluster(Mda &clips,const Branch_Cluster_Opts &opts,QList<int> &base_inds);
 QList<double> compute_peaks(Mda &clips,int ch);
@@ -12,12 +13,15 @@ QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QLis
 
 bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char *adjacency_matrix_path, const char *output_firings_path, const Branch_Cluster_Opts &opts)
 {
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     DiskReadMda X; X.setPath(raw_path);
     int M=X.N1();
 
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     DiskReadMda detect; detect.setPath(detect_path);
     int L=detect.N2();
 
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     Mda AM;
     if ((adjacency_matrix_path)&&(strlen(adjacency_matrix_path)>0)) {
         AM.read(adjacency_matrix_path);
@@ -31,6 +35,7 @@ bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char
         }
     }
 
+    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     if ((AM.N1()!=M)||(AM.N2()!=M)) {
         printf("Error: incompatible dimensions between AM and X.\n");
         return false;
@@ -158,22 +163,6 @@ QList<double> compute_abs_peaks(Mda &clips,int ch) {
     QList<double> ret;
     for (int i=0; i<L; i++) {
         ret << fabs(clips.value(ch,t0,i));
-    }
-    return ret;
-}
-
-Mda grab_clips_subset(Mda &clips,const QList<int> &inds) {
-    int M=clips.N1();
-    int T=clips.N2();
-    int LLL=inds.count();
-    Mda ret; ret.allocate(M,T,LLL);
-    for (int i=0; i<LLL; i++) {
-        long aaa=i*M*T;
-        long bbb=inds[i]*M*T;
-        for (int k=0; k<M*T; k++) {
-            ret.setValue1(clips.value1(bbb),aaa);
-            aaa++; bbb++;
-        }
     }
     return ret;
 }

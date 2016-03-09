@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include "mvutils.h"
+#include "affinetransformation.h"
 
 class MVClusterWidgetPrivate;
 class MVClusterWidget : public QWidget
@@ -19,6 +20,10 @@ public:
 	void setCurrentEvent(const MVEvent &evt);
 	void setClipSize(int clip_size);
 	void setRaw(const DiskReadMda &X);
+    void setTransformation(const AffineTransformation &T);
+    void setDensityViewVisible(bool val);
+    void setColorViewVisible(bool val);
+    void setClipsViewVisible(bool val);
 	MVEvent currentEvent();
 
 signals:

@@ -5,6 +5,7 @@
 #include <QList>
 #include "mvclipsview.h"
 #include "msutils.h"
+#include <math.h>
 
 class MVClusterWidgetPrivate {
 public:
@@ -15,6 +16,8 @@ public:
 	DiskReadMda m_raw;
 	int m_clip_size;
 	QList<double> m_outlier_scores;
+    MVClusterView *m_density_view;
+    MVClusterView *m_color_view;
 
 	void connect_view(MVClusterView *V);
 	void update_clips_view();
@@ -34,11 +37,13 @@ MVClusterWidget::MVClusterWidget()
 		MVClusterView *X=new MVClusterView;
 		X->setMode(MVCV_MODE_HEAT_DENSITY);
 		d->m_views << X;
+        d->m_density_view=X;
 	}
 	{
 		MVClusterView *X=new MVClusterView;
 		X->setMode(MVCV_MODE_LABEL_COLORS);
 		d->m_views << X;
+        d->m_color_view=X;
 	}
 
 	QHBoxLayout *hlayout=new QHBoxLayout;
@@ -70,6 +75,18 @@ void MVClusterWidget::setData(const Mda &X)
 	foreach (MVClusterView *V,d->m_views) {
 		V->setData(X);
 	}
+    double max_abs_val=0;
+    int NN=X.totalSize();
+    for (int i=0; i<NN; i++) {
+        if (fabs(X.value1(i))>max_abs_val) max_abs_val=fabs(X.value1(i));
+    }
+    if (max_abs_val) {
+        AffineTransformation T;
+        T.setIdentity();
+        double factor=1/1.2;
+        T.scale(1.0/max_abs_val*factor,1.0/max_abs_val*factor,1.0/max_abs_val*factor);
+        this->setTransformation(T);
+    }
 }
 
 void MVClusterWidget::setTimes(const QList<double> &times)
@@ -107,7 +124,30 @@ void MVClusterWidget::setClipSize(int clip_size)
 void MVClusterWidget::setRaw(const DiskReadMda &X)
 {
 	d->m_raw=X;
-	d->update_clips_view();
+    d->update_clips_view();
+}
+
+void MVClusterWidget::setTransformation(const AffineTransformation &T)
+{
+    foreach (MVClusterView *V,d->m_views) {
+        V->setTransformation(T);
+    }
+}
+
+void MVClusterWidget::setDensityViewVisible(bool val)
+{
+    d->m_density_view->setVisible(val);
+}
+
+void MVClusterWidget::setColorViewVisible(bool val)
+{
+    d->m_color_view->setVisible(val);
+}
+
+void MVClusterWidget::setClipsViewVisible(bool val)
+{
+    d->m_clips_view->setVisible(val);
+    d->m_info_bar->setVisible(val);
 }
 
 MVEvent MVClusterWidget::currentEvent()

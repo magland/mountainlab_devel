@@ -1,4 +1,5 @@
 #include "msutils.h"
+#include <math.h>
 
 double compute_min(const QList<double> &X) {
 	double ret=X.value(0);
@@ -94,4 +95,40 @@ Mda compute_mean_clip(Mda &clips) {
 		}
 	}
 	return ret;
+}
+
+double compute_mean(const QList<double> &X)
+{
+    double sum=0;
+    for (int i=0; i<X.count(); i++) sum+=X[i];
+    if (X.count()) sum/=X.count();
+    return sum;
+}
+
+double compute_stdev(const QList<double> &X)
+{
+    double sumsqr=0;
+    for (int i=0; i<X.count(); i++) sumsqr+=X[i]*X[i];
+    double sum=0;
+    for (int i=0; i<X.count(); i++) sum+=X[i];
+    int ct=X.count();
+    if (ct>=2) {
+        return sqrt((sumsqr-sum*sum/ct)/(ct-1));
+    }
+    else return 0;
+}
+Mda grab_clips_subset(Mda &clips,const QList<int> &inds) {
+    int M=clips.N1();
+    int T=clips.N2();
+    int LLL=inds.count();
+    Mda ret; ret.allocate(M,T,LLL);
+    for (int i=0; i<LLL; i++) {
+        long aaa=i*M*T;
+        long bbb=inds[i]*M*T;
+        for (int k=0; k<M*T; k++) {
+            ret.setValue1(clips.value1(bbb),aaa);
+            aaa++; bbb++;
+        }
+    }
+    return ret;
 }

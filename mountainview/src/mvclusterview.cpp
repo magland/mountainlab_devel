@@ -57,7 +57,7 @@ MVClusterView::MVClusterView(QWidget *parent) : QWidget(parent)
 	d=new MVClusterViewPrivate;
 	d->q=this;
 	d->m_grid_N1=d->m_grid_N2=300;
-	d->m_grid_delta=8.0/d->m_grid_N1;
+    d->m_grid_delta=2.0/d->m_grid_N1;
 	d->m_grid_update_needed=false;
 	d->m_data_proj_needed=true;
 	d->m_data_trans_needed=true;
@@ -80,7 +80,7 @@ MVClusterView::MVClusterView(QWidget *parent) : QWidget(parent)
 				  << "#7EA7D8" << "#8882BE"
 				  << "#BC8DBF" << "#F6989D";
 	for (int i=0; i<color_strings.size(); i++) {
-		d->m_label_colors << QColor(color_strings[i]);
+        d->m_label_colors << QColor(color_strings[i]);
 	}
 }
 
@@ -338,6 +338,7 @@ void MVClusterViewPrivate::update_grid()
 	int N1=m_grid_N1,N2=m_grid_N2;
 
 	m_point_grid.allocate(N1,N2);
+    for (int i=0; i<N1*N2; i++) m_point_grid.setValue1(-1,i);
 	double *m_point_grid_ptr=m_point_grid.dataPtr();
 
 	if (m_mode==MVCV_MODE_HEAT_DENSITY) {
@@ -366,7 +367,7 @@ void MVClusterViewPrivate::update_grid()
 		if ((ii1-kernel_rad>=0)&&(ii1+kernel_rad<N1)&&(ii2-kernel_rad>=0)&&(ii2+kernel_rad<N2)) {
 			int iiii=ii1+N1*ii2;
 			if (m_mode==MVCV_MODE_LABEL_COLORS) {
-				if ((m_point_grid_ptr[iiii]==0)||(z_grid_ptr[iiii]>z0)) {
+                if ((m_point_grid_ptr[iiii]==-1)||(z_grid_ptr[iiii]>z0)) {
 					m_point_grid_ptr[iiii]=m_labels.value(j);
 					z_grid_ptr[iiii]=z0;
 				}
@@ -397,7 +398,7 @@ void MVClusterViewPrivate::update_grid()
 		for (int i2=0; i2<N2; i2++) {
 			for (int i1=0; i1<N1; i1++) {
 				double val=m_point_grid.value(i1,i2);
-				if (val) {
+                if (val>0) {
 					double val2=m_heat_map_grid.value(i1,i2)/max_heat_map_grid_val;
 					QColor CC=get_heat_map_color(val2);
 					//m_grid_image.setPixel(i1,i2,white.rgb());
@@ -413,10 +414,14 @@ void MVClusterViewPrivate::update_grid()
 		for (int i2=0; i2<N2; i2++) {
 			for (int i1=0; i1<N1; i1++) {
 				double val=m_point_grid.value(i1,i2);
-				if (val) {
+                if (val>0) {
 					QColor CC=get_label_color((int)val);
 					m_grid_image.setPixel(i1,i2,CC.rgb());
 				}
+                else if (val==0) {
+                    QColor CC=Qt::white;
+                    m_grid_image.setPixel(i1,i2,CC.rgb());
+                }
 				else {
 					m_grid_image.setPixel(i1,i2,dark.rgb());
 				}

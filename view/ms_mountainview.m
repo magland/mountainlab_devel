@@ -69,6 +69,14 @@ end;
 if isfield(view_params,'templates')
     cmd=[cmd,sprintf('--templates=%s ',view_params.templates)];
 end;
+if isfield(view_params,'data')
+    view_params.data=create_temporary_path_if_array(view_params.data);
+    cmd=[cmd,sprintf('--data=%s ',view_params.data)];
+end;
+if isfield(view_params,'labels')
+    view_params.labels=create_temporary_path_if_array(view_params.labels);
+    cmd=[cmd,sprintf('--labels=%s ',view_params.labels)];
+end;
 if (isfield(view_params,'clips'))&&(isfield(view_params,'clips_index'))
     cmd=[cmd,sprintf('--clips=%s ',view_params.clips)];
     cmd=[cmd,sprintf('--clips_index=%s ',view_params.clips_index)];

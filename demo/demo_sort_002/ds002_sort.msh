@@ -64,8 +64,14 @@ mscmd remove_noise_subclusters
 	--detectability_threshold=$detectability_threshold
 	--shell_increment=$shell_increment --min_shell_size=$min_shell_size
 
+echo "*** COMPUTE OUTLIER SCORES ***"
+mscmd outlier_scores_v1
+	--raw=$2/pre2.mda --firings_in=$2/firings3.mda --firings_out=$2/firings4.mda
+	--clip_size=$clip_size
+	--shell_increment=$shell_increment --min_shell_size=$min_shell_size
+
 mscmd copy
-	--input=$2/firings3.mda --output=$2/firings.mda 
+	--input=$2/firings4.mda --output=$2/firings.mda 
 
 mscmd mda2txt
 	--input=$2/firings.mda --output=$2/firings.txt 

@@ -19,9 +19,11 @@ INCLUDEPATH += ../../mountainview/src/spikespy/src
 DEPENDPATH += ../../mountainview/src/spikespy/src
 VPATH += ../../mountainview/src/spikespy/src
 HEADERS += diskreadmda.h \
-    mda2txt.h
+    mda2txt.h \
+    outlier_scores_v1.h
 SOURCES += diskreadmda.cpp \
-    mda2txt.cpp
+    mda2txt.cpp \
+    outlier_scores_v1.cpp
 
 HEADERS += \
     bandpass_filter.h \

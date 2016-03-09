@@ -41,11 +41,7 @@ Mda get_subclips(Mda &clips,const QList<int> &inds) {
 	return ret;
 }
 
-struct Shell {
-	QList<int> inds;
-};
-
-QList<Shell> define_shells(const QList<double> &peaks,const Remove_noise_subclusters_opts &opts) {
+QList<Shell> define_shells(const QList<double> &peaks,const Define_Shells_Opts &opts) {
 	QList<Shell> shells;
 	if (peaks.count()==0) return shells;
 
@@ -283,7 +279,8 @@ QList<Subcluster> compute_subcluster_detectability_scores(DiskReadMda &pre,Mda &
 	for (int i=0; i<L; i++) {
 		peaks << clips.value(channel,Tmid,i);
 	}
-	QList<Shell> shells=define_shells(peaks,opts);
+    Define_Shells_Opts opts2; opts2.min_shell_size=opts.min_shell_size; opts2.shell_increment=opts.shell_increment;
+    QList<Shell> shells=define_shells(peaks,opts2);
 	Mda noise_shape=estimate_noise_shape(pre,T,channel);
 	QList<Subcluster> subclusters;
 	for (int s=0; s<shells.count(); s++) {

@@ -1,4 +1,4 @@
-function test_hippocampal_02_10_2016
+msfunction test_hippocampal_02_10_2016
 
 close all; drawnow;
 

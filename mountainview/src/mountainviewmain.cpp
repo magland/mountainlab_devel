@@ -22,6 +22,7 @@
 #include "mvoverview2widget.h"
 #include "sstimeserieswidget.h"
 #include "sstimeseriesview.h"
+#include "mvclusterwidget.h"
 
 /*
  * TO DO:
@@ -109,6 +110,7 @@ int main(int argc, char *argv[]) {
 	float sampling_freq=CLP.named_parameters.value("sampling_freq","0").toFloat();
 
     if (mode=="overview") {
+        //OBSOLETE!!! use overview2
         MVOverviewWidget *W=new MVOverviewWidget;
         W->setWindowTitle(CLP.named_parameters.value("window_title","MountainView"));
         W->show();
@@ -199,6 +201,24 @@ int main(int argc, char *argv[]) {
         W->setDefaultInitialization();
 		W->setWindowTitle(window_title);
 	}
+    else if (mode=="view_clusters") {
+        MVClusterWidget *W=new MVClusterWidget;
+        QString data_path=CLP.named_parameters.value("data");
+        QString labels_path=CLP.named_parameters.value("labels");
+        Mda data0; data0.read(data_path);
+        W->setData(data0);
+        if (~labels_path.isEmpty()) {
+            Mda labels0; labels0.read(labels_path);
+            int NN=labels0.totalSize();
+            QList<int> labels; for (int i=0; i<NN; i++) labels << labels0.value1(i);
+            W->setLabels(labels);
+        }
+        W->setClipsViewVisible(false);
+        W->setDensityViewVisible(true);
+        W->setColorViewVisible(true);
+        W->resize(1000,500);
+        W->show();
+    }
 	else if (mode=="spikespy") {
 		printf("spikespy...\n");
 		SSTimeSeriesWidget *W=new SSTimeSeriesWidget;
