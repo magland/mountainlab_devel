@@ -271,7 +271,7 @@ double *DiskReadMdaPrivate::load_chunk(long i)
 				jfree(data);
 			}
 			else {
-				qWarning() << "Problem reading from mda 212" << num_read << num << m_path;
+                qWarning() << "Problem reading from mda 212" << num_read << num << m_path << i << m_num_bytes_per_entry << m_size[0] << m_size[1] << m_size[2];
 			}
 		}
 		else qWarning() << "File is not open!";
@@ -307,8 +307,11 @@ void DiskReadMdaPrivate::load_header()
 		return;
 	}
 	MDAIO_HEADER HH;
-	mda_read_header(&HH,m_file);
+    if (!mda_read_header(&HH,m_file)) {
+        qWarning() << "Problem in mda_read_header" << m_path;
+    }
 	m_data_type=HH.data_type;
+    qDebug() << "DiskReadMdaPrivate::load_header, data_type=" << m_data_type << HH.num_bytes_per_entry << HH.dims[0] << HH.dims[1] << HH.num_dims;
 	m_num_bytes_per_entry=HH.num_bytes_per_entry;
 	m_total_size=1;
     for (long i=0; i<MDAIO_MAX_DIMS; i++) {

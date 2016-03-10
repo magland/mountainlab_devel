@@ -19,6 +19,6 @@ bool assemble_firings_file(const char *input_detect_path,const char *input_label
         C.setValue(D.value(1,inds[i]),1,i);
         C.setValue(L.value(0,inds[i]),2,i);
     }
-	C.write(output_firings_path);
+    C.write64(output_firings_path);
     return true;
 }

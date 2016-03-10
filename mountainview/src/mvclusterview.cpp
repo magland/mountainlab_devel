@@ -7,6 +7,8 @@
 #include "affinetransformation.h"
 #include <QTimer>
 #include <math.h>
+#include "mvutils.h"
+#include "msutils.h"
 
 class MVClusterViewPrivate {
 public:
@@ -23,6 +25,8 @@ public:
 	QRectF m_image_target;
 	Mda m_heat_map_grid;
 	Mda m_point_grid;
+    Mda m_time_grid;
+    Mda m_amplitude_grid;
 	int m_grid_N1,m_grid_N2;
 	bool m_grid_update_needed;
 	QPointF m_anchor_point;
@@ -30,6 +34,9 @@ public:
 	AffineTransformation m_anchor_transformation;
 	bool m_moved_from_anchor;
 	QList<double> m_times;
+    double m_max_time;
+    QList<double> m_amplitudes; //absolute amplitudes, actually
+    double m_max_amplitude;
 	QList<int> m_labels;
 	QSet<int> m_closest_inds_to_exclude;
 	QList<QColor> m_label_colors;
@@ -46,6 +53,7 @@ public:
 	QPointF coord2pixel(QPointF coord);
 	QColor get_heat_map_color(double val);
 	QColor get_label_color(int label);
+    QColor get_time_color(double pct);
 	int find_closest_event_index(double x,double y,const QSet<int> &inds_to_exclude);
 	void set_current_event_index(int ind,bool do_emit=true);
 	void schedule_emit_transformation_changed();
@@ -66,6 +74,8 @@ MVClusterView::MVClusterView(QWidget *parent) : QWidget(parent)
 	d->m_current_event_index=-1;
 	d->m_mode=MVCV_MODE_LABEL_COLORS;
 	d->m_emit_transformation_changed_scheduled=false;
+    d->m_max_time=1;
+    d->m_max_amplitude=1;
 	this->setMouseTracking(true);
 
 	QList<QString> color_strings;
@@ -100,6 +110,7 @@ void MVClusterView::setData(const Mda &X)
 void MVClusterView::setTimes(const QList<double> &times)
 {
 	d->m_times=times;
+    d->m_max_time=compute_max(times);
 }
 
 void MVClusterView::setLabels(const QList<int> &labels)
@@ -111,6 +122,14 @@ void MVClusterView::setLabels(const QList<int> &labels)
             d->m_times << i;
         }
     }
+}
+
+void MVClusterView::setAmplitudes(const QList<double> &amps)
+{
+    QList<double> tmp;
+    for (int i=0; i<amps.count(); i++) tmp << fabs(amps[i]);
+    d->m_amplitudes=tmp;
+    d->m_max_amplitude=compute_max(tmp);
 }
 
 void MVClusterView::setMode(int mode)
@@ -346,13 +365,25 @@ void MVClusterViewPrivate::update_grid()
     for (int i=0; i<N1*N2; i++) m_point_grid.setValue1(-1,i);
 	double *m_point_grid_ptr=m_point_grid.dataPtr();
 
+    if (m_mode==MVCV_MODE_TIME_COLORS) {
+        m_time_grid.allocate(N1,N2);
+        for (int i=0; i<N1*N2; i++) m_time_grid.setValue1(-1,i);
+    }
+    double *m_time_grid_ptr=m_time_grid.dataPtr();
+
+    if (m_mode==MVCV_MODE_AMPLITUDE_COLORS) {
+        m_amplitude_grid.allocate(N1,N2);
+        for (int i=0; i<N1*N2; i++) m_amplitude_grid.setValue1(0,i);
+    }
+    double *m_amplitude_grid_ptr=m_amplitude_grid.dataPtr();
+
 	if (m_mode==MVCV_MODE_HEAT_DENSITY) {
 		m_heat_map_grid.allocate(N1,N2);
 	}
 	double *m_heat_map_grid_ptr=m_heat_map_grid.dataPtr();
 
 	Mda z_grid;
-	if (m_mode==MVCV_MODE_LABEL_COLORS) {
+    if (m_mode!=MVCV_MODE_HEAT_DENSITY) {
 		z_grid.allocate(N1,N2);
 	}
 	double *z_grid_ptr=z_grid.dataPtr();
@@ -365,17 +396,19 @@ void MVClusterViewPrivate::update_grid()
 
     QList<double> x0s,y0s,z0s;
     QList<int> label0s;
+    QList<double> time0s;
+    QList<double> amp0s;
     for (int j=0; j<m_data_trans.N2(); j++) {
         double x0=m_data_trans.value(0,j);
         double y0=m_data_trans.value(1,j);
         double z0=m_data_trans.value(2,j);
         x0s << x0; y0s << y0; z0s << z0;
         label0s << m_labels.value(j);
+        time0s << m_times.value(j);
+        amp0s << m_amplitudes.value(j);
     }
 
-
-
-    if (m_mode==MVCV_MODE_LABEL_COLORS) {
+    if (m_mode!=MVCV_MODE_HEAT_DENSITY) {
         //3 axes
 
 
@@ -401,6 +434,8 @@ void MVClusterViewPrivate::update_grid()
     for (int i=0; i<x0s.count(); i++) {
         double x0=x0s[i],y0=y0s[i],z0=z0s[i];
         int label0=label0s[i];
+        double time0=time0s[i];
+        double amp0=amp0s[i];
 		double factor=1;
 		//if (m_data_trans.value(2,j)>0) {
 			//factor=0.2;
@@ -411,14 +446,26 @@ void MVClusterViewPrivate::update_grid()
 		int ii2=(int)(i2+0.5);
 		if ((ii1-kernel_rad>=0)&&(ii1+kernel_rad<N1)&&(ii2-kernel_rad>=0)&&(ii2+kernel_rad<N2)) {
 			int iiii=ii1+N1*ii2;
-			if (m_mode==MVCV_MODE_LABEL_COLORS) {
+            if (m_mode!=MVCV_MODE_HEAT_DENSITY) {
                 if ((m_point_grid_ptr[iiii]==-1)||(z_grid_ptr[iiii]>z0)) {
                     m_point_grid_ptr[iiii]=label0;
+                    if (m_mode==MVCV_MODE_TIME_COLORS) {
+                        m_time_grid_ptr[iiii]=time0;
+                    }
+                    if (m_mode==MVCV_MODE_AMPLITUDE_COLORS) {
+                        m_amplitude_grid_ptr[iiii]=amp0;
+                    }
 					z_grid_ptr[iiii]=z0;
 				}
 			}
 			else {
 				m_point_grid_ptr[iiii]=1;
+                if (m_mode==MVCV_MODE_TIME_COLORS) {
+                    m_time_grid_ptr[iiii]=time0;
+                }
+                if (m_mode==MVCV_MODE_AMPLITUDE_COLORS) {
+                    m_amplitude_grid_ptr[iiii]=amp0;
+                }
 			}
 
 			if (m_mode==MVCV_MODE_HEAT_DENSITY) {
@@ -482,16 +529,42 @@ void MVClusterViewPrivate::update_grid()
 		for (int i2=0; i2<N2; i2++) {
 			for (int i1=0; i1<N1; i1++) {
 				double val=m_point_grid.value(i1,i2);
-                if (val>0) {
-					QColor CC=get_label_color((int)val);
-					m_grid_image.setPixel(i1,i2,CC.rgb());
-				}
-                else if (val==0) {
-                    QColor CC=Qt::white;
-                    m_grid_image.setPixel(i1,i2,CC.rgb());
+                if (m_mode==MVCV_MODE_TIME_COLORS) {
+                    if (val>=0) {
+                        double time0=m_time_grid.value(i1,i2);
+                        if (m_max_time) {
+                            QColor CC=get_time_color(time0/m_max_time);
+                            m_grid_image.setPixel(i1,i2,CC.rgb());
+                        }
+                    }
+                    else if (val==-2) {
+                        m_grid_image.setPixel(i1,i2,axes_color.rgb());
+                    }
                 }
-                else if (val==-2) {
-                    m_grid_image.setPixel(i1,i2,axes_color.rgb());
+                else if (m_mode==MVCV_MODE_AMPLITUDE_COLORS) {
+                    if (val>=0) {
+                        double amp0=m_amplitude_grid.value(i1,i2);
+                        if (m_max_amplitude) {
+                            QColor CC=get_time_color(amp0/m_max_amplitude);
+                            m_grid_image.setPixel(i1,i2,CC.rgb());
+                        }
+                    }
+                    else if (val==-2) {
+                        m_grid_image.setPixel(i1,i2,axes_color.rgb());
+                    }
+                }
+                else if (m_mode==MVCV_MODE_LABEL_COLORS) {
+                    if (val>0) {
+                        QColor CC=get_label_color((int)val);
+                        m_grid_image.setPixel(i1,i2,CC.rgb());
+                    }
+                    else if (val==0) {
+                        QColor CC=Qt::white;
+                        m_grid_image.setPixel(i1,i2,CC.rgb());
+                    }
+                    else if (val==-2) {
+                        m_grid_image.setPixel(i1,i2,axes_color.rgb());
+                    }
                 }
 			}
 		}
@@ -575,7 +648,15 @@ QColor MVClusterViewPrivate::get_heat_map_color(double val)
 
 QColor MVClusterViewPrivate::get_label_color(int label)
 {
-	return m_label_colors[label % m_label_colors.size()];
+    return m_label_colors[label % m_label_colors.size()];
+}
+
+QColor MVClusterViewPrivate::get_time_color(double pct)
+{
+    if (pct<0) pct=0;
+    if (pct>1) pct=1;
+    int h=(int)(pct*359);
+    return QColor::fromHsv(h,200,255);
 }
 
 int MVClusterViewPrivate::find_closest_event_index(double x, double y,const QSet<int> &inds_to_exclude)

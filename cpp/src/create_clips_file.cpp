@@ -66,7 +66,7 @@ bool create_clips_file(const char *input_path,const char *firings_path,const cha
 
     fclose(outf);
 
-    if (!index_out.write(index_out_path)) {
+    if (!index_out.write64(index_out_path)) {
         printf("Unable to write output file: %s\n",index_out_path);
         return false;
     }

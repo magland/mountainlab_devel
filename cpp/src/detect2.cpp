@@ -62,7 +62,7 @@ bool detect2(const char *raw_path, const char *detect_path, double detect_thresh
         detect.setValue(channels[i],0,i);
         detect.setValue(timepoints[i],1,i);
     }
-    detect.write(detect_path);
+    detect.write64(detect_path);
 
     return true;
 }

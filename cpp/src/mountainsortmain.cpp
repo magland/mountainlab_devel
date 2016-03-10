@@ -1002,7 +1002,7 @@ int main(int argc,char *argv[]) {
         QList<int> labels=isosplit2(X,isocut_threshold,K_init,true);
         Mda labels_mda; labels_mda.allocate(1,labels.count());
         for (int i=0; i<labels.count(); i++) labels_mda.setValue(labels[i],0,i);
-		labels_mda.write(labels_path);
+        labels_mda.write32(labels_path);
     }
 	else if (command=="copy") {
 		QString input_path=CLP.named_parameters["input"];

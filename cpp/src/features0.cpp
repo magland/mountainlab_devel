@@ -61,7 +61,7 @@ bool features(const char *input_path,const char *detect_path,const char *adjacen
 		}
 	}
 
-	output.write(output_path);
+    output.write32(output_path);
 
     return true;
 }

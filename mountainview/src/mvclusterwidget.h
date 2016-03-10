@@ -16,14 +16,12 @@ public:
 	void setData(const Mda &X);
 	void setTimes(const QList<double> &times);
 	void setLabels(const QList<int> &labels);
+    void setAmplitudes(const QList<double> &amps);
 	void setOutlierScores(const QList<double> &outlier_scores);
 	void setCurrentEvent(const MVEvent &evt);
 	void setClipSize(int clip_size);
 	void setRaw(const DiskReadMda &X);
     void setTransformation(const AffineTransformation &T);
-    void setDensityViewVisible(bool val);
-    void setColorViewVisible(bool val);
-    void setClipsViewVisible(bool val);
 	MVEvent currentEvent();
 
 signals:

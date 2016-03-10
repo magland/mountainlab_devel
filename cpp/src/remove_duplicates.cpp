@@ -118,7 +118,7 @@ bool remove_duplicates(const char *firings_in_path,const char *firings_out_path,
 	}
 
 	printf("Writing...\n");
-	F2.write(firings_out_path);
+    F2.write64(firings_out_path);
 
 	return true;
 }

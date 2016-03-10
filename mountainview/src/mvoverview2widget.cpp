@@ -1174,19 +1174,27 @@ void normalize_features(Mda &F,bool individual_channels) {
 	if (individual_channels) {
 		for (int m=0; m<F.N1(); m++) {
 			double sumsqr=0;
+            double sum=0;
 			int NN=F.N2();
-			for (int i=0; i<NN; i++) sumsqr+=F.value(m,i)*F.value(m,i);
+            for (int i=0; i<NN; i++) {
+                sumsqr+=F.value(m,i)*F.value(m,i);
+                sum+=F.value(m,i);
+            }
 			double norm=1;
-			if (NN) norm=sqrt(sumsqr/NN);
+            if (NN>=2) norm=sqrt((sumsqr-sum*sum/NN)/(NN-1));
 			for (int i=0; i<NN; i++) F.setValue(F.value(m,i)/norm,m,i);
 		}
 	}
 	else {
 		double sumsqr=0;
+        double sum=0;
 		int NN=F.totalSize();
-		for (int i=0; i<NN; i++) sumsqr+=F.value1(i)*F.value1(i);
+        for (int i=0; i<NN; i++) {
+            sumsqr+=F.value1(i)*F.value1(i);
+            sum+=F.value1(i);
+        }
 		double norm=1;
-		if (NN) norm=sqrt(sumsqr/NN);
+        if (NN>=2) norm=sqrt((sumsqr-sum*sum/NN)/(NN-1));
 		for (int i=0; i<NN; i++) F.setValue1(F.value1(i)/norm,i);
 	}
 }
@@ -1315,15 +1323,18 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 
 		QList<int> labels;
 		QList<double> times;
+        QList<double> peaks;
 		QList<double> outlier_scores;
 		for (int n=0; n<m_firings.N2(); n++) {
 			times << m_firings.value(1,n);
 			labels << (int)m_firings.value(2,n);
+            peaks << m_firings.value(3,n);
 			outlier_scores << m_firings.value(4,n);
 		}
 
 		QList<double> times_kk;
 		QList<int> labels_kk;
+        QList<double> peaks_kk;
 		QList<double> outlier_scores_kk;
 		for (int ik=0; ik<ks.count(); ik++) {
 			int kk=ks[ik];
@@ -1331,6 +1342,7 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 				if (labels[n]==kk) {
 					times_kk << times[n];
 					labels_kk << labels[n];
+                    peaks_kk << peaks[n];
 					outlier_scores_kk << outlier_scores[n];
 				}
 			}
@@ -1342,13 +1354,14 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		set_progress("Computing features","Computing features",0);
 		printf("Computing features...\n");
 		get_pca_features(M*T,L,3,features.dataPtr(),clips.dataPtr());
-		subtract_features_mean(features);
+        //subtract_features_mean(features);
 		normalize_features(features,false);
 		features.write("/tmp/tmp_features.mda");
 		WW->setRaw(m_raw);
 		WW->setData(features);
 		WW->setTimes(times_kk);
 		WW->setLabels(labels_kk);
+        WW->setAmplitudes(peaks_kk);
 		WW->setOutlierScores(outlier_scores_kk);
 		set_progress("","",1);
 		printf(".\n");

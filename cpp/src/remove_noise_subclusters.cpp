@@ -418,7 +418,7 @@ bool remove_noise_subclusters(const char *pre_path,const char *firings_path,cons
 	}
 
 	printf("Using %d/%d events in %d/%d clusters\n",num_events_to_use,L,compute_max(labels_map),K);
-	firings_out.write(firings_out_path);
+    firings_out.write64(firings_out_path);
 
 	return true;
 }

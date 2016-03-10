@@ -33,7 +33,7 @@ bool confusion_matrix(const char *firings1_path, const char *firings2_path, cons
 	Mda output=confusion_matrix_2(firings1_path,firings2_path,max_matching_offset,map12);
 
 	//finally we write it
-	output.write(output_path);
+    output.write32(output_path);
 
 	return true;
 }

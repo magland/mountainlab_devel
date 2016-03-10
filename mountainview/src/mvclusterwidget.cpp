@@ -1,5 +1,6 @@
 #include "mvclusterwidget.h"
 #include "mvclusterview.h"
+#include <QCheckBox>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QList>
@@ -16,8 +17,6 @@ public:
 	DiskReadMda m_raw;
 	int m_clip_size;
 	QList<double> m_outlier_scores;
-    MVClusterView *m_density_view;
-    MVClusterView *m_color_view;
 
 	void connect_view(MVClusterView *V);
 	void update_clips_view();
@@ -37,26 +36,72 @@ MVClusterWidget::MVClusterWidget()
 		MVClusterView *X=new MVClusterView;
 		X->setMode(MVCV_MODE_HEAT_DENSITY);
 		d->m_views << X;
-        d->m_density_view=X;
 	}
 	{
 		MVClusterView *X=new MVClusterView;
 		X->setMode(MVCV_MODE_LABEL_COLORS);
 		d->m_views << X;
-        d->m_color_view=X;
 	}
+    {
+        MVClusterView *X=new MVClusterView;
+        X->setMode(MVCV_MODE_TIME_COLORS);
+        d->m_views << X;
+    }
+    {
+        MVClusterView *X=new MVClusterView;
+        X->setMode(MVCV_MODE_AMPLITUDE_COLORS);
+        d->m_views << X;
+    }
+
+    QVBoxLayout *mainlayout=new QVBoxLayout;
+    this->setLayout(mainlayout);
+
+    QHBoxLayout *bottom_panel=new QHBoxLayout;
+    {
+        QCheckBox *CB=new QCheckBox; CB->setText("Clip View");
+        bottom_panel->addWidget(CB);
+    }
+    {
+        QCheckBox *CB=new QCheckBox; CB->setText("Density Plot");
+        bottom_panel->addWidget(CB);
+    }
+    {
+        QCheckBox *CB=new QCheckBox; CB->setText("Label Colors");
+        bottom_panel->addWidget(CB);
+    }
+    {
+        QCheckBox *CB=new QCheckBox; CB->setText("Time Colors");
+        bottom_panel->addWidget(CB);
+    }
+    {
+        QCheckBox *CB=new QCheckBox; CB->setText("Amplitude Colors");
+        bottom_panel->addWidget(CB);
+    }
+    bottom_panel->addStretch();
 
 	QHBoxLayout *hlayout=new QHBoxLayout;
-	this->setLayout(hlayout);
+    mainlayout->addLayout(hlayout);
+    mainlayout->addLayout(bottom_panel);
 
 	QVBoxLayout *vlayout=new QVBoxLayout;
 	vlayout->addWidget(d->m_clips_view);
 	d->m_info_bar=new QLabel; d->m_info_bar->setFixedHeight(20);
 	vlayout->addWidget(d->m_info_bar);
-	hlayout->addLayout(vlayout);
-	d->m_clips_view->setFixedWidth(250);
+    //d->m_clips_view->setFixedWidth(250);
+
+    QSizePolicy clips_size_policy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    clips_size_policy.setHorizontalStretch(1);
+
+    QWidget *clips_widget=new QWidget;
+    clips_widget->setLayout(vlayout);
+    clips_widget->setSizePolicy(clips_size_policy);
+    hlayout->addWidget(clips_widget);
+
+    QSizePolicy view_size_policy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+    view_size_policy.setHorizontalStretch(1);
 
 	foreach (MVClusterView *V,d->m_views) {
+        V->setSizePolicy(view_size_policy);
 		hlayout->addWidget(V);
 	}
 
@@ -100,7 +145,14 @@ void MVClusterWidget::setLabels(const QList<int> &labels)
 {
 	foreach (MVClusterView *V,d->m_views) {
 		V->setLabels(labels);
-	}
+    }
+}
+
+void MVClusterWidget::setAmplitudes(const QList<double> &amps)
+{
+    foreach (MVClusterView *V,d->m_views) {
+        V->setAmplitudes(amps);
+    }
 }
 
 void MVClusterWidget::setOutlierScores(const QList<double> &outlier_scores)
@@ -132,22 +184,6 @@ void MVClusterWidget::setTransformation(const AffineTransformation &T)
     foreach (MVClusterView *V,d->m_views) {
         V->setTransformation(T);
     }
-}
-
-void MVClusterWidget::setDensityViewVisible(bool val)
-{
-    d->m_density_view->setVisible(val);
-}
-
-void MVClusterWidget::setColorViewVisible(bool val)
-{
-    d->m_color_view->setVisible(val);
-}
-
-void MVClusterWidget::setClipsViewVisible(bool val)
-{
-    d->m_clips_view->setVisible(val);
-    d->m_info_bar->setVisible(val);
 }
 
 MVEvent MVClusterWidget::currentEvent()

@@ -64,7 +64,7 @@ bool outlier_scores_v1(const char *raw_path, const char *firings_in_path, const 
         }
         firings2.setValue(scores[i],4,i);
     }
-    firings2.write(firings_out_path);
+    firings2.write64(firings_out_path);
 
     return true;
 }

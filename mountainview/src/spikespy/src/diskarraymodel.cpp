@@ -21,7 +21,7 @@ public:
     long m_num_channels;
     long m_num_timepoints;
     long m_dim3;
-    long m_data_type;
+    //long m_data_type;
 	QMap<QString,Mda *> m_loaded_chunks;
 	Mda m_mda;
 	bool m_set_from_mda;
@@ -46,7 +46,7 @@ DiskArrayModel::DiskArrayModel(QObject *parent) : QObject(parent)
 	d->m_num_channels=1;
 	d->m_num_timepoints=0;
 	d->m_dim3=1;
-    d->m_data_type=MDA_TYPE_FLOAT32;
+    //d->m_data_type=MDA_TYPE_FLOAT32;
 }
 
 DiskArrayModel::~DiskArrayModel()
@@ -73,7 +73,6 @@ void DiskArrayModel::setFromMda(const Mda &X)
 	d->m_num_channels=X.N1();
 	d->m_num_timepoints=X.N2()*X.N3();
 	d->m_dim3=X.N3();
-    d->m_data_type=X.dataType();
 }
 
 QString DiskArrayModel::path()
@@ -89,7 +88,7 @@ double safe_value1(Mda &X,long ii) {
 Mda DiskArrayModel::loadData(long scale,long t1,long t2) {
     QTime timer; timer.start();
 
-	Mda X; X.setDataType(d->m_data_type);
+    Mda X;
     long d3=2;
 	X.allocate(d->m_num_channels,t2-t1+1,d3);
 
@@ -537,11 +536,11 @@ void DiskArrayModelPrivate::read_header() {
     long dim1=HH.dims[0];
     long dim2=HH.dims[1];
     long dim3=HH.dims[2];
-    long data_type=HH.data_type;
+    //long data_type=HH.data_type;
 
 	jfclose(inf);
 
-	m_data_type=data_type;
+    //m_data_type=data_type;
 	m_num_channels=dim1;
 	m_num_timepoints=dim2*dim3;
 	m_dim3=dim3;
@@ -571,7 +570,7 @@ Mda *DiskArrayModelPrivate::load_chunk_from_file(QString path,long scale,long ch
         QVector<double> d0=load_data_from_mda(path,m_num_channels*m_chunk_size,0,chunk_ind*m_chunk_size,0);
 		if (d0.isEmpty()) return 0;
 		Mda *ret=new Mda();
-		ret->setDataType(m_data_type);
+        //ret->setDataType(m_data_type);
 		ret->allocate(m_num_channels,m_chunk_size,2);
         long ct=0;
         for (long tt=0; tt<m_chunk_size; tt++) {
@@ -591,7 +590,7 @@ Mda *DiskArrayModelPrivate::load_chunk_from_file(QString path,long scale,long ch
 
 		if (d0.isEmpty()) return 0;
 		Mda *ret=new Mda();
-		ret->setDataType(m_data_type);
+        //ret->setDataType(m_data_type);
 		ret->allocate(m_num_channels,m_chunk_size,2);
         long ct=0;
         for (long tt=0; tt<m_chunk_size; tt++) {

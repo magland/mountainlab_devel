@@ -20,7 +20,6 @@ public:
 
     long *m_size;
 	double *m_data_real;
-    long m_data_type;
 	
 	void construct() {
         m_size=(long *)jmalloc(sizeof(long)*MDA_MAX_DIMS);
@@ -28,8 +27,6 @@ public:
 		
         m_data_real=(double *)jmalloc(sizeof(double)*1);
 		m_data_real[0]=0;
-	
-        m_data_type=MDA_TYPE_FLOAT32;
 	}
 	
 	bool do_read(FILE *inf);
@@ -39,7 +36,7 @@ public:
 	short read_short(FILE *inf);	
 	unsigned short read_unsigned_short(FILE *inf);
 	unsigned char read_unsigned_char(FILE *inf);
-	bool do_write(FILE *outf);
+    bool do_write(FILE *outf,long data_type);
 	void write_int(FILE *outf,int val);
 	void write_float(FILE *outf,float val);
     void write_double(FILE *outf,double val);
@@ -62,7 +59,7 @@ Mda::Mda(const Mda &X) {
 	
 	d->construct();
 	
-	setDataType(X.dataType());
+    //setDataType(X.dataType());
 	allocate(X.dimCount(),X.d->m_size);
 	setValues(X.d->m_data_real);
 }
@@ -75,19 +72,11 @@ Mda::~Mda()
 }
 
 void Mda::operator=(const Mda &X) {
-	setDataType(X.dataType());
+    //setDataType(X.dataType());
 	allocate(X.dimCount(),X.d->m_size);
 	setValues(X.d->m_data_real);
 }
 
-void Mda::setDataType(long dt) {
-	d->m_data_type = dt;
-	allocate(1, 1);
-}
-
-long Mda::dataType() const {
-	return d->m_data_type;
-}
 void Mda::allocate(long N1,long N2,long N3,long N4,long N5,long N6) {
     long tmp[6];
 	tmp[0]=N1; tmp[1]=N2; tmp[2]=N3; tmp[3]=N4; tmp[4]=N5; tmp[5]=N6;
@@ -410,7 +399,7 @@ bool MdaPrivate::do_read(FILE *inf) {
 		hold_dims[j] = holdval;
 	}
 	{
-		q->setDataType(data_type);
+        //q->setDataType(data_type);
 		q->allocate(hold_num_dims,hold_dims);
         long N = q->totalSize();
 		if (data_type == MDA_TYPE_COMPLEX) {
@@ -497,16 +486,36 @@ unsigned char MdaPrivate::read_unsigned_char(FILE *inf) {
 
 bool Mda::write(const char *path) {
 
-	FILE *outf=jfopen(path,"wb");
-	if (!outf) {
-		printf ("Unable to write mda file: %s\n",path);
-		return false;
-	}
-	
-	bool ret=d->do_write(outf);
-	
-	jfclose(outf);
-	
+    return write32(path);
+}
+
+bool Mda::write32(const char *path)
+{
+    FILE *outf=jfopen(path,"wb");
+    if (!outf) {
+        printf ("Unable to write mda file: %s\n",path);
+        return false;
+    }
+
+    bool ret=d->do_write(outf,MDA_TYPE_FLOAT32);
+
+    jfclose(outf);
+
+    return ret;
+}
+
+bool Mda::write64(const char *path)
+{
+    FILE *outf=jfopen(path,"wb");
+    if (!outf) {
+        printf ("Unable to write mda file: %s\n",path);
+        return false;
+    }
+
+    bool ret=d->do_write(outf,MDA_TYPE_FLOAT64);
+
+    jfclose(outf);
+
     return ret;
 }
 
@@ -520,6 +529,16 @@ bool Mda::write(const QString &path)
 {
     return write(path.toLatin1().data());
 }
+
+bool Mda::write32(const QString &path)
+{
+    return write32(path.toLatin1().data());
+}
+
+bool Mda::write64(const QString &path)
+{
+    return write64(path.toLatin1().data());
+}
 #endif
 
 double *Mda::dataPtr()
@@ -527,18 +546,22 @@ double *Mda::dataPtr()
     return d->m_data_real;
 }
 
-bool MdaPrivate::do_write(FILE *outf) {
-	write_int(outf, m_data_type);
+bool MdaPrivate::do_write(FILE *outf,long data_type) {
+
+    write_int(outf, data_type);
     long num_bytes = 4;
-	if (m_data_type == MDA_TYPE_COMPLEX) {
+    if (data_type == MDA_TYPE_COMPLEX) {
 		num_bytes = 8;
-	} else if (m_data_type == MDA_TYPE_BYTE) {
+    } else if (data_type == MDA_TYPE_BYTE) {
 		num_bytes = 1;
-	} else if (m_data_type == MDA_TYPE_SHORT) {
+    } else if (data_type == MDA_TYPE_SHORT) {
 		num_bytes = 2;
-	} else if (m_data_type == MDA_TYPE_UINT16) {
+    } else if (data_type == MDA_TYPE_UINT16) {
 		num_bytes = 2;
-	}
+    } else if (data_type == MDA_TYPE_FLOAT64 ) {
+        num_bytes = 8;
+    }
+
 	write_int(outf, num_bytes);
     long num_dims = 2;
     for (long i = 2; i < MDA_MAX_DIMS; i++) {
@@ -551,46 +574,46 @@ bool MdaPrivate::do_write(FILE *outf) {
 		write_int(outf, m_size[ii]);
 	}
     long N = q->totalSize();
-	if (m_data_type == MDA_TYPE_COMPLEX) {
+    if (data_type == MDA_TYPE_COMPLEX) {
         for (long i = 0; i < N; i++) {
 			float re0 = (float) m_data_real[i];
 			write_float(outf, re0);
 			write_float(outf, 0);
 		}
-    } else if (m_data_type == MDA_TYPE_FLOAT32) {
+    } else if (data_type == MDA_TYPE_FLOAT32) {
         for (long i = 0; i < N; i++) {
 			float re0 = (float) m_data_real[i];
 			write_float(outf, re0);
 		}
-	} else if (m_data_type == MDA_TYPE_BYTE) {
+    } else if (data_type == MDA_TYPE_BYTE) {
         for (long i = 0; i < N; i++) {
 			unsigned char re0 = (unsigned char) m_data_real[i];
 			write_unsigned_char(outf,re0);
 		}
-	} else if (m_data_type == MDA_TYPE_SHORT) {
+    } else if (data_type == MDA_TYPE_SHORT) {
         for (long i = 0; i < N; i++) {
 			short re0 = (short) m_data_real[i];
 			write_short(outf, (short) re0);
 		}
-	} else if (m_data_type == MDA_TYPE_UINT16) {
+    } else if (data_type == MDA_TYPE_UINT16) {
         for (long i = 0; i < N; i++) {
 			unsigned short re0 = (unsigned short) m_data_real[i];
 			write_unsigned_short(outf, (unsigned short) re0);
 		}
-	} else if (m_data_type == MDA_TYPE_INT32) {
+    } else if (data_type == MDA_TYPE_INT32) {
         for (long i = 0; i < N; i++) {
 			int re0 = (int) m_data_real[i];
 			write_int(outf, re0);
 		}
 	}
-    else if (m_data_type == MDA_TYPE_FLOAT64) {
+    else if (data_type == MDA_TYPE_FLOAT64) {
         for (long i = 0; i < N; i++) {
             double re0 = m_data_real[i];
             write_double(outf, re0);
         }
     }
 	else {
-        printf ("Problem in do_write... unexpected data type: %ld\n",m_data_type);
+        printf ("Problem in do_write... unexpected data type: %ld\n",data_type);
 		return false;
 	}
 	return true;

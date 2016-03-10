@@ -96,7 +96,7 @@ bool fit(const char *input_path,const char *templates_path,const char *cluster_i
         }
     }
 
-    cluster_out.write(cluster_out_path);
+    cluster_out.write64(cluster_out_path);
 
     return true;
 }

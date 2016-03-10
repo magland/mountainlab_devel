@@ -53,7 +53,7 @@ bool split_firings(const char *input_path,const char *firings_path,const char *o
 		kk+=K0;
     }
 
-	C2.write(output_path);
+    C2.write64(output_path);
 
 	return true;
 }

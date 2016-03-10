@@ -48,22 +48,22 @@ if isfield(view_params,'mode')
     cmd=[cmd,sprintf('--mode=%s ',view_params.mode)];
 end;
 if isfield(view_params,'raw')
-    view_params.raw=create_temporary_path_if_array(view_params.raw);
+    view_params.raw=create_temporary_path_if_array32(view_params.raw);
     cmd=[cmd,sprintf('--raw=%s ',view_params.raw)];
 end;
 if isfield(view_params,'filt')
-    view_params.filt=create_temporary_path_if_array(view_params.filt);
+    view_params.filt=create_temporary_path_if_array32(view_params.filt);
     cmd=[cmd,sprintf('--filt=%s ',view_params.filt)];
 end;
 if isfield(view_params,'pre')
-    view_params.pre=create_temporary_path_if_array(view_params.pre);
+    view_params.pre=create_temporary_path_if_array32(view_params.pre);
     cmd=[cmd,sprintf('--pre=%s ',view_params.pre)];
 end;
 if isfield(view_params,'clusters') %for historical compatibility
     cmd=[cmd,sprintf('--firings=%s ',view_params.clusters)];
 end;
 if isfield(view_params,'firings')
-    view_params.firings=create_temporary_path_if_array(view_params.firings);
+    view_params.firings=create_temporary_path_if_array64(view_params.firings);
     cmd=[cmd,sprintf('--firings=%s ',view_params.firings)];
 end;
 if isfield(view_params,'templates')
@@ -74,7 +74,7 @@ if isfield(view_params,'data')
     cmd=[cmd,sprintf('--data=%s ',view_params.data)];
 end;
 if isfield(view_params,'labels')
-    view_params.labels=create_temporary_path_if_array(view_params.labels);
+    view_params.labels=create_temporary_path_if_array32(view_params.labels);
     cmd=[cmd,sprintf('--labels=%s ',view_params.labels)];
 end;
 if (isfield(view_params,'clips'))&&(isfield(view_params,'clips_index'))
@@ -88,7 +88,7 @@ if isfield(view_params,'sampling_freq')
     cmd=[cmd,sprintf('--sampling_freq=%f ',view_params.sampling_freq)];
 end;
 if isfield(view_params,'locations')
-    view_params.locations=create_temporary_path_if_array(view_params.locations);
+    view_params.locations=create_temporary_path_if_array32(view_params.locations);
     cmd=[cmd,sprintf('--locations=%s ',view_params.locations)];
 end;
 
@@ -97,10 +97,16 @@ system(sprintf('%s &',cmd));
 
 end
 
-function path=create_temporary_path_if_array(X)
+function path=create_temporary_path_if_array32(X)
 if (isstr(X)) path=X; return; end;
 path=create_temporary_mda_path;
-writemda(X,path);
+writemda32(X,path);
+end
+
+function path=create_temporary_path_if_array64(X)
+if (isstr(X)) path=X; return; end;
+path=create_temporary_mda_path;
+writemda64(X,path);
 end
 
 function path=create_temporary_mda_path

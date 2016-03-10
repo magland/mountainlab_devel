@@ -240,8 +240,8 @@ bool consolidate(const char *firings_path,const char *templates_path,const char 
 	}
 
 
-	templates2.write(templates_out_path);
-	load_channels2.write(load_channels_out_path);
+    templates2.write32(templates_out_path);
+    load_channels2.write32(load_channels_out_path);
 
 	printf("Using %d clusters\n",num_to_use);
 

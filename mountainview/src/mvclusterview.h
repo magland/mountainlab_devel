@@ -8,6 +8,8 @@
 
 #define MVCV_MODE_HEAT_DENSITY 1
 #define MVCV_MODE_LABEL_COLORS 2
+#define MVCV_MODE_TIME_COLORS 3
+#define MVCV_MODE_AMPLITUDE_COLORS 4
 
 class MVClusterViewPrivate;
 class MVClusterView : public QWidget
@@ -20,6 +22,7 @@ public:
 	void setData(const Mda &X);
 	void setTimes(const QList<double> &times);
 	void setLabels(const QList<int> &labels);
+    void setAmplitudes(const QList<double> &amps);
 	void setMode(int mode);
 	void setCurrentEvent(MVEvent evt,bool do_emit=false);
 	MVEvent currentEvent();

@@ -213,9 +213,6 @@ int main(int argc, char *argv[]) {
             QList<int> labels; for (int i=0; i<NN; i++) labels << labels0.value1(i);
             W->setLabels(labels);
         }
-        W->setClipsViewVisible(false);
-        W->setDensityViewVisible(true);
-        W->setColorViewVisible(true);
         W->resize(1000,500);
         W->show();
     }

@@ -84,7 +84,7 @@ bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char
         }
     }
 
-    firings.write(output_firings_path);
+    firings.write64(output_firings_path);
 
     return true;
 }

@@ -26,7 +26,7 @@ if (code>0)
     num_dims=code;
     code=-1;
 else
-    fread(F,1,'long');
+    bytes_per_datum=fread(F,1,'long');
     num_dims=fread(F,1,'long');    
 end;
 

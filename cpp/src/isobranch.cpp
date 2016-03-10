@@ -38,7 +38,7 @@ bool isobranch(const char *clips_input_path, const char *labels_output_path, con
         labels0.setValue(labels[i],0,i);
     }
 
-    labels0.write(labels_output_path);
+    labels0.write32(labels_output_path);
 
     printf("Using %d of %d events in %d clusters.\n",count_nonzero_labels(labels),labels.count(),max_label(labels));
 

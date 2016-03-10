@@ -10,7 +10,7 @@
 #define MDA_TYPE_SHORT -4
 #define MDA_TYPE_INT32 -5
 #define MDA_TYPE_UINT16 -6
-#define MDA_TYPE_FLOAT64 -6
+#define MDA_TYPE_FLOAT64 -7
 
 #ifdef QT_CORE_LIB
 #include <QString>
@@ -28,8 +28,6 @@ public:
 	virtual ~Mda();
 	
 	void operator=(const Mda &X);
-    void setDataType(long dt);
-    long dataType() const;
     void allocate(long N1,long N2,long N3=1,long N4=1,long N5=1,long N6=1);
     void allocate(long num_dims,int *size);
     void allocate(long num_dims,long *size);
@@ -62,9 +60,13 @@ public:
 	Mda transpose() const;
     bool read(const char *path);
     bool write(const char *path);
+    bool write32(const char *path);
+    bool write64(const char *path);
     #ifdef QT_CORE_LIB
     bool read(const QString &path);
     bool write(const QString &path);
+    bool write32(const QString &path);
+    bool write64(const QString &path);
     #endif
 
     double *dataPtr();
