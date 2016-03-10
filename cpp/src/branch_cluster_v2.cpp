@@ -400,7 +400,7 @@ QList<int> do_branch_cluster_v2(Mda &clips,const Branch_Cluster_V2_Opts &opts) {
 
                 //label the events below based on distance to threshold
                 for (int i=0; i<inds_below.count(); i++) {
-                    int best_k=0; double best_dist=distances.value(i,0);
+                    int best_k=0; double best_dist=distances.value(i,0L);
                     for (int k=0; k<K_above; k++) {
                         double dist0=distances.value(i,k);
                         if (dist0<best_dist) {

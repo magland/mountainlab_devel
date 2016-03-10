@@ -12,11 +12,11 @@ public:
 	DiskArrayModelClipsSubset();
 	virtual ~DiskArrayModelClipsSubset();
 
-	virtual Mda loadData(int scale,int t1,int t2);
-	virtual int size(int dim);
-	virtual int dim3();
+    virtual Mda loadData(long scale,long t1,long t2);
+    virtual long size(long dim);
+    virtual long dim3();
 
-	void setRange(int t1,int t2);
+    void setRange(long t1,long t2);
 signals:
 
 private slots:

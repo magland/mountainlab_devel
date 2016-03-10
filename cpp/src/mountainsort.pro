@@ -21,11 +21,12 @@ VPATH += ../../mountainview/src/spikespy/src
 HEADERS += diskreadmda.h \
     mda2txt.h \
     outlier_scores_v1.h \
-    detect2.h
+    detect2.h \
+
 SOURCES += diskreadmda.cpp \
     mda2txt.cpp \
     outlier_scores_v1.cpp \
-    detect2.cpp
+    detect2.cpp \
 
 HEADERS += \
     bandpass_filter.h \

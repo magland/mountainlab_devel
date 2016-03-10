@@ -17,7 +17,7 @@ bool templates(const char *input_path,const char *firings_path,const char *outpu
 
 	int K=0;
     for (int ii=0; ii<NT; ii++) {
-        int ch=(int)CC.value(0,ii);
+        //int ch=(int)CC.value(0,ii);
         int k=(int)CC.value(2,ii);
         if (k>K) K=k;
     }

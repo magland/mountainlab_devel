@@ -30,7 +30,8 @@ public:
 
 	void setChannelLabels(const QStringList &labels);
 	void setUniformVerticalChannelSpacing(bool val);
-	bool uniformVerticalChannelSpacing();
+    void setFixedVerticalChannelSpacing(double fixed_val);
+    bool uniformVerticalChannelSpacing();
     void setShowMarkerLines(bool val);
 	void setControlPanelVisible(bool val);
 
@@ -40,6 +41,7 @@ public:
 	int pixToChannel(Vec2 pix);
 	void setMargins(int left,int right,int top,int bottom);
 	void setConnectZeros(bool val);
+
 
 
 private slots:

@@ -2,7 +2,8 @@
 #define mda_H
 
 #define MDA_MAX_DIMS 50
-#define MDA_MAX_SIZE 512 * 512 * 512 * 10
+//#define MDA_MAX_SIZE 512 * 512 * 512 * 10
+#define MDA_MAX_SIZE 1e12
 #define MDA_TYPE_COMPLEX -1
 #define MDA_TYPE_BYTE -2
 #define MDA_TYPE_FLOAT32 -3
@@ -15,6 +16,8 @@
 #include <QString>
 #endif
 
+//changed ints to longs on 3/10/16
+
 
 class MdaPrivate;
 class Mda {
@@ -25,34 +28,37 @@ public:
 	virtual ~Mda();
 	
 	void operator=(const Mda &X);
-	void setDataType(int dt);
-	int dataType() const;
-	void allocate(int N1,int N2,int N3=1,int N4=1,int N5=1,int N6=1);
-	void allocate(int num_dims,int *size);
-	int size(int dim) const;
-	int N1() const;
-	int N2() const;
-	int N3() const;
-	int N4() const;
-	int N5() const;
-	int N6() const;
-	int dimCount() const;
-	int totalSize() const;
-	void reshape(int N1,int N2,int N3=1,int N4=1,int N5=1,int N6=1);
-	double value1(int i) const;
-	double value(int i1,int i2) const;
-	double value(int i1,int i2,int i3,int i4=0) const;
-	double value(int num_dims,int *ind) const;
-	void setValue1(double val,int i);
-	void setValue(double val,int i1,int i2,int i3=0,int i4=0);
-	void setValue(double val,int num_dims,int *ind);
+    void setDataType(long dt);
+    long dataType() const;
+    void allocate(long N1,long N2,long N3=1,long N4=1,long N5=1,long N6=1);
+    void allocate(long num_dims,int *size);
+    void allocate(long num_dims,long *size);
+    long size(long dim) const;
+    long N1() const;
+    long N2() const;
+    long N3() const;
+    long N4() const;
+    long N5() const;
+    long N6() const;
+    long dimCount() const;
+    long totalSize() const;
+    void reshape(long N1,long N2,long N3=1,long N4=1,long N5=1,long N6=1);
+    double value1(long i) const;
+    double value(long i1,long i2) const;
+    double value(long i1,long i2,long i3,long i4=0) const;
+    double value(long num_dims,int *ind) const;
+    double value(long num_dims,long *ind) const;
+    void setValue1(double val,long i);
+    void setValue(double val,long i1,long i2,long i3=0,long i4=0);
+    void setValue(double val,long num_dims,int *ind);
+    void setValue(double val,long num_dims,long *ind);
 	void setValues(double *vals);
 	void setValues(int *vals);
 	void setValues(short *vals);
 	void setValues(unsigned char *vals);
-	Mda getDataXY(int num_inds,int *inds) const;
-	Mda getDataXZ(int num_inds,int *inds) const;
-	Mda getDataYZ(int num_inds,int *inds) const;
+    Mda getDataXY(long num_inds,int *inds) const;
+    Mda getDataXZ(long num_inds,int *inds) const;
+    Mda getDataYZ(long num_inds,int *inds) const;
 	Mda transpose() const;
     bool read(const char *path);
     bool write(const char *path);

@@ -96,9 +96,9 @@ void FTElectrodeArrayView::setElectrodeLocations(const Mda &L)
 	int M=d->m_electrode_locations.N1();
 	for (int i=0; i<M; i++) {
 		for (int j=0; j<M; j++) {
-			float x1=d->m_electrode_locations.value(i,0);
+            float x1=d->m_electrode_locations.value(i,0L);
 			float y1=d->m_electrode_locations.value(i,1);
-			float x2=d->m_electrode_locations.value(j,0);
+            float x2=d->m_electrode_locations.value(j,0L);
 			float y2=d->m_electrode_locations.value(j,1);
 			float val=sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
 			if (val!=0) {
@@ -148,8 +148,8 @@ void FTElectrodeArrayView::setWaveform(const Mda &X)
 				maxind=t;
 			}
 		}
-		d->m_waveform_absmax_vals.setValue(d->m_waveform.value(m,maxind),m,0);
-		d->m_waveform_absmax_inds.setValue(maxind,m,0);
+        d->m_waveform_absmax_vals.setValue(d->m_waveform.value(m,maxind),m,0L);
+        d->m_waveform_absmax_inds.setValue(maxind,m,0L);
 		if (maxval>d->m_waveform_absmax) d->m_waveform_absmax=maxval;
 	}
 
@@ -162,7 +162,7 @@ void FTElectrodeArrayView::setWaveform(const Mda &X)
 			electrod_sort_struct tmp0;
 			tmp0.ind=i;
 			tmp0.x=0;
-			tmp0.y=qAbs(d->m_waveform_absmax_vals.value(i,0));
+            tmp0.y=qAbs(d->m_waveform_absmax_vals.value(i,0L));
 			list << tmp0;
 		}
 		qSort(list.begin(),list.end(),electrode_sort_comparer());
@@ -268,7 +268,7 @@ QList<int> FTElectrodeArrayView::selectedElectrodeIndices()
 	QList<electrod_sort_struct> list;
 	foreach (int ind,d->m_selected_indices) {
 		electrod_sort_struct aa;
-		aa.x=d->m_electrode_locations.value(ind,0);
+        aa.x=d->m_electrode_locations.value(ind,0L);
 		aa.y=d->m_electrode_locations.value(ind,1);
 		aa.ind=ind;
 		list.append(aa);
@@ -306,7 +306,7 @@ void FTElectrodeArrayView::paintEvent(QPaintEvent *evt)
 	for (int i=0; i<M; i++) {
 		float val=0;
 		if (d->m_timepoint<0)
-			val=(d->m_waveform_absmax_vals.value(i,0)/absmax);
+            val=(d->m_waveform_absmax_vals.value(i,0L)/absmax);
 		else
 			val=(d->m_waveform.value(i,d->m_timepoint))/absmax;
 
@@ -428,7 +428,7 @@ FTElectrodeArrayView::~FTElectrodeArrayView()
 
 QPointF FTElectrodeArrayViewPrivate::ind2pix(int i)
 {
-	float x0=m_electrode_locations.value(i,0);
+    float x0=m_electrode_locations.value(i,0L);
 	float y0=m_electrode_locations.value(i,1);
 
 	float minx=m_electrode_minx-m_min_electrode_spacing; float maxx=m_electrode_maxx+m_min_electrode_spacing;

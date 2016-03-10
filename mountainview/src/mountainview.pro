@@ -29,7 +29,8 @@ HEADERS += \
     mvclusterdetailwidget.h \
     mvclipsview.h \
     mvclusterview.h \
-    mvclusterwidget.h
+    mvclusterwidget.h \
+    mvfiringrateview.h
 SOURCES += mountainviewmain.cpp \
     histogramview.cpp \
     mvoverviewwidget.cpp \
@@ -48,7 +49,8 @@ SOURCES += mountainviewmain.cpp \
     mvclusterdetailwidget.cpp \
     mvclipsview.cpp \
     mvclusterview.cpp \
-    mvclusterwidget.cpp
+    mvclusterwidget.cpp \
+    mvfiringrateview.cpp
 
 INCLUDEPATH += ../../cpp/src
 DEPENDPATH += ../../cpp/src

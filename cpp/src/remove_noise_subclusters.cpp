@@ -239,7 +239,7 @@ Mda compute_geometric_median_template(Mda &clips) {
 	for (int i=0; i<L; i++) {
 		double tmp=0;
 		for (int a=0; a<num_features; a++) {
-			double val=FF.value(a,i)-FFmm.value(a,0);
+            double val=FF.value(a,i)-FFmm.value(a,0L);
 			tmp+=val*val;
 		}
 		tmp=sqrt(tmp);

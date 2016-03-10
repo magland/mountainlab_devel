@@ -212,9 +212,11 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
 				double x0 = SS.xvals.value(0,i);
 				double val = SS.yvals.value(0,i);
 				Vec2 pix1 = q->coordToPix(vec2(x0, val+SS.offset));
-				if ((val==0)&&(last_val==0)/*&&(!m_connect_zeros)*/) {
+                //if ((val==0)&&(last_val==0)/*&&(!m_connect_zeros)*/) {
+                if ((val==0)/*&&(!m_connect_zeros)*/) {
 					path.moveTo(pix1.x, pix1.y);
-					is_first=false;
+                    //is_first=false;
+                    is_first=true;
 				} else {
 					if (is_first) {
 						is_first=false;

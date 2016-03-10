@@ -42,6 +42,8 @@ public:
 	//QMap<int,Mda *> m_multiscale_max_arrays;
 	int m_margins[4];
 	bool m_uniform_vertical_channel_spacing;
+    bool m_use_fixed_vertical_channel_spacing;
+    double m_fixed_vertical_channel_spacing;
   
 	void set_data2();
 	QColor get_channel_color(int num);
@@ -71,6 +73,8 @@ SSTimeSeriesPlot::SSTimeSeriesPlot(QWidget *parent) : SSAbstractPlot(parent) {
 	d->m_bar_width=1;
 
 	d->m_uniform_vertical_channel_spacing=true;
+    d->m_use_fixed_vertical_channel_spacing=false;
+    d->m_fixed_vertical_channel_spacing=0;
 
 	QList<QString> color_strings;
 
@@ -263,7 +267,14 @@ void SSTimeSeriesPlot::setChannelLabels(const QStringList &labels)
 void SSTimeSeriesPlot::setUniformVerticalChannelSpacing(bool val)
 {
 	d->m_uniform_vertical_channel_spacing=val;
-	this->slot_replot_needed();
+    this->slot_replot_needed();
+}
+
+void SSTimeSeriesPlot::setFixedVerticalChannelSpacing(double fixed_val)
+{
+    d->m_use_fixed_vertical_channel_spacing=true;
+    d->m_fixed_vertical_channel_spacing=fixed_val;
+    this->slot_replot_needed();
 }
 
 bool SSTimeSeriesPlot::uniformVerticalChannelSpacing()
@@ -332,8 +343,8 @@ void SSTimeSeriesPlotPrivate::set_data2() {
 		for (int ch = 0; ch < M; ch++) {
             int NN=data0->size(1)*data0->size(2);
             if (NN > 0) {
-				m_minvals[ch] = data0->value(ch, 0);
-				m_maxvals[ch] = data0->value(ch, 0);
+                m_minvals[ch] = data0->value(ch, 0L);
+                m_maxvals[ch] = data0->value(ch, 0L);
 			}
 			for (int i = 0; i < NN; i++) {
 				double val = data0->value1(ch+i*M);
@@ -423,21 +434,46 @@ void SSTimeSeriesPlotPrivate::setup_plot_area() {
 	double offset = 0;
 	if (!q->channelFlip()) { // ahb
 	  for (int ch = 0; ch < M; ch++) { // jfm's upwards ordering
-		m_plot_y1[ch]=offset;
-		offset += (-m_plot_minvals[ch]);
+
+        if (m_use_fixed_vertical_channel_spacing) {
+            m_plot_y1[ch]=offset+m_plot_minvals[ch]-max00;
+            offset+=m_fixed_vertical_channel_spacing;
+        }
+        else {
+            m_plot_y1[ch]=offset;
+            offset += (-m_plot_minvals[ch]);
+        }
 		m_plot_offsets[ch] = offset;
-		offset += m_plot_maxvals[ch];
-		offset += max00 / 20;
-		m_plot_y2[ch]=offset;
+        if (m_use_fixed_vertical_channel_spacing) {
+            m_plot_y1[ch]=offset+m_plot_maxvals[ch]+max00;
+        }
+        else {
+            offset += m_plot_maxvals[ch];
+            offset += max00 / 20;
+            m_plot_y2[ch]=offset;
+        }
+
 		}
 	} else {
 	  for (int ch = M-1; ch>=0; ch--) { // downwards ordering
-		m_plot_y1[ch]=offset;
-		offset += (-m_plot_minvals[ch]);
+
+        if (m_use_fixed_vertical_channel_spacing) {
+            m_plot_y1[ch]=offset+m_plot_minvals[ch]-max00;
+            offset-=m_fixed_vertical_channel_spacing;
+        }
+        else {
+            m_plot_y1[ch]=offset;
+            offset += (-m_plot_minvals[ch]);
+        }
 		m_plot_offsets[ch] = offset;
-		offset += m_plot_maxvals[ch];
-		offset += max00 / 20;
-		m_plot_y2[ch]=offset;
+        if (m_use_fixed_vertical_channel_spacing) {
+            m_plot_y2[ch]=offset+m_plot_maxvals[ch]+max00;
+        }
+        else {
+            offset += m_plot_maxvals[ch];
+            offset += max00 / 20;
+            m_plot_y2[ch]=offset;
+        }
 	  }
 	}
 
@@ -447,12 +483,12 @@ void SSTimeSeriesPlotPrivate::setup_plot_area() {
 	int xrange_max = q->xRange().y;
 
     //m_plot_area.setXRange(xrange_min - 1, xrange_max + 1);
-	if (M>0) {
+    if (M>0) {
 	  if (!q->channelFlip())      // ahb, matches above
-	  		q->setYRange(vec2(m_plot_offsets[0] + m_plot_minvals[0] - max00 / 20, m_plot_offsets[M - 1] + m_plot_maxvals[M - 1] + max00 / 20));
+            q->setYRange(vec2(m_plot_offsets[0] + m_plot_minvals[0] - max00 / 2, m_plot_offsets[M - 1] + m_plot_maxvals[M - 1] + max00 / 2));
 	  else
-       		q->setYRange(vec2(m_plot_offsets[M-1] + m_plot_minvals[M-1] - max00 / 20, m_plot_offsets[0] + m_plot_maxvals[0] + max00 / 20));
-        }
+            q->setYRange(vec2(m_plot_offsets[M-1] + m_plot_minvals[M-1] - max00 / 2, m_plot_offsets[0] + m_plot_maxvals[0] + max00 / 2));
+    }
 
 	int NN=xrange_max-xrange_min+1;
 	int msfactor=1;

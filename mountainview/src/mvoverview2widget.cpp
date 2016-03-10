@@ -9,6 +9,7 @@
 #include "mvclusterdetailwidget.h"
 #include "mvclipsview.h"
 #include "mvclusterwidget.h"
+#include "mvfiringrateview.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -64,6 +65,7 @@ public:
 	void update_cluster_details();
     void update_clips();
 	void update_cluster_views();
+    void update_firing_rate_views();
 	void do_shell_split();
 	void do_event_filter();
 	void add_tab(QWidget *W,QString label);
@@ -76,6 +78,7 @@ public:
 	void open_raw_data();
     void open_clips();
 	void open_clusters();
+    void open_firing_rates();
 
 	void update_cross_correlograms();
 	void update_raw_views();
@@ -197,6 +200,7 @@ void MVOverview2Widget::setCurrentRawDataName(const QString &name)
     d->update_cluster_details();
 	d->update_clips();
 	d->update_cluster_views();
+    d->update_firing_rate_views();
 }
 
 void MVOverview2Widget::setFiringsPath(const QString &firings)
@@ -255,6 +259,7 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
         d->remove_widgets_of_type("matrix_of_cross_correlograms");
 		d->remove_widgets_of_type("clips");
 		d->remove_widgets_of_type("clusters");
+        d->remove_widgets_of_type("firing_rates");
         d->update_cluster_details();
 		d->update_cross_correlograms();
 	}
@@ -284,6 +289,9 @@ void MVOverview2Widget::slot_control_panel_button_clicked(QString str)
 	else if (str=="open_clusters") {
 		d->open_clusters();
 	}
+    else if (str=="open_firing_rates") {
+        d->open_firing_rates();
+    }
 	else if (str=="template_method") {
         d->update_cluster_details();
     }
@@ -579,6 +587,16 @@ void MVOverview2WidgetPrivate::update_cluster_views()
 			update_widget(W);
 		}
 	}
+}
+
+void MVOverview2WidgetPrivate::update_firing_rate_views()
+{
+    QList<QWidget *> list=get_all_widgets();
+    foreach (QWidget *W,list) {
+        if (W->property("widget_type")=="firing_rates") {
+            update_widget(W);
+        }
+    }
 }
 
 double get_max(QList<double> &list) {
@@ -1078,7 +1096,23 @@ void MVOverview2WidgetPrivate::open_clusters()
 	X->setProperty("ks",int_list_to_string_list(ks));
 	q->connect(X,SIGNAL(currentEventChanged()),q,SLOT(slot_cluster_view_current_event_changed()));
 	add_tab(X,QString("Clusters"));
-	update_widget(X);
+    update_widget(X);
+}
+
+void MVOverview2WidgetPrivate::open_firing_rates()
+{
+    QList<int> ks=m_selected_ks.toList();
+    qSort(ks);
+    if (ks.count()==0) {
+        QMessageBox::information(q,"Unable to open firing rates","You must select at least one cluster.");
+        return;
+    }
+    MVFiringRateView *X=new MVFiringRateView;
+    X->setProperty("widget_type","firing_rates");
+    X->setProperty("ks",int_list_to_string_list(ks));
+    //q->connect(X,SIGNAL(currentEventChanged()),q,SLOT(slot_firing_rate_view_current_event_changed()));
+    add_tab(X,QString("Firing Rates"));
+    update_widget(X);
 }
 
 void MVOverview2WidgetPrivate::update_cross_correlograms()
@@ -1319,6 +1353,13 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
 		set_progress("","",1);
 		printf(".\n");
 	}
+    else if (widget_type=="firing_rates") {
+        MVFiringRateView *WW=(MVFiringRateView *)W;
+        QList<int> ks=string_list_to_int_list(WW->property("ks").toStringList());
+
+        WW->setFirings(DiskReadMda(m_firings));
+        WW->setVisibleLabels(ks);
+    }
 	else if (widget_type=="raw_data") {
         SSTimeSeriesWidget *WW=(SSTimeSeriesWidget *)W;
 		DiskArrayModel *X=new DiskArrayModel;
@@ -1631,6 +1672,10 @@ void MVOverview2WidgetPrivate::set_current_event(MVEvent evt)
 			MVClusterWidget *WW=(MVClusterWidget *)W;
 			WW->setCurrentEvent(evt);
 		}
+        else if (widget_type=="firing_rates") {
+            MVFiringRateView *WW=(MVFiringRateView *)W;
+            WW->setCurrentEvent(evt);
+        }
 		else if (widget_type=="cluster_details") {
 			MVClusterDetailWidget *WW=(MVClusterDetailWidget *)W;
 			if (evt.label>0) {

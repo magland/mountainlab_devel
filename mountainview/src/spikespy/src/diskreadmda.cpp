@@ -19,18 +19,18 @@ public:
 	DiskReadMda *q;
 	QVector<DataChunk> m_chunks;
 	FILE *m_file;
-	int m_header_size;
-	int m_num_bytes_per_entry;
-	int m_total_size;
+    long m_header_size;
+    long m_num_bytes_per_entry;
+    long m_total_size;
 	QString m_path;
-	int m_data_type;
-	int m_size[MDAIO_MAX_DIMS];
+    long m_data_type;
+    long m_size[MDAIO_MAX_DIMS];
     Mda m_memory_mda;
     bool m_using_memory_mda;
 
-	int get_index(int i1,int i2,int i3,int i4=0,int i5=0,int i6=0);
-	int get_index(int i1,int i2);
-    double *load_chunk(int i);
+    long get_index(long i1,long i2,long i3,long i4=0,long i5=0,long i6=0);
+    long get_index(long i1,long i2);
+    double *load_chunk(long i);
 	void clear_chunks();
 	void load_header();
 	void initialize_contructor();
@@ -96,19 +96,19 @@ void DiskReadMda::setPath(const QString &path)
 	d->m_path=path;
 	d->load_header();
 	d->m_chunks.resize(ceil(d->m_total_size*1.0/CHUNKSIZE));
-	for (int i=0; i<d->m_chunks.count(); i++) {
+    for (long i=0; i<d->m_chunks.count(); i++) {
 		d->m_chunks[i].data=0;
 	}
 }
 
-int DiskReadMda::N1() const {return size(0);}
-int DiskReadMda::N2() const {return size(1);}
-int DiskReadMda::N3() const {return size(2);}
-int DiskReadMda::N4() const {return size(3);}
-int DiskReadMda::N5() const {return size(4);}
-int DiskReadMda::N6() const {return size(5);}
+long DiskReadMda::N1() const {return size(0);}
+long DiskReadMda::N2() const {return size(1);}
+long DiskReadMda::N3() const {return size(2);}
+long DiskReadMda::N4() const {return size(3);}
+long DiskReadMda::N5() const {return size(4);}
+long DiskReadMda::N6() const {return size(5);}
 
-int DiskReadMda::totalSize() const
+long DiskReadMda::totalSize() const
 {
     if (d->m_using_memory_mda) {
         return d->m_memory_mda.totalSize();
@@ -116,7 +116,7 @@ int DiskReadMda::totalSize() const
 	return d->m_total_size;
 }
 
-int DiskReadMda::size(int dim) const {
+long DiskReadMda::size(long dim) const {
     if (d->m_using_memory_mda) {
         return d->m_memory_mda.size(dim);
     }
@@ -125,12 +125,12 @@ int DiskReadMda::size(int dim) const {
 	return d->m_size[dim];
 }
 
-double DiskReadMda::value(int i1, int i2)
+double DiskReadMda::value(long i1, long i2)
 {
 	if (d->m_using_memory_mda) {
 		return d->m_memory_mda.value(i1,i2);
 	}
-	int ind=d->get_index(i1,i2);
+    long ind=d->get_index(i1,i2);
 	if (ind<0) return 0;
 	double *X=d->load_chunk(ind/CHUNKSIZE);
 	if (!X) {
@@ -140,12 +140,12 @@ double DiskReadMda::value(int i1, int i2)
 	return X[ind%CHUNKSIZE];
 }
 
-double DiskReadMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
+double DiskReadMda::value(long i1, long i2, long i3, long i4, long i5, long i6)
 {
     if (d->m_using_memory_mda) {
         return d->m_memory_mda.value(i1,i2,i3,i4);
     }
-	int ind=d->get_index(i1,i2,i3,i4,i5,i6);
+    long ind=d->get_index(i1,i2,i3,i4,i5,i6);
     if (ind<0) return 0;
     double *X=d->load_chunk(ind/CHUNKSIZE);
 	if (!X) {
@@ -155,7 +155,7 @@ double DiskReadMda::value(int i1, int i2, int i3, int i4, int i5, int i6)
 	return X[ind%CHUNKSIZE];
 }
 
-double DiskReadMda::value1(int ind)
+double DiskReadMda::value1(long ind)
 {
     if (d->m_using_memory_mda) {
         return d->m_memory_mda.value1(ind);
@@ -165,17 +165,17 @@ double DiskReadMda::value1(int ind)
 	return X[ind%CHUNKSIZE];
 }
 
-void DiskReadMda::reshape(int N1, int N2, int N3, int N4, int N5, int N6)
+void DiskReadMda::reshape(long N1, long N2, long N3, long N4, long N5, long N6)
 {
     if (d->m_using_memory_mda) {
         printf("Warning: unable to reshape because we are using a memory mda.\n");
     }
-	int tot=N1*N2*N3*N4*N5*N6;
+    long tot=N1*N2*N3*N4*N5*N6;
 	if (tot!=d->m_total_size) {
-		printf("Warning: unable to reshape %d <> %d: %s\n",tot,d->m_total_size,d->m_path.toLatin1().data());
+        printf("Warning: unable to reshape %ld <> %ld: %s\n",tot,d->m_total_size,d->m_path.toLatin1().data());
 		return;
 	}
-	for (int i=0; i<MDAIO_MAX_DIMS; i++) d->m_size[i]=1;
+    for (long i=0; i<MDAIO_MAX_DIMS; i++) d->m_size[i]=1;
 	d->m_size[0]=N1;
 	d->m_size[1]=N2;
 	d->m_size[2]=N3;
@@ -198,12 +198,12 @@ void DiskReadMda::write(const QString &path)
 	QFile::copy(d->m_path,path);
 }
 
-int DiskReadMdaPrivate::get_index(int i1, int i2, int i3, int i4, int i5, int i6)
+long DiskReadMdaPrivate::get_index(long i1, long i2, long i3, long i4, long i5, long i6)
 {
-	int inds[6]; inds[0]=i1; inds[1]=i2; inds[2]=i3; inds[3]=i4; inds[4]=i5; inds[5]=i6;
-	int factor=1;
-	int ret=0;
-	for (int j=0; j<6; j++) {
+    long inds[6]; inds[0]=i1; inds[1]=i2; inds[2]=i3; inds[3]=i4; inds[4]=i5; inds[5]=i6;
+    long factor=1;
+    long ret=0;
+    for (long j=0; j<6; j++) {
         if (inds[j]>=m_size[j]) return -1;
 		ret+=factor*inds[j];
 		factor*=m_size[j];
@@ -211,12 +211,12 @@ int DiskReadMdaPrivate::get_index(int i1, int i2, int i3, int i4, int i5, int i6
 	return ret;
 }
 
-int DiskReadMdaPrivate::get_index(int i1, int i2)
+long DiskReadMdaPrivate::get_index(long i1, long i2)
 {
 	return i1+m_size[0]*i2;
 }
 
-double *DiskReadMdaPrivate::load_chunk(int i)
+double *DiskReadMdaPrivate::load_chunk(long i)
 {
 	if (i>=m_chunks.count()) {
 		//qWarning() << "i>=m_chunks.count()" << this->m_size[0] << this->m_size[1] << this->m_size[2] << this->m_size[3];
@@ -224,7 +224,7 @@ double *DiskReadMdaPrivate::load_chunk(int i)
 	}
 	if (!m_chunks[i].data) {
         m_chunks[i].data=(double *)jmalloc(sizeof(double)*CHUNKSIZE);
-		for (int j=0; j<CHUNKSIZE; j++) m_chunks[i].data[j]=0;
+        for (long j=0; j<CHUNKSIZE; j++) m_chunks[i].data[j]=0;
 		if (m_file) {
 			fseek(m_file,m_header_size+m_num_bytes_per_entry*i*CHUNKSIZE,SEEK_SET);
 			size_t num;
@@ -266,7 +266,7 @@ double *DiskReadMdaPrivate::load_chunk(int i)
                     for (size_t j=0; j<num; j++) tmp2[j]=(double)tmp[j];
                 }
 				else {
-					printf("Warning: unexpected data type: %d\n",m_data_type);
+                    printf("Warning: unexpected data type: %ld\n",m_data_type);
 				}
 				jfree(data);
 			}
@@ -281,7 +281,7 @@ double *DiskReadMdaPrivate::load_chunk(int i)
 
 void DiskReadMdaPrivate::clear_chunks()
 {
-	for (int i=0; i<m_chunks.count(); i++) {
+    for (long i=0; i<m_chunks.count(); i++) {
 		if (m_chunks[i].data) jfree(m_chunks[i].data);
 	}
 	m_chunks.clear();
@@ -311,7 +311,7 @@ void DiskReadMdaPrivate::load_header()
 	m_data_type=HH.data_type;
 	m_num_bytes_per_entry=HH.num_bytes_per_entry;
 	m_total_size=1;
-	for (int i=0; i<MDAIO_MAX_DIMS; i++) {
+    for (long i=0; i<MDAIO_MAX_DIMS; i++) {
 		m_size[i]=HH.dims[i];
 		m_total_size*=m_size[i];
 	}
@@ -326,5 +326,5 @@ void DiskReadMdaPrivate::initialize_contructor()
 	m_total_size=0;
 	m_data_type=MDAIO_TYPE_FLOAT32;
     m_using_memory_mda=false;
-	for (int i=0; i<MDAIO_MAX_DIMS; i++) m_size[i]=1;
+    for (long i=0; i<MDAIO_MAX_DIMS; i++) m_size[i]=1;
 }

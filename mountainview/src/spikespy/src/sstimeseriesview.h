@@ -26,7 +26,7 @@ public:
 	bool clipMode();
 
 	void setChannelLabels(const QStringList &labels);
-	void setUniformVerticalChannelSpacing(bool val);
+    void setUniformVerticalChannelSpacing(bool val);
 	void setTimesLabels(const QList<long> &times,const QList<long> &labels);
 
 	SSLabelsModel *getLabels();

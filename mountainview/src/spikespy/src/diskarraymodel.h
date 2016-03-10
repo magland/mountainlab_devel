@@ -4,6 +4,8 @@
 #include <QObject>
 #include "mda.h"
 
+//changed all ints to longs!!! 3/10/2016 (hope it didn't cause problems!)
+
 class DiskArrayModelPrivate;
 class DiskArrayModel : public QObject
 {
@@ -17,11 +19,11 @@ public:
 	QString path();
 	bool fileHierarchyExists();
 	void createFileHierarchyIfNeeded();
-    double value(int ch,int t);
+    double value(long ch,long t);
 
-	virtual Mda loadData(int scale,int t1,int t2);
-	virtual int size(int dim);
-	virtual int dim3();
+    virtual Mda loadData(long scale,long t1,long t2);
+    virtual long size(long dim);
+    virtual long dim3();
 private:
 	DiskArrayModelPrivate *d;
 
