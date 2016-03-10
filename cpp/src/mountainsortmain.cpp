@@ -32,6 +32,7 @@
 #include "process_msh.h"
 #include "isosplit2.h"
 #include "branch_cluster_v1.h"
+#include "branch_cluster_v2.h"
 #include "outlier_scores_v1.h"
 #include "remove_duplicates.h"
 #include "remove_noise_subclusters.h"
@@ -215,6 +216,14 @@ void register_processors(ProcessTracker &PT) {
     }
     {
         PTProcessor P;
+        P.command="branch_cluster_v2";
+        P.input_file_pnames << "raw" << "detect";
+        P.output_file_pnames << "firings";
+        P.version="0.1";
+        PT.registerProcessor(P);
+    }
+    {
+        PTProcessor P;
         P.command="outlier_scores_v1";
         P.input_file_pnames << "raw" << "firings_in";
         P.output_file_pnames << "firings_out";
@@ -342,6 +351,10 @@ void confusion_matrix_usage() {
 
 void branch_cluster_v1_usage() {
 	printf("mountainsort branch_cluster_v1 --raw=pre.mda --detect=detect.mda --adjacency_matrix= --firings=firings.mda --clip_size=100 --min_shell_count=50 --shell_increment=0.5 --num_features=6 --detect_interval=15\n");
+}
+
+void branch_cluster_v2_usage() {
+    printf("mountainsort branch_cluster_v2 --raw=pre.mda --detect=detect.mda --adjacency_matrix= --firings=firings.mda --clip_size=100 --min_shell_count=50 --shell_increment=0.5 --num_features=6 --detect_interval=15\n");
 }
 
 void outlier_scores_v1_usage() {
@@ -894,6 +907,34 @@ int main(int argc,char *argv[]) {
 		opts.detect_interval=detect_interval;
         if (!branch_cluster_v1(raw_path.toLatin1().data(),detect_path.toLatin1().data(),adjacency_matrix_path.toLatin1().data(),firings_path.toLatin1().data(),opts)) {
             printf("Error in branch_cluster_v1.\n");
+            return -1;
+        }
+    }
+    else if (command=="branch_cluster_v2") {
+        QString raw_path=CLP.named_parameters["raw"];
+        QString detect_path=CLP.named_parameters["detect"];
+        QString adjacency_matrix_path=CLP.named_parameters["adjacency_matrix"];
+        QString firings_path=CLP.named_parameters["firings"];
+        int clip_size=CLP.named_parameters.value("clip_size","0").toInt();
+        int min_shell_size=CLP.named_parameters.value("min_shell_size","100").toInt();
+        double shell_increment=CLP.named_parameters.value("shell_increment","0.5").toDouble();
+        int num_features=CLP.named_parameters.value("num_features","0").toInt();
+        int detect_interval=CLP.named_parameters.value("detect_interval","0").toInt();
+
+        if ((raw_path.isEmpty())||(detect_path.isEmpty())||(firings_path.isEmpty())) {branch_cluster_v2_usage(); return -1;}
+        if (clip_size==0) {printf("clip_size is 0\n"); branch_cluster_v2_usage(); return -1;}
+        if (shell_increment==0) {printf("shell_increment is 0\n"); branch_cluster_v2_usage(); return -1;}
+        if (num_features==0) {printf("num_features is 0\n"); branch_cluster_v2_usage(); return -1;}
+        if (detect_interval<0) {printf("detect_interval is negative\n"); branch_cluster_v2_usage(); return -1;}
+
+        Branch_Cluster_V2_Opts opts;
+        opts.clip_size=clip_size;
+        opts.min_shell_size=min_shell_size;
+        opts.num_features=num_features;
+        opts.shell_increment=shell_increment;
+        opts.detect_interval=detect_interval;
+        if (!branch_cluster_v2(raw_path.toLatin1().data(),detect_path.toLatin1().data(),adjacency_matrix_path.toLatin1().data(),firings_path.toLatin1().data(),opts)) {
+            printf("Error in branch_cluster_v2.\n");
             return -1;
         }
     }

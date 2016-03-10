@@ -20,10 +20,12 @@ DEPENDPATH += ../../mountainview/src/spikespy/src
 VPATH += ../../mountainview/src/spikespy/src
 HEADERS += diskreadmda.h \
     mda2txt.h \
-    outlier_scores_v1.h
+    outlier_scores_v1.h \
+    detect2.h
 SOURCES += diskreadmda.cpp \
     mda2txt.cpp \
-    outlier_scores_v1.cpp
+    outlier_scores_v1.cpp \
+    detect2.cpp
 
 HEADERS += \
     bandpass_filter.h \
@@ -53,6 +55,7 @@ HEADERS += \
     extract_channels.h \
     remove_artifacts.h \
     branch_cluster_v1.h \
+    branch_cluster_v2.h \
     remove_duplicates.h \
     get_sort_indices.h \
     remove_noise_subclusters.h \
@@ -87,6 +90,7 @@ mountainsortmain.cpp \
     extract_channels.cpp \
     remove_artifacts.cpp \
     branch_cluster_v1.cpp \
+    branch_cluster_v2.cpp \
     remove_duplicates.cpp \
     get_sort_indices.cpp \
     remove_noise_subclusters.cpp \

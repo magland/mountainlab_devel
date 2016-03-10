@@ -222,6 +222,7 @@ int main(int argc, char *argv[]) {
 	else if (mode=="spikespy") {
 		printf("spikespy...\n");
 		SSTimeSeriesWidget *W=new SSTimeSeriesWidget;
+        W->hideMenu();
 		SSTimeSeriesView *V=new SSTimeSeriesView;
 		V->setSamplingFrequency(sampling_freq);
 		DiskArrayModel *DAM=new DiskArrayModel;
