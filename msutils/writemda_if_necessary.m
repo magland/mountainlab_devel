@@ -1,5 +1,6 @@
 function writemda_if_necessary(X,fname)
-if (~mda_equals_file(X,fname)) writemda(X,fname); end;
+% note, is 32-bit for now
+if (~mda_equals_file(X,fname)) writemda32(X,fname); end;
 end
 
 function ret=mda_equals_file(X,fname)
