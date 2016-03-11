@@ -29,6 +29,8 @@ signals:
 private slots:
 	void slot_view_current_event_changed();
 	void slot_view_transformation_changed();
+    void slot_show_clip_view_toggled(bool val);
+    void slot_show_view_toggled(bool val);
 private:
 	MVClusterWidgetPrivate *d;
 };

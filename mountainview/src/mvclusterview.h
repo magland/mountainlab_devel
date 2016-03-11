@@ -20,6 +20,7 @@ public:
 	MVClusterView(QWidget *parent=0);
 	virtual ~MVClusterView();
 	void setData(const Mda &X);
+    bool hasData();
 	void setTimes(const QList<double> &times);
 	void setLabels(const QList<int> &labels);
     void setAmplitudes(const QList<double> &amps);

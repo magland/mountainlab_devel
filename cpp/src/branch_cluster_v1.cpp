@@ -13,15 +13,12 @@ QList<int> consolidate_labels(DiskReadMda &X,const QList<long> &times,const QLis
 
 bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char *adjacency_matrix_path, const char *output_firings_path, const Branch_Cluster_Opts &opts)
 {
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     DiskReadMda X; X.setPath(raw_path);
     int M=X.N1();
 
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     DiskReadMda detect; detect.setPath(detect_path);
     int L=detect.N2();
 
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     Mda AM;
     if ((adjacency_matrix_path)&&(strlen(adjacency_matrix_path)>0)) {
         AM.read(adjacency_matrix_path);
@@ -35,7 +32,6 @@ bool branch_cluster_v1(const char *raw_path, const char *detect_path, const char
         }
     }
 
-    qDebug() << __FILE__ << __FUNCTION__ << __LINE__;
     if ((AM.N1()!=M)||(AM.N2()!=M)) {
         printf("Error: incompatible dimensions between AM and X.\n");
         return false;

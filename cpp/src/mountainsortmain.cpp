@@ -1038,7 +1038,6 @@ int main(int argc,char *argv[]) {
         opts.transpose=CLP.named_parameters.value("transpose","1").toInt();
         opts.max_rows=(long)CLP.named_parameters.value("max_rows","1e9").toDouble();
         opts.max_cols=(long)CLP.named_parameters.value("max_cols","100").toDouble();
-        qDebug() << opts.transpose;
         if (!mda2txt(input_path.toLatin1().data(),output_path.toLatin1().data(),opts)) {
             return -1;
         }

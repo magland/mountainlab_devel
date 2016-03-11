@@ -103,7 +103,12 @@ void MVClusterView::setData(const Mda &X)
 	d->m_data_trans_needed=true;
 	d->m_grid_update_needed=true;
 
-	update();
+    update();
+}
+
+bool MVClusterView::hasData()
+{
+    return (d->m_data.totalSize()>1);
 }
 
 void MVClusterView::setTimes(const QList<double> &times)
@@ -293,6 +298,7 @@ void MVClusterView::slot_emit_transformation_changed()
 
 void MVClusterViewPrivate::compute_data_proj()
 {
+    if (m_data.N2()<=1) return;
 	m_data_proj.allocate(3,m_data.N2());
 	for (int i=0; i<m_data.N2(); i++) {
 		m_data_proj.setValue(m_data.value(0,i),0,i);
@@ -305,6 +311,7 @@ void MVClusterViewPrivate::compute_data_trans()
 {
 	int N2=m_data_proj.N2();
 	m_data_trans.allocate(3,N2);
+    if (m_data_proj.N1()!=3) return; //prevents a crash when data hasn't been set, which is always a good thing
 	double *AA=m_data_proj.dataPtr();
 	double *BB=m_data_trans.dataPtr();
 	double MM[16];
@@ -316,8 +323,6 @@ void MVClusterViewPrivate::compute_data_trans()
 		BB[aaa+2]=AA[aaa+0]*MM[8]+AA[aaa+1]*MM[9]+AA[aaa+2]*MM[10] +  MM[11];
 		aaa+=3;
 	}
-	m_data_proj.write("/tmp/tmp_proj.mda");
-	m_data_trans.write("/tmp/tmp_trans.mda");
 }
 
 double compute_max(int N,double *X) {
@@ -409,24 +414,24 @@ void MVClusterViewPrivate::update_grid()
 
     if (m_mode!=MVCV_MODE_HEAT_DENSITY) {
         //3 axes
-
-
         double factor=1.2;
-        for (double aa=-max_abs_val*factor; aa<=max_abs_val*factor; aa+=max_abs_val*factor/50) {
-            {
-                CVPoint pt1=cvpoint(aa,0,0);
-                CVPoint pt2=m_transformation.map(pt1);
-                x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
-            }
-            {
-                CVPoint pt1=cvpoint(0,aa,0);
-                CVPoint pt2=m_transformation.map(pt1);
-                x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
-            }
-            {
-                CVPoint pt1=cvpoint(0,0,aa);
-                CVPoint pt2=m_transformation.map(pt1);
-                x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
+        if (max_abs_val) {
+            for (double aa=-max_abs_val*factor; aa<=max_abs_val*factor; aa+=max_abs_val*factor/50) {
+                {
+                    CVPoint pt1=cvpoint(aa,0,0);
+                    CVPoint pt2=m_transformation.map(pt1);
+                    x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
+                }
+                {
+                    CVPoint pt1=cvpoint(0,aa,0);
+                    CVPoint pt2=m_transformation.map(pt1);
+                    x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
+                }
+                {
+                    CVPoint pt1=cvpoint(0,0,aa);
+                    CVPoint pt2=m_transformation.map(pt1);
+                    x0s << pt2.x; y0s << pt2.y; z0s << pt2.z; label0s << -2;
+                }
             }
         }
     }

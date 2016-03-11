@@ -14,6 +14,7 @@ public:
 	QList<MVClusterView *> m_views;
 	MVClipsView *m_clips_view;
 	QLabel *m_info_bar;
+    Mda m_data;
 	DiskReadMda m_raw;
 	int m_clip_size;
 	QList<double> m_outlier_scores;
@@ -21,6 +22,7 @@ public:
 	void connect_view(MVClusterView *V);
 	void update_clips_view();
 	int current_event_index();
+    void set_data_on_visible_views_that_need_it();
 };
 
 MVClusterWidget::MVClusterWidget()
@@ -45,11 +47,13 @@ MVClusterWidget::MVClusterWidget()
     {
         MVClusterView *X=new MVClusterView;
         X->setMode(MVCV_MODE_TIME_COLORS);
+        X->setVisible(false);
         d->m_views << X;
     }
     {
         MVClusterView *X=new MVClusterView;
         X->setMode(MVCV_MODE_AMPLITUDE_COLORS);
+        X->setVisible(false);
         d->m_views << X;
     }
 
@@ -59,22 +63,36 @@ MVClusterWidget::MVClusterWidget()
     QHBoxLayout *bottom_panel=new QHBoxLayout;
     {
         QCheckBox *CB=new QCheckBox; CB->setText("Clip View");
+        connect(CB,SIGNAL(toggled(bool)),this,SLOT(slot_show_clip_view_toggled(bool)));
+        CB->setChecked(true);
         bottom_panel->addWidget(CB);
     }
     {
         QCheckBox *CB=new QCheckBox; CB->setText("Density Plot");
+        CB->setProperty("view_index",0);
+        connect(CB,SIGNAL(toggled(bool)),this,SLOT(slot_show_view_toggled(bool)));
+        CB->setChecked(true);
         bottom_panel->addWidget(CB);
     }
     {
         QCheckBox *CB=new QCheckBox; CB->setText("Label Colors");
+        CB->setProperty("view_index",1);
+        connect(CB,SIGNAL(toggled(bool)),this,SLOT(slot_show_view_toggled(bool)));
+        CB->setChecked(true);
         bottom_panel->addWidget(CB);
     }
     {
         QCheckBox *CB=new QCheckBox; CB->setText("Time Colors");
+        CB->setProperty("view_index",2);
+        connect(CB,SIGNAL(toggled(bool)),this,SLOT(slot_show_view_toggled(bool)));
+        CB->setChecked(false);
         bottom_panel->addWidget(CB);
     }
     {
         QCheckBox *CB=new QCheckBox; CB->setText("Amplitude Colors");
+        CB->setProperty("view_index",3);
+        connect(CB,SIGNAL(toggled(bool)),this,SLOT(slot_show_view_toggled(bool)));
+        CB->setChecked(false);
         bottom_panel->addWidget(CB);
     }
     bottom_panel->addStretch();
@@ -117,9 +135,10 @@ MVClusterWidget::~MVClusterWidget()
 
 void MVClusterWidget::setData(const Mda &X)
 {
-	foreach (MVClusterView *V,d->m_views) {
-		V->setData(X);
-	}
+    d->m_data=X;
+    foreach (MVClusterView *V,d->m_views) {
+        V->setData(Mda());
+    }
     double max_abs_val=0;
     int NN=X.totalSize();
     for (int i=0; i<NN; i++) {
@@ -132,6 +151,8 @@ void MVClusterWidget::setData(const Mda &X)
         T.scale(1.0/max_abs_val*factor,1.0/max_abs_val*factor,1.0/max_abs_val*factor);
         this->setTransformation(T);
     }
+    d->set_data_on_visible_views_that_need_it();
+
 }
 
 void MVClusterWidget::setTimes(const QList<double> &times)
@@ -204,7 +225,21 @@ void MVClusterWidget::slot_view_transformation_changed()
 	AffineTransformation T=V0->transformation();
 	foreach (MVClusterView *V,d->m_views) {
 		V->setTransformation(T);
-	}
+    }
+}
+
+void MVClusterWidget::slot_show_clip_view_toggled(bool val)
+{
+    d->m_clips_view->setVisible(val);
+}
+
+void MVClusterWidget::slot_show_view_toggled(bool val)
+{
+    int index=sender()->property("view_index").toInt();
+    if ((index>=0)&&(index<d->m_views.count())) {
+        d->m_views[index]->setVisible(val);
+    }
+    d->set_data_on_visible_views_that_need_it();
 }
 
 
@@ -235,5 +270,16 @@ void MVClusterWidgetPrivate::update_clips_view()
 
 int MVClusterWidgetPrivate::current_event_index()
 {
-	return m_views[0]->currentEventIndex();
+    return m_views[0]->currentEventIndex();
+}
+
+void MVClusterWidgetPrivate::set_data_on_visible_views_that_need_it()
+{
+    foreach (MVClusterView *V,m_views) {
+        if (V->isVisible()) {
+            if (!V->hasData()) {
+                V->setData(m_data);
+            }
+        }
+    }
 }
