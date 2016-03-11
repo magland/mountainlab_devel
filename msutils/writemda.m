@@ -26,7 +26,7 @@ if (size(X,6)~=1) num_dims=6; end;
 if nargin<3, dtype=''; end;
 
 if isempty(dtype)
-    warning('Please use writemda32 or writemda64 rather than directly calling writemda. This way you have control on whether the file stores 32-bit or 64-bit floating points.');
+    %warning('Please use writemda32 or writemda64 rather than directly calling writemda. This way you have control on whether the file stores 32-bit or 64-bit floating points.');
     is_complex=1;
     if (isreal(X)) is_complex=0; end;
 
