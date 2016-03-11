@@ -183,6 +183,11 @@ int main(int argc, char *argv[]) {
         if (!raw_path.isEmpty()) {
             W->addRawPath("Raw Data",raw_path);
         }
+        QString epochs_path=CLP.named_parameters["epochs"];
+        if (!epochs_path.isEmpty()) {
+            QList<Epoch> epochs=read_epochs(epochs_path);
+            W->setEpochs(epochs);
+        }
 		if (window_title.isEmpty()) window_title=pre_path;
 		if (window_title.isEmpty()) window_title=filt_path;
 		if (window_title.isEmpty()) window_title=raw_path;
@@ -200,6 +205,7 @@ int main(int argc, char *argv[]) {
 		}
         W->setDefaultInitialization();
 		W->setWindowTitle(window_title);
+
 	}
     else if (mode=="view_clusters") {
         MVClusterWidget *W=new MVClusterWidget;

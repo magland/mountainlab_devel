@@ -132,3 +132,13 @@ Mda grab_clips_subset(Mda &clips,const QList<int> &inds) {
     }
     return ret;
 }
+
+double compute_max(long N, double *X)
+{
+    if (N==0) return 0;
+    double ret=X[0];
+    for (long i=0; i<N; i++) {
+        if (X[i]>ret) ret=X[i];
+    }
+    return ret;
+}

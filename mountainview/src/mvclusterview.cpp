@@ -51,7 +51,6 @@ public:
 	void coord2gridindex(double x0,double y0,double &i1,double &i2);
 	QPointF pixel2coord(QPointF pix);
 	QPointF coord2pixel(QPointF coord);
-	QColor get_heat_map_color(double val);
 	QColor get_label_color(int label);
     QColor get_time_color(double pct);
 	int find_closest_event_index(double x,double y,const QSet<int> &inds_to_exclude);
@@ -607,43 +606,6 @@ QPointF MVClusterViewPrivate::coord2pixel(QPointF coord)
 	double pt_x=pctx*m_image_target.width()+m_image_target.x();
 	double pt_y=pcty*m_image_target.height()+m_image_target.y();
 	return QPointF(pt_x,pt_y);
-}
-
-QColor MVClusterViewPrivate::get_heat_map_color(double val)
-{
-	double r=0,g=0,b=0;
-	if (val<0.2) {
-		double tmp=(val-0)/0.2;
-		r=200*(1-tmp)+150*tmp;
-		b=200*(1-tmp)+255*tmp;
-		g=0*(1-tmp)+0*tmp;
-	}
-	else if (val<0.4) {
-		double tmp=(val-0.2)/0.2;
-		r=150*(1-tmp)+0*tmp;
-		b=255*(1-tmp)+255*tmp;
-		g=0*(1-tmp)+100*tmp;
-	}
-	else if (val<0.6) {
-		double tmp=(val-0.4)/0.2;
-		r=0*(1-tmp)+255*tmp;
-		b=255*(1-tmp)+0*tmp;
-		g=100*(1-tmp)+20*tmp;
-	}
-	else if (val<0.8) {
-		double tmp=(val-0.6)/0.2;
-		r=255*(1-tmp)+255*tmp;
-		b=0*(1-tmp)+0*tmp;
-		g=20*(1-tmp)+255*tmp;
-	}
-	else if (val<=1.0) {
-		double tmp=(val-0.8)/0.2;
-		r=255*(1-tmp)+255*tmp;
-		b=0*(1-tmp)+255*tmp;
-		g=255*(1-tmp)+255*tmp;
-	}
-
-	return QColor((int)r,(int)g,(int)b);
 }
 
 QColor MVClusterViewPrivate::get_label_color(int label)

@@ -4,6 +4,7 @@
 #include <QWidget>
 #include "mda.h"
 #include <QTabWidget>
+#include "mvutils.h"
 
 class MVOverview2WidgetPrivate;
 class CustomTabWidget;
@@ -20,6 +21,7 @@ public:
 	void setFiringsPath(const QString &firings);
 	void setSamplingFrequency(float freq);
 	void setDefaultInitialization();
+    void setEpochs(const QList<Epoch> &epochs);
 
 protected:
 	void resizeEvent(QResizeEvent *evt);

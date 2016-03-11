@@ -113,7 +113,7 @@ void bandpass_filter_2(MDAIO_HEADER &H,FILE *input_file,MDAIO_HEADER &H_out,FILE
 			fftw_execute(p_ifft);
 			ii=m;
 			for (long n=0; n<NN; n++) {
-				X[ii]=X0[n]/NN; ii+=M;
+                if (X[ii]) X[ii]=X0[n]/NN; ii+=M; //condition added so zeros stay zeros (3/11/16 by jfm)
 			}
 		}
 

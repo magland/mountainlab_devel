@@ -13,15 +13,14 @@ public:
     friend class MVFiringRateViewPrivate;
     MVFiringRateView();
     virtual ~MVFiringRateView();
-    void setFirings(const DiskReadMda &X);
-    void setVisibleLabels(const QList<int> &X);
-    void setWindowWidth(double sec); //in seconds
+    void setTimesAmplitudes(const QList<double> &times,const QList<double> &amps);
     void setSamplingFreq(double ff); //in Hz
     void setCurrentEvent(MVEvent evt);
+    void setEpochs(const QList<Epoch> &epochs);
 signals:
 
 protected:
-    //void paintEvent(QPaintEvent *evt);
+    void paintEvent(QPaintEvent *evt);
 
 private slots:
     void slot_update();

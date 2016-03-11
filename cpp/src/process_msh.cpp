@@ -56,7 +56,7 @@ int process_msh(const QString &path,int argc,char *argv[])
         txt2+="echo\n";
     }
 
-    QStringList args; args << path+".sh";
+    QStringList args; args << path+".tmp";
     QString set_args_txt;
     for (int i=2; i<argc; i++) {
         QString arg0=argv[i];
@@ -83,6 +83,6 @@ int process_msh(const QString &path,int argc,char *argv[])
     else {
         txt2=set_args_txt+txt2;
     }
-    write_text_file(path+".sh",txt2);
+    write_text_file(path+".tmp",txt2);
     return QProcess::execute("/bin/bash",args);
 }

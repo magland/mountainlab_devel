@@ -34,6 +34,7 @@ public:
 	DiskReadMda m_firings_original;
 	Mda m_firings_split;
 	Mda m_firings;
+    QList<Epoch> m_epochs;
 	QList<int> m_original_cluster_numbers;
     QList<int> m_original_cluster_offsets;
 	int m_current_k;
@@ -230,7 +231,12 @@ void MVOverview2Widget::setDefaultInitialization()
 	//d->open_templates();
 	d->open_cluster_details();
 	d->m_current_tab_widget=d->m_tabs2;
-	d->open_auto_correlograms();
+    d->open_auto_correlograms();
+}
+
+void MVOverview2Widget::setEpochs(const QList<Epoch> &epochs)
+{
+    d->m_epochs=epochs;
 }
 
 void MVOverview2Widget::resizeEvent(QResizeEvent *evt)
@@ -1369,9 +1375,21 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
     else if (widget_type=="firing_rates") {
         MVFiringRateView *WW=(MVFiringRateView *)W;
         QList<int> ks=string_list_to_int_list(WW->property("ks").toStringList());
+        QSet<int> ks_set=ks.toSet();
+        qDebug() << ks_set;
 
-        WW->setFirings(DiskReadMda(m_firings));
-        WW->setVisibleLabels(ks);
+        QList<double> times,amplitudes;
+        for (int i=0; i<m_firings.N2(); i++) {
+            int label=(int)m_firings.value(2,i);
+            if (ks_set.contains(label)) {
+                times << m_firings.value(1,i);
+                amplitudes << m_firings.value(3,i);
+            }
+        }
+        qDebug() << times.count() << amplitudes.count();
+        WW->setTimesAmplitudes(times,amplitudes);
+        WW->setSamplingFreq(m_sampling_frequency);
+        WW->setEpochs(m_epochs);
     }
 	else if (widget_type=="raw_data") {
         SSTimeSeriesWidget *WW=(SSTimeSeriesWidget *)W;

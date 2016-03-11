@@ -6,34 +6,29 @@
 #include <QHBoxLayout>
 #include <QTimer>
 #include "sstimeseriesview.h"
+#include "mvutils.h"
+#include "msutils.h"
 
 class MVFiringRateViewPrivate {
 public:
     MVFiringRateView *q;
 
     //set by user
-    DiskReadMda m_firings;
-    QList<int> m_visible_labels;
-    double m_window_width_sec; //seconds
-    double m_smoothing_kernel_size;
-    double m_bin_size; //timepoints
+    QList<double> m_times;
+    QList<double> m_amplitudes;
     double m_sampling_freq;
-    bool m_log_mode;
+    QList<Epoch> m_epochs;
 
     //internal
     double m_max_timepoint;
-    int m_K;
-    Mda m_event_counts;
-    double m_max_firing_rate;
-    SSTimeSeriesView *m_view;
+    double m_min_amplitude,m_max_amplitude;
     bool m_update_scheduled;
+    QImage m_image;
 
     //settings
     double m_hmargin,m_vmargin;
 
-    void do_compute();
-    QPointF coord2pix(const QPointF &p);
-    QColor get_label_color(int label);
+    QPointF coord2imagepix(const QPointF &p,int W,int H);
     void schedule_update();
 };
 
@@ -41,25 +36,14 @@ MVFiringRateView::MVFiringRateView()
 {
     d=new MVFiringRateViewPrivate;
     d->q=this;
-    d->m_window_width_sec=1; //seconds
-    d->m_smoothing_kernel_size=5; //seconds
-    d->m_sampling_freq=30000;
-    d->m_bin_size=d->m_window_width_sec*d->m_sampling_freq; //timepoints
+    d->m_sampling_freq=30000; //Hz
     d->m_max_timepoint=0;
-    d->m_max_firing_rate=0;
-    d->m_log_mode=true;
+    d->m_min_amplitude=0;
+    d->m_max_amplitude=0;
     d->m_update_scheduled=false;
 
     d->m_hmargin=25;
     d->m_vmargin=25;
-
-    d->m_view=new SSTimeSeriesView;
-    d->m_view->initialize();
-    d->m_view->plot()->setFixedVerticalChannelSpacing(0);
-
-    QHBoxLayout *hlayout=new QHBoxLayout;
-    hlayout->addWidget(d->m_view);
-    this->setLayout(hlayout);
 }
 
 MVFiringRateView::~MVFiringRateView()
@@ -67,35 +51,22 @@ MVFiringRateView::~MVFiringRateView()
     delete d;
 }
 
-void MVFiringRateView::setFirings(const DiskReadMda &X)
+void MVFiringRateView::setTimesAmplitudes(const QList<double> &times, const QList<double> &amps)
 {
-    d->m_firings=X;
-    d->m_max_timepoint=0;
-    d->m_K=0;
-    for (int i=0; i<X.N2(); i++) {
-        if (d->m_firings.value(1,i)>d->m_max_timepoint) d->m_max_timepoint=d->m_firings.value(1,i);
-        if (d->m_firings.value(2,i)>d->m_K) d->m_K=(int)d->m_firings.value(2,i);
-    }
-    d->schedule_update();
-}
+    d->m_times=times;
+    d->m_amplitudes=amps;
 
-void MVFiringRateView::setVisibleLabels(const QList<int> &X)
-{
-    d->m_visible_labels=X;
-    d->schedule_update();
-}
+    d->m_max_timepoint=compute_max(d->m_times);
+    d->m_min_amplitude=compute_min(d->m_amplitudes);
+    d->m_max_amplitude=compute_max(d->m_amplitudes);
 
-void MVFiringRateView::setWindowWidth(double sec)
-{
-    d->m_window_width_sec=sec;
-    d->m_bin_size=d->m_window_width_sec*d->m_sampling_freq;
+
     d->schedule_update();
 }
 
 void MVFiringRateView::setSamplingFreq(double ff)
 {
     d->m_sampling_freq=ff;
-    d->m_bin_size=d->m_window_width_sec*d->m_sampling_freq;
     d->schedule_update();
 }
 
@@ -105,37 +76,108 @@ void MVFiringRateView::setCurrentEvent(MVEvent evt)
     //finish this!
 }
 
-QList<double> do_smoothing(const QList<double> &X,double sigma) {
-    int krad=(int)(sigma*4);
-    double kernel[krad*2+1];
-    //double kernel_sum=0;
-    for (int dt=-krad; dt<=krad; dt++) {
-        kernel[dt+krad]=exp(-0.5*dt*dt/(sigma*sigma));
-        //kernel_sum+=kernel[dt+krad];
-    }
-    //for (int dt=-krad; dt<=krad; dt++) {
-    //    kernel[dt+krad]/=kernel_sum;
-    //}
+void MVFiringRateView::setEpochs(const QList<Epoch> &epochs)
+{
+    d->m_epochs=epochs;
+    update();
+}
 
-    QList<double> Y;
-    for (int t=0; t<X.count(); t++) {
+void apply_kernel(int N,double *X,int kernel_rad,double *kernel) {
+    double Y[N];
+    for (int i=0; i<N; i++) {
         double val=0;
-        double denom=0;
-        for (int dt=-krad; dt<=krad; dt++) {
-            if ((0<=t+dt)&&(t+dt<X.count())) {
-                val+=X[t+dt]*kernel[dt+krad];
-                denom+=kernel[dt+krad];
+        for (int dd=-kernel_rad; dd<=kernel_rad; dd++) {
+            int i2=i+dd;
+            if ((0<=i2)&&(i2<N)) {
+                val+=X[i2]*kernel[kernel_rad+dd];
             }
         }
-        Y << val/denom;
+        Y[i]=val;
     }
+    for (int i=0; i<N; i++) X[i]=Y[i];
+}
 
-    return Y;
+void smooth_grid(Mda &X,double kernel_tau) {
+    int kernel_rad=(int)kernel_tau*3;
+    double kernel[(kernel_rad*2+1)];
+    for (int dd=-kernel_rad; dd<=kernel_rad; dd++) {
+        kernel[dd+kernel_rad]=exp(-0.5*(dd*dd)/(kernel_tau*kernel_tau));
+    }
+    double *ptr=X.dataPtr();
+    double bufx[X.N1()];
+    int aa=0;
+    for (int y=0; y<X.N2(); y++) {
+        for (int x=0; x<X.N1(); x++) {
+            bufx[x]=ptr[aa];
+            aa++;
+        }
+        aa-=X.N1();
+        apply_kernel(X.N1(),bufx,kernel_rad,kernel);
+        for (int x=0; x<X.N1(); x++) {
+            ptr[aa]=bufx[x];
+            aa++;
+        }
+    }
+    double bufy[X.N2()];
+    for (int x=0; x<X.N1(); x++) {
+        int aa=x;
+        for (int y=0; y<X.N2(); y++) {
+            bufy[y]=ptr[aa];
+            aa+=X.N1();
+        }
+        apply_kernel(X.N2(),bufy,kernel_rad,kernel);
+        aa=x;
+        for (int y=0; y<X.N2(); y++) {
+            ptr[aa]=bufy[y];
+            aa+=X.N1();
+        }
+    }
 }
 
 void MVFiringRateView::slot_update()
 {
     d->m_update_scheduled=false;
+
+    int W=500;
+    int H=(int)(this->height()*1.0/this->width()*W);
+
+    Mda grid; grid.allocate(W,H);
+    double *ptr=grid.dataPtr();
+    for (int i=0; i<d->m_times.count(); i++) {
+        double t0=d->m_times[i];
+        double a0=d->m_amplitudes.value(i);
+        QPointF pt=d->coord2imagepix(QPointF(t0,a0),W,H);
+        int x=(int)pt.x();
+        int y=(int)pt.y();
+        if ((x>=0)&&(x<W)&&(y>=0)&&(y<H)) {
+            ptr[x+W*y]++;
+        }
+    }
+
+    Mda smoothed_grid=grid;
+    smooth_grid(smoothed_grid,4);
+    double max_density=compute_max(smoothed_grid.totalSize(),smoothed_grid.dataPtr());
+    double *smoothed_ptr=smoothed_grid.dataPtr();
+
+    d->m_image=QImage(W,H,QImage::Format_ARGB32);
+    d->m_image.fill(QColor(0,0,0,0).toRgb());
+
+    QColor white(255,255,255);
+    QColor red(255,0,0);
+    for (int y=0; y<H; y++) {
+        for (int x=0; x<W; x++) {
+            double val=ptr[x+W*y];
+            if (val) {
+                double pct=smoothed_ptr[x+W*y]/max_density;
+                pct=sqrt(pct);
+                QColor CC=get_heat_map_color(pct);
+                d->m_image.setPixel(x,y,CC.rgb());
+            }
+        }
+    }
+
+    this->update();
+    /*d->m_update_scheduled=false;
     d->do_compute();
     int Kv=d->m_event_counts.N1();
     long num_bins=d->m_event_counts.N2();
@@ -154,106 +196,55 @@ void MVFiringRateView::slot_update()
     }
     DiskArrayModel *DAM=new DiskArrayModel();
     DAM->setFromMda(data);
-    d->m_view->setData(DAM,this);
+    d->m_view->setData(DAM,this);*/
 }
 
 
 
-/*
+
 void MVFiringRateView::paintEvent(QPaintEvent *evt)
 {
     Q_UNUSED(evt);
-    if (d->m_compute_needed) {
-        d->do_compute();
-        d->m_compute_needed=false;
-    }
+
+    qDebug() << "paintEvent" << d->m_times.count() << d->m_amplitudes.count();
 
     QPainter painter(this);
-    painter.fillRect(0,0,width(),height(),QColor(50,50,50));
+    painter.fillRect(0,0,width(),height(),QColor(160,160,160));
 
-    int Kv=d->m_event_counts.N1();
-    long num_bins=d->m_event_counts.N2();
-    for (int k=0; k<Kv; k++) {
-        QPainterPath path;
-        QList<double> rates;
-        for (int i=0; i<num_bins; i++) {
-            rates << d->m_event_counts.value(k,i)/d->m_window_width_sec;
-        }
-        QList<double> rates_smoothed=do_smoothing(rates,d->m_smoothing_kernel_size/d->m_window_width_sec);
-        for (int i=0; i<rates_smoothed.count(); i++) {
-            double rate=rates_smoothed[i];
-            double time0=(i+0.5)*d->m_bin_size;
-            QPointF pt=d->coord2pix(QPointF(time0,rate));
-            if (i==0) path.moveTo(pt);
-            else path.lineTo(pt);
-        }
-        QColor col=d->get_label_color(k);
-        QPen pen; pen.setColor(col);
-        painter.setPen(pen);
-        painter.drawPath(path);
-    }
-}
-*/
+    QRectF target=QRectF(d->m_hmargin,d->m_vmargin,width()-2*d->m_hmargin,height()-2*d->m_vmargin);
 
-
-void MVFiringRateViewPrivate::do_compute()
-{
-    long num_bins=2+ (long)(m_max_timepoint/m_bin_size);
-    int Kv=m_visible_labels.count();
-    QList<int> label_map;
-    for (int k=0; k<=m_K; k++) label_map << -1;
-    for (int ii=0; ii<Kv; ii++) {
-        if ((m_visible_labels[ii]>=0)&&(m_visible_labels[ii]<label_map.count())) {
-            label_map[m_visible_labels[ii]]=ii;
+    QFont font=painter.font(); font.setPixelSize(24);
+    painter.setFont(font);
+    QColor epoch_color=QColor(150,150,150);
+    //double margin=(d->m_max_amplitude-d->m_min_amplitude)*0.3;
+    double margin=0;
+    for (int i=0; i<d->m_epochs.count(); i++) {
+        Epoch epoch=d->m_epochs[i];
+        QPointF pt1=d->coord2imagepix(QPointF(epoch.t_begin,d->m_max_amplitude+margin),target.width(),target.height());
+        QPointF pt2=d->coord2imagepix(QPointF(epoch.t_end,d->m_min_amplitude-margin),target.width(),target.height());
+        QRect RR(target.x()+pt1.x(),target.y()+pt1.y(),pt2.x()-pt1.x(),pt2.y()-pt1.y());
+        painter.fillRect(RR,epoch_color);
+        RR.adjust(0,d->m_vmargin,0,0);
+        if (fabs(d->m_max_amplitude)>fabs(d->m_min_amplitude)) {
+            painter.drawText(RR,Qt::AlignTop|Qt::AlignHCenter,epoch.name);
         }
         else {
-            qWarning() << "Unexpected problem" << __FILE__ << __FUNCTION__ << __LINE__;
+            painter.drawText(RR,Qt::AlignBottom|Qt::AlignHCenter,epoch.name);
         }
+    }
 
-    }
-    m_event_counts.allocate(Kv,num_bins);
-    for (int i=0; i<m_firings.N2(); i++) {
-        int k=(int)m_firings.value(2,i);
-        int ii=label_map[k];
-        if (ii>=0) {
-            double t=m_firings.value(1,i);
-            long bin=t/m_bin_size;
-            m_event_counts.setValue(m_event_counts.value(ii,bin)+1,ii,bin);
-        }
-    }
-    m_max_firing_rate=0;
-    for (int i=0; i<num_bins; i++) {
-        for (int j=0; j<Kv; j++) {
-            double rate=m_event_counts.value(j,i)/m_window_width_sec;
-            if (rate>m_max_firing_rate) m_max_firing_rate=rate;
-        }
-    }
+    painter.drawImage(target,d->m_image.scaled(target.width(),target.height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation));
 }
 
-QPointF MVFiringRateViewPrivate::coord2pix(const QPointF &p)
+
+QPointF MVFiringRateViewPrivate::coord2imagepix(const QPointF &p,int W,int H)
 {
-    if ((m_max_timepoint==0)||(m_max_firing_rate==0)) return QPointF(0,0);
+    if ((m_max_timepoint==0)||(m_max_amplitude==m_min_amplitude)) return QPointF(0,0);
     double pctx=p.x()/m_max_timepoint;
-    double pcty;
+    double pcty=(p.y()-m_min_amplitude)/(m_max_amplitude-m_min_amplitude);
 
-    if (m_log_mode) {
-        double v1=log(m_max_firing_rate/10000);
-        double v2=log(m_max_firing_rate);
-        if (p.y()) {
-            pcty=(log(p.y())-v1)/(v2-v1);
-        }
-        else {
-            pcty=0;
-        }
-    }
-    else {
-        pcty=p.y()/m_max_firing_rate;
-    }
-    if (pcty<0) pcty=0;
-    if (pcty>1) pcty=1;
-
-    double x0=m_hmargin+pctx*(q->width()-2*m_hmargin);
-    double y0=m_vmargin+(1-pcty)*(q->height()-2*m_vmargin);
+    double x0=pctx*W;
+    double y0=(1-pcty)*H;
 
     return QPointF(x0,y0);
 }
