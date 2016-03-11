@@ -14,8 +14,7 @@ public:
     MVFiringRateView *q;
 
     //set by user
-    QList<double> m_times;
-    QList<double> m_amplitudes;
+    Mda m_firings;
     double m_sampling_freq;
     QList<Epoch> m_epochs;
 
@@ -51,15 +50,18 @@ MVFiringRateView::~MVFiringRateView()
     delete d;
 }
 
-void MVFiringRateView::setTimesAmplitudes(const QList<double> &times, const QList<double> &amps)
+void MVFiringRateView::setFirings(const Mda &firings)
 {
-    d->m_times=times;
-    d->m_amplitudes=amps;
+    d->m_firings=firings;
+}
+
+void MVFiringRateView::setFirings(const Mda &firings)
+{
+    d->m_firings=firings;
 
     d->m_max_timepoint=compute_max(d->m_times);
     d->m_min_amplitude=compute_min(d->m_amplitudes);
     d->m_max_amplitude=compute_max(d->m_amplitudes);
-
 
     d->schedule_update();
 }

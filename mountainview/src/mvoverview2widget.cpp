@@ -821,6 +821,9 @@ void MVOverview2WidgetPrivate::do_shell_split() {
 		}
 	}
 
+    this->set_templates_current_number(-1);
+    this->set_templates_selected_numbers(QList<int>());
+
 	do_event_filter();
 }
 
@@ -1376,18 +1379,24 @@ void MVOverview2WidgetPrivate::update_widget(QWidget *W)
         MVFiringRateView *WW=(MVFiringRateView *)W;
         QList<int> ks=string_list_to_int_list(WW->property("ks").toStringList());
         QSet<int> ks_set=ks.toSet();
-        qDebug() << ks_set;
 
         QList<double> times,amplitudes;
+        QList<int> labels;
         for (int i=0; i<m_firings.N2(); i++) {
             int label=(int)m_firings.value(2,i);
             if (ks_set.contains(label)) {
                 times << m_firings.value(1,i);
                 amplitudes << m_firings.value(3,i);
+                labels << label;
             }
         }
-        qDebug() << times.count() << amplitudes.count();
-        WW->setTimesAmplitudes(times,amplitudes);
+        Mda firings2; firings2.allocate(4,times.count());
+        for (int i=0; i<times.count(); i++) {
+            firings2.setValue(times[i],1,i);
+            firings2.setValue(labels[i],2,i);
+            firings2.setValue(amplitudes[i],3,i);
+        }
+        WW->setFirings(firings2);
         WW->setSamplingFreq(m_sampling_frequency);
         WW->setEpochs(m_epochs);
     }
