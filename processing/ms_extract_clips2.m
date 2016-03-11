@@ -28,6 +28,7 @@ function [X tcens]=ms_extract_clips2(Y,times,T,beta,betaonesnap)
 %    beta - (optional) integer upsampling factor (1 assumed if absent)
 %    betaonesnap - (optional) integer upsampling factor used internally when
 %                 beta=1 to do faster interpolation to shifted grid (default inf)
+%                 A sensible value is 10.
 %
 % Outputs:
 %    X - Mx(beta*T)xNC array of extracted clips
@@ -245,8 +246,9 @@ for betaonesnap = [inf 10]
   title('\beta = 1: should match true func and be centered'); drawnow
 end
 
-% timing test for real-valued times at beta=1...
-N=1e6; Y = randn(10,N); tj = rand(1,3e4)*N; T = 50;
-tic; X = ms_extract_clips2(Y,tj,T,1,inf); toc
-tic; X = ms_extract_clips2(Y,tj,T,1,10); toc   % about 5x faster
+% timing test for integer and real-valued times at beta=1...
+N=1e6; Y = randn(10,N); tj = rand(1,5e4)*N; T = 50;
+tic; X = ms_extract_clips2(Y,round(tj),T); toc   % int (7x faster than fast real)
+tic; X = ms_extract_clips2(Y,tj,T,1,inf); toc   % slow real
+tic; X = ms_extract_clips2(Y,tj,T,1,10); toc   % fast real, about 5x faster
 

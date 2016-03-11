@@ -46,7 +46,7 @@ Nf=numel(times.tfals); Nm=numel(times.tmiss); Nw=numel(times.twrng);
 Ntot = Nf+Nm+Nw;
 fprintf('\t%d mistakes (%d missed, %d false pos, %d wrong label)\n',Ntot,Nm,Nf,Nw)
 
-[P acc] = labels_similarity(P);
+[P acc] = labels_similarity(P,[],opts);  % so opts.verb passed along
 
 K = min(size(P))-1;  % smaller of K1 and K2
 Pod = P; for i=1:K, Pod(i,i) = Pod(i,i) - P(i,i); end  % off-diag part of P
