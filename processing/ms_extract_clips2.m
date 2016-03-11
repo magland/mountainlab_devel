@@ -53,6 +53,7 @@ if nargin<4 || isempty(beta), beta=1; end          % default
 if nargin<5, betaonesnap=inf; end
 integertimes = (sum(times==round(times))==C);   % all times are integers
 kerpars.Tf = 5;       % half-width of kernel support
+
 if beta==1 && integertimes
   X = extract_int_clips(Y,times,T);   % simple, done
   tcens = times;
@@ -66,26 +67,28 @@ else
     t = Tcenw + ((1:beta*T)-Tcenup)/beta;  % out time grid rel to wider clip
     X = upsample(Z,t,kerpars);
   else           % beta=1 but times non-integer
+    tf = times - tcens;      
     if isinf(betaonesnap)   % individual exact time-shifts (slow)
-      tf = times - tcens;      
       X = zeros(M,T,C);
       for c=1:C             % slowness
         X(:,:,c) = upsample(Z(:,:,c),tf(c)+tpad+(1:T),kerpars);
       end
       tcens = times;
-    else
-      
-      % *** to do
+    else                 % extract to internal upsampled grid then pull out
       beta = betaonesnap;
-      % ****
-      it = round(beta*ft);              % # upsamp t-pt offsets for all clips
-    
-    t = Tcenw + (it+(1:beta*T)-1-Tcenup)/beta;  % out time grid rel to wider clip
-
-    % tweak tcens by < +-beta/2
+      Tcenup = floor((beta*T+1)/2);         % center in upsampled time coords
+      maxjit = floor(beta/2);               % maximum jitter in 1/beta units
+      t = ((tpad+1)*beta-maxjit:(tpad+T)*beta+maxjit)/beta;
+      Z = upsample(Z,t,kerpars);
+      ti = round(beta*tf);                  % # upsamp t-pt offsets for all clips
+      ti = max(-maxjit,min(maxjit,ti));     % in case rounding different
+      inds = 1+maxjit+(0:T-1)*beta;         % indices in the list t if no jitter
+      for c=1:C
+        X(:,:,c) = Z(:,ti(c)+inds,c);
+      end
+      tcens = tcens + ti/beta;              % the actual grid centers used
     end
-  end
-  
+  end  
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -226,13 +229,21 @@ title('\beta > 1: should match true func but only centered to within +-0.5')
 % beta=1 but off-grid resampling ...
 N = 1e3;
 t = 1:N; % signal time grid
-t0 = 171.3; w0 = 2.0; f = @(t) exp(-.5*((t-t0)/w0).^2);  % Gaussian center, width
+t0 = 171.35; w0 = 2.0; f = @(t) exp(-.5*((t-t0)/w0).^2); % Gaussian center, width
 Y = f(t);
 T = 15; tcen = floor((T+1)/2);
-[X tcens] = ms_extract_clips2(Y,t0,T,1);
-t = tcens + (1:T)-tcen;      % output time grid in orig samp units
-figure; plot(1:N,Y,'.','markersize',20); hold on; plot(t,[f(t);X],'.-');
-plot(t0*[1 1],[0 1],'r-');
-legend('Y data pts','true f','upsampled X','center t_0');
-axis([min(t),max(t),-.5,1.5]);
-title('\beta = 1: should match true func and be centered');
+for betaonesnap = [inf 10]
+  [X tcens] = ms_extract_clips2(Y,t0,T,1,betaonesnap);
+  t = tcens + (1:T)-tcen;      % output time grid in orig samp units
+  figure; plot(1:N,Y,'.','markersize',20); hold on; plot(t,[f(t);X],'.-');
+  plot(t0*[1 1],[0 1],'r-');
+  legend('Y data pts','true f','upsampled X','center t_0');
+  axis([min(t),max(t),-.5,1.5]);
+  title('\beta = 1: should match true func and be centered'); drawnow
+end
+
+% timing test for real-valued times at beta=1...
+N=1e6; Y = randn(10,N); tj = rand(1,3e4)*N; T = 50;
+tic; X = ms_extract_clips2(Y,tj,T,1,inf); toc
+tic; X = ms_extract_clips2(Y,tj,T,1,10); toc   % about 5x faster
+
