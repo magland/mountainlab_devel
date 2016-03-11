@@ -41,7 +41,7 @@ truefiringsfile = [head '_truefirings.mda'];
 trueWfile = [head '_trueW.mda'];
 
 [W samplerateW] = loaddemowaveforms;         % should switch different W's
-writemda(W,trueWfile);           % in case the validator needs them
+writemda32(W,trueWfile);           % in case the validator needs them
 samplerate = 2e4;           % in samples/sec
 o_synth.upsamplefac = round(samplerateW/samplerate); % allows upsampled W
 K = size(W,3);
@@ -54,7 +54,7 @@ o_firings.amplsig = 0.0;  % 0.2       % amplitude variation
 [times labels ampls] = randomfirings(N,rates,o_firings);
 peakchans = 0*times;
 % write out ground-truth firings in correct format... since validator needs
-writemda([peakchans;times;labels;ampls],truefiringsfile);
+writemda64([peakchans;times;labels;ampls],truefiringsfile);
 tic; Y = ms_synthesize(W,N,times,labels,ampls,o_synth); toc
 eta = 20;               % noise std deviation per sample per channel
 Y = Y + eta * randn(size(Y));

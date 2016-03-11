@@ -1,6 +1,6 @@
 function [X tcens]=ms_extract_clips2(Y,times,T,beta,betaonesnap)
 %MS_EXTRACT_CLIPS2 - Extract clips from raw/preprocessed data array centered
-%                   at a collection of event times, possibly upsampling.
+%                    at a collection of event times, possibly upsampling/shifting
 %
 %Consider using mscmd_extract_clips
 %
@@ -16,8 +16,10 @@ function [X tcens]=ms_extract_clips2(Y,times,T,beta,betaonesnap)
 %   then +-0.5/betaonesnap.
 %
 % If beta=2,3,... then times are rounded to their nearest integer.
-%  Output grid has beta.T timepoints in it, and the 
+%  Output grid has beta.T timepoints in it, and the "center" point has the above
+%  definition and matches the nearest integer time.
 %
+% Windowed-sinc interpolation is used, although FFT could be faster in the end.
 %
 % Inputs:
 %    Y - MxN array of raw or pre-processed data (M channels, N timepoints)
@@ -38,13 +40,14 @@ function [X tcens]=ms_extract_clips2(Y,times,T,beta,betaonesnap)
 %    FF=ms_event_features(clips,3);
 %    labels=isosplit2(FF)
 %    ms_view_clusters(FF,labels);
+% See also the self-tests at bottom of m-file.
 %
 % Other m-files required: none
 %
 % See also: ms_extract_clips, mscmd_extract_clips, ms_event_features, spikespy
 
 % Author: Jeremy Magland. started Jan 2016.
-% Upsampling Alex Barnett 3/10/16
+% Upsampling Alex Barnett 3/10/16-3/11/16
 
 if nargin==0, test_ms_extract_clips2; return; end
 [M,N]=size(Y);

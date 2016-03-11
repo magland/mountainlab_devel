@@ -44,3 +44,4 @@ o.detect_threshold = 80;
 o.detect_interval = 20;
 o.clip_size = 50;
 test_detect_accuracy(@ms_detect,o)
+test_detect_accuracy(@ms_detect3,o)
