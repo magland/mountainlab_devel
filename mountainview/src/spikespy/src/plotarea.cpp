@@ -206,7 +206,7 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
 		if (SS.plot_pairs) line_width++; //this is a major hack!
 		P->setPen(QPen(QBrush(SS.color),line_width));
 		QPainterPath path;
-		double last_val=0;
+		//double last_val=0;
 		if (!SS.plot_pairs) {
 			for (int i=0; i<SS.xvals.N2(); i++) {
 				double x0 = SS.xvals.value(0,i);
@@ -226,7 +226,7 @@ void PlotAreaPrivate::do_refresh(QPainter *P) {
 						num_line_segments++;
 					}
 				}
-				last_val=val;
+				//last_val=val;
 			}
 		}
 		else {

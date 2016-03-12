@@ -45,7 +45,7 @@ CVComboWidget::CVComboWidget(QWidget *parent) : QWidget(parent)
 	splitter->addWidget(d->m_ts_widget);
 	splitter->setStretchFactor(0,1);
 	splitter->setStretchFactor(1,1);
-	d->m_ts_widget->setMinimumHeight(150);
+	d->m_ts_widget->setMinimumHeight(30);
 
 	connect(d->m_cv_widget,SIGNAL(selectedDataPointsChanged()),this,SLOT(slot_update_selected_clips()));
 }

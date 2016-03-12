@@ -35,7 +35,7 @@ void MVOverview2WidgetControlPanelPrivate::add_group_label(QGridLayout *G,QStrin
 	int r=G->rowCount();
 	QLabel *X=new QLabel(label);
 	QFont f=X->font();
-	f.setPointSize(16);
+	f.setPointSize(10);
 	X->setFont(f);
     G->addWidget(X,r,0,1,2);
 }
@@ -113,6 +113,7 @@ QGroupBox *MVOverview2WidgetControlPanelPrivate::add_radio_button_group(QGridLay
 QPushButton *MVOverview2WidgetControlPanelPrivate::add_button(QGridLayout *G,QString name,QString label) {
 	int r=G->rowCount();
 	QPushButton *X=new QPushButton(label);
+	X->setFixedHeight(20);
 	G->addWidget(X,r,1);
     X->setProperty("name",name);
 	q->connect(X,SIGNAL(clicked(bool)),q,SLOT(slot_button_clicked()));
@@ -134,6 +135,10 @@ MVOverview2WidgetControlPanel::MVOverview2WidgetControlPanel(QWidget *parent) : 
 {
 	d=new MVOverview2WidgetControlPanelPrivate;
 	d->q=this;
+
+	QFont fnt=this->font();
+	fnt.setPixelSize(9);
+	this->setFont(fnt);
 
 	QVBoxLayout *layout=new QVBoxLayout;
 

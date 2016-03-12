@@ -5,6 +5,7 @@
 #include <math.h>
 #include <QHBoxLayout>
 #include <QTimer>
+#include <QMouseEvent>
 #include "sstimeseriesview.h"
 #include "mvutils.h"
 #include "msutils.h"
@@ -14,7 +15,9 @@ public:
     MVFiringRateView *q;
 
     //set by user
-    Mda m_firings;
+	QList<double> m_times;
+	QList<int> m_labels;
+	QList<double> m_amplitudes;
     double m_sampling_freq;
     QList<Epoch> m_epochs;
 
@@ -23,12 +26,20 @@ public:
     double m_min_amplitude,m_max_amplitude;
     bool m_update_scheduled;
     QImage m_image;
+	QRectF m_target_rect;
+	Mda m_event_index_grid;
+	int m_current_event_index;
 
     //settings
     double m_hmargin,m_vmargin;
 
     QPointF coord2imagepix(const QPointF &p,int W,int H);
+	QPointF windowpix2coord(const QPointF &p);
+	QPointF imagepix2coord(const QPointF &p,int W,int H);
     void schedule_update();
+	int find_closest_event_index(const QPointF &pt);
+	int find_closest_event_index(int i1,int i2);
+	void set_current_event_index(int ind);
 };
 
 MVFiringRateView::MVFiringRateView()
@@ -40,6 +51,7 @@ MVFiringRateView::MVFiringRateView()
     d->m_min_amplitude=0;
     d->m_max_amplitude=0;
     d->m_update_scheduled=false;
+	d->m_current_event_index=-1;
 
     d->m_hmargin=25;
     d->m_vmargin=25;
@@ -52,12 +64,12 @@ MVFiringRateView::~MVFiringRateView()
 
 void MVFiringRateView::setFirings(const Mda &firings)
 {
-    d->m_firings=firings;
-}
-
-void MVFiringRateView::setFirings(const Mda &firings)
-{
-    d->m_firings=firings;
+	d->m_times.clear(); d->m_labels.clear(); d->m_amplitudes.clear();
+	for (int i=0; i<firings.N2(); i++) {
+		d->m_times << firings.value(1,i);
+		d->m_labels << (int)firings.value(2,i);
+		d->m_amplitudes << firings.value(3,i);
+	}
 
     d->m_max_timepoint=compute_max(d->m_times);
     d->m_min_amplitude=compute_min(d->m_amplitudes);
@@ -143,7 +155,10 @@ void MVFiringRateView::slot_update()
     int W=500;
     int H=(int)(this->height()*1.0/this->width()*W);
 
-    Mda grid; grid.allocate(W,H);
+	d->m_event_index_grid.allocate(W,H);
+	double *ptr_eig=d->m_event_index_grid.dataPtr();
+	for (int i=0; i<W*H; i++) ptr_eig[i]=-1;
+	Mda grid; grid.allocate(W,H);
     double *ptr=grid.dataPtr();
     for (int i=0; i<d->m_times.count(); i++) {
         double t0=d->m_times[i];
@@ -153,6 +168,7 @@ void MVFiringRateView::slot_update()
         int y=(int)pt.y();
         if ((x>=0)&&(x<W)&&(y>=0)&&(y<H)) {
             ptr[x+W*y]++;
+			ptr_eig[x+W*y]=i;
         }
     }
 
@@ -214,6 +230,7 @@ void MVFiringRateView::paintEvent(QPaintEvent *evt)
     painter.fillRect(0,0,width(),height(),QColor(160,160,160));
 
     QRectF target=QRectF(d->m_hmargin,d->m_vmargin,width()-2*d->m_hmargin,height()-2*d->m_vmargin);
+	d->m_target_rect=target;
 
     QFont font=painter.font(); font.setPixelSize(24);
     painter.setFont(font);
@@ -235,7 +252,14 @@ void MVFiringRateView::paintEvent(QPaintEvent *evt)
         }
     }
 
-    painter.drawImage(target,d->m_image.scaled(target.width(),target.height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation));
+	painter.drawImage(target,d->m_image.scaled(target.width(),target.height(),Qt::IgnoreAspectRatio,Qt::SmoothTransformation));
+}
+
+void MVFiringRateView::mouseReleaseEvent(QMouseEvent *evt)
+{
+	QPointF pt=evt->pos();
+	int index=d->find_closest_event_index(pt);
+	qDebug() << index;
 }
 
 
@@ -248,12 +272,62 @@ QPointF MVFiringRateViewPrivate::coord2imagepix(const QPointF &p,int W,int H)
     double x0=pctx*W;
     double y0=(1-pcty)*H;
 
-    return QPointF(x0,y0);
+	return QPointF(x0,y0);
+}
+
+QPointF MVFiringRateViewPrivate::windowpix2coord(const QPointF &p)
+{
+	QPointF q=p-m_target_rect.topLeft();
+	return imagepix2coord(q,m_target_rect.width(),m_target_rect.height());
+}
+
+QPointF MVFiringRateViewPrivate::imagepix2coord(const QPointF &p, int W, int H)
+{
+	double pctx=p.x()/W;
+	double pcty=1-p.y()/H;
+	return QPointF(pctx*m_max_timepoint,pcty*(m_max_amplitude-m_min_amplitude)+m_min_amplitude);
 }
 
 void MVFiringRateViewPrivate::schedule_update()
 {
     if (m_update_scheduled) return;
     m_update_scheduled=true;
-    QTimer::singleShot(500,q,SLOT(slot_update()));
+	QTimer::singleShot(500,q,SLOT(slot_update()));
+}
+
+int MVFiringRateViewPrivate::find_closest_event_index(const QPointF &pt)
+{
+	QPointF coord=windowpix2coord(pt);
+	QPointF qq=coord2imagepix(coord,m_event_index_grid.N1(),m_event_index_grid.N2());
+	return find_closest_event_index((int)(qq.x()),(int)(qq.y()));
+}
+
+int MVFiringRateViewPrivate::find_closest_event_index(int i1, int i2)
+{
+	int best_ind=-1;
+	int best_x=-1,best_y=-1;
+	double best_dist=0;
+	for (int y=0; y<m_event_index_grid.N2(); y++) {
+		for (int x=0; x<m_event_index_grid.N1(); x++) {
+			int val=(int)m_event_index_grid.value(x,y);
+			if (val>=0) {
+				double dist=sqrt((x-i1)*(x-i1)+(y-i2)*(y-i2));
+				if ((best_ind<0)||(dist<best_dist)) {
+					best_dist=dist;
+					best_ind=val;
+					best_x=x; best_y=y;
+				}
+			}
+		}
+	}
+	qDebug() << i1 << i2 << best_x << best_y;
+	return best_ind;
+}
+
+void MVFiringRateViewPrivate::set_current_event_index(int ind)
+{
+	if (ind==m_current_event_index) return;
+	m_current_event_index=ind;
+	//emit!!!!!
+	q->update();
 }

@@ -195,10 +195,10 @@ int main(int argc, char *argv[]) {
 		W->show();
 		W->setSamplingFrequency(sampling_freq);
 		W->move(QApplication::desktop()->screen()->rect().topLeft()+QPoint(200,200));
-		int W0=1800,H0=1200;
+		int W0=1300,H0=400;
 		QRect geom=QApplication::desktop()->geometry();
 		if ((geom.width()-100<W0)||(geom.height()-100<H0)) {
-			W->showMaximized();
+			//W->showMaximized();
 		}
 		else {
 			W->resize(W0,H0);

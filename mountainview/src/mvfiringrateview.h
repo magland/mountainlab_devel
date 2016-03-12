@@ -21,7 +21,7 @@ signals:
 
 protected:
     void paintEvent(QPaintEvent *evt);
-    void mousePressEvent();
+	void mouseReleaseEvent(QMouseEvent *evt);
 
 private slots:
     void slot_update();
