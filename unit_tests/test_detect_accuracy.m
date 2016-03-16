@@ -57,5 +57,6 @@ function demo_test_detect_accuracy
 o.detect_threshold = 90;
 o.detect_interval = 5;
 o.clip_size = 30;          % only affects ends of timeseries
-test_detect_accuracy(@ms_detect,o); title('old detect'); % ,1) if want regen data
+regendata = 1;
+test_detect_accuracy(@ms_detect,o,regendata); title('old detect');
 test_detect_accuracy(@ms_detect3,o); title('new detect3');

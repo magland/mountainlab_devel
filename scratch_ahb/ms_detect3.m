@@ -18,7 +18,7 @@ function times=ms_detect3(X,opts)
 %                     later extract a clip of size clip_size.
 %    opts.meth - (optional) string giving method for sub-sample alignment:
 %                'x' - plane upsampled signal peak
-%                'p' - peak from projection to PCA space
+%                'p' - peak from projection to PCA space (default)
 %    opts.beta - (optional, integer) sub-sampling factor for real-valued time
 %                estimation.
 %    opts.Tsub - clip size used for sub-sample time estimation
@@ -42,15 +42,15 @@ function times=ms_detect3(X,opts)
 %
 % See also: mscmd_detect, ms_extract_clips, spikespy, test_detect_accuracy
 
-% based on ms_detect, Jeremy Magland Jan 2016. Alex Barnett 3/11/16
+% based on ms_detect, Jeremy Magland Jan 2016. Alex Barnett 3/11/16-3/16/16
 
 if nargin==0, test_ms_detect3; return; end
 
 detect_interval=opts.detect_interval;
 detect_threshold=opts.detect_threshold;
 T = opts.clip_size;
-if isfield(opts,'beta'), beta = opts.beta; else, beta = 5; end
-if ~isfield(opts,'meth'), opts.meth = 'x'; end                  % default
+if isfield(opts,'beta'), beta = opts.beta; else, beta = 10; end
+if ~isfield(opts,'meth'), opts.meth = 'p'; end                  % default
 
 absX=abs(X);
 absX=max(absX,[],1); %max over channels (but best to put in one channel at a time)
@@ -78,7 +78,8 @@ times=find(use_it==1);
 
 % the above code was integer t, from ms_detect. Now do sub-sample adjustments...
 if beta>1
-  maxjit = beta;  % maximum peak move allowed, in upsampled timepoints
+  NC = numel(times);
+  maxjit = beta;  % maximum peak move allowed, in upsampled timepoints, small
   % (otherwise it can jump to another peak entirely)
   if ~isfield(opts,'Tsub')                    % default
     if strcmp(opts.meth,'x'), opts.Tsub = 5;  % v small clips for interp
@@ -86,20 +87,23 @@ if beta>1
   end
   Tcen = floor((beta*opts.Tsub+1)/2);
   Z = ms_extract_clips2(X,times,opts.Tsub,beta); %figure; plot(squeeze(Z));
-  if strcmp(opts.meth,'x')
-    for i=1:numel(times)
-      if M>1
-        [~,peakchan] = max(max(abs(Z(:,:,i)),[],2),[],1); % or not upsampled?
-      else, peakchan = 1;
-      end
-      z = Z(peakchan,:,i);               % signal only on the peak channel
-      [~,ind] = max(abs(z));
-      jit = max(-maxjit,min(maxjit, ind-Tcen));   % limit |jitter| to maxjit
-      times(i) = times(i) + jit/beta;   % jitter by # subsamples
+  if strcmp(opts.meth,'p')      % PCA on upsampled clips, smoothing of that
+    if ~isfield(opts,'num_features'), opts.num_features = 10; end
+    Tu = size(Z,2);
+    [FF, subspace] = ms_event_features(Z,opts.num_features);  % PCA
+    % now make Z a smoothed version by summing feature vectors * their coeffs...
+    Z = reshape(reshape(subspace,[M*Tu opts.num_features])*FF, [M Tu NC]);
+    maxjit = 2.0*beta;           % allow larger jitter adjustment (make param)
+  end
+  for i=1:NC    % now find location of max abs in the subsampled clips...
+    if M>1
+      [~,peakchan] = max(max(abs(Z(:,:,i)),[],2),[],1); % or not upsampled?
+    else, peakchan = 1;
     end
-  else
-    % *** do PCA
-    error('meth not implemented');
+    z = Z(peakchan,:,i);               % signal only on the peak channel
+    [~,ind] = max(abs(z));
+    jit = max(-maxjit,min(maxjit, ind-Tcen));   % limit |jitter| to maxjit
+    times(i) = times(i) + jit/beta;   % jitter by # subsamples
   end
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%
