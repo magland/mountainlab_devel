@@ -1,7 +1,7 @@
-function fk = accuracy_anysorter_groundtrutheddata(sortfunc,datasetname,outdir,o_acc,o_sorter)
+function fk = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,outdir,o_acc,o_sorter)
 % ACCURACY_ANYSORTER_GROUNDTRUTHEDDATA  test accuracy of a sorter on synth data.
 %
-% fk = accuracy_anysorter_groundtrutheddata(sortfunc,datasetname,outdir,o_acc,
+% fk = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,outdir,o_acc,
 %      o_sorter)
 % measures any sorter's accuracy vs known firing times on synthetic demo data.
 % Also pops up a bunch of windows showing accuracy.
@@ -9,14 +9,20 @@ function fk = accuracy_anysorter_groundtrutheddata(sortfunc,datasetname,outdir,o
 % Inputs:
 %   sortfunc - function handle to a sorter with the interface
 %                [firingsfile,prefile] = sorter(rawfile,outdir);
-%
-%  datasetname - text string passed to get_default_dataset
+%  dataset - struct with fields giving names of dataset with its ground truth:
+%            dataset.raw - filename for raw data MDA
+%            dataset.truefirings - filename for true firings MDA
+%            dataset.truewaveforms - filename for true waveforms MDA
+%            dataset.samplerate - samplerate in Hz for raw data
+%            OR, if dataset is a text string, is passed to get_default_dataset
+%            and chooses the name of generated or stored ground-truthed data.
 %  outputdir - working directory where MDA files will go
 %  o_acc - accuracy measuring options:
-%               o_acc.samplefreq - sample rate in Hz
 %               o_acc.T          - clip size
 %  o_sorter (optional) - passed to last arg of sorter, as in:
-%                [firingsfile,prefile] = sorter(rawfile,outdir,opts);
+%                [firingsfile,prefile] = sorter(rawfile,outdir,opts)
+%                Note: the sorter opts will also be passed samplerate
+%                      as given by the dataset.
 % Outputs:
 %  fk - (1xK) accuracy metrics on the neuron types labeled by ground truth labels
 %
@@ -25,15 +31,25 @@ function fk = accuracy_anysorter_groundtrutheddata(sortfunc,datasetname,outdir,o
 % Barnett 3/3/16 based on accuracy_sort_demotimeseries.m
 % 3/16/16 Barnett changed to use non-integer firing time resampling
 % todo: * make various switches below into options.
+% 3/17/16 - struct input for dataset
 if nargin==0, test_accuracy_anysorter_groundtrutheddata; return; end
-if nargin<2 | isempty(datasetname), datasetname = 'EJ K7'; end
+if nargin<2 | isempty(dataset), dataset = 'EJ K7'; end
 if nargin<3, o_acc=[]; end
-if ~isfield(o_acc,'samplefreq'), o_acc.samplefreq = 2e4; end
 if ~isfield(o_acc,'T'), o_acc.T = 50; end
 if ~isfield(o_acc,'max_matching_offset'), o_acc.max_matching_offset = 10; end  % in samples; 0.5 ms
 if nargin<4, o_sorter=[]; end
 
-[Yfile truefiringsfile trueWfile] = get_default_dataset(datasetname);
+if isstruct(dataset)   % pull fields
+  Yfile = dataset.raw;
+  truefiringsfile = dataset.truefirings;
+  trueWfile = dataset.truewaveforms;
+  samplerate = dataset.samplerate;
+else
+  [Yfile truefiringsfile trueWfile samplerate] = get_default_dataset(dataset);
+end
+if ~isfield(o_sorter,'samplerate'), o_sorter.samplerate = samplerate;
+  o_sorter.samplefreq = samplerate;   % remove when that fieldname obsolete
+end
 if ~exist(outdir,'dir') mkdir(outdir); end
 
 % load & view the data and truth about it...
@@ -65,7 +81,7 @@ X = ms_event_features(clips,3);       % 3 features, just for viz
 
 if 0 %%%% View output
   mv.mode='overview2'; mv.raw=prefile; mv.firings=firingsfile;
-  mv.sampling_freq = o_acc.samplefreq;
+  mv.sampling_freq = samplefreq;
   ms_mountainview(mv);
 end
 
