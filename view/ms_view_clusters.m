@@ -17,6 +17,7 @@ function ms_view_clusters(features,labels)
 % Author: Jeremy Magland
 % Jan 2015; Last revision: 26-Feb-2016. AHB broke legnum/num2cellstr out,
 % replaced plot3 w/ scatter3, does correct z-buffering.
+% fixed bug if missing label, ahb 3/17/16
 
 if nargin<1, test_ms_view_clusters; return; end;
 ptsiz = 20;    % for 3d points
@@ -38,6 +39,7 @@ for j=1:size(CC,1)
 	colors{j}=CC(j,:);
 end;
 
+labellist = [];
 if M==2
     for k=0:K
         inds=find(labels==k);
@@ -47,10 +49,11 @@ if M==2
             else
                 plot(features(1,inds),features(2,inds),'.','Color',[0.5,0.5,0.5]); hold on;
             end;
+            labellist = [labellist k];
         end;
     end;
     hold off;
-    legnum(1:K);
+    legnum(labellist);
     axis equal; xlabel('z_1'); ylabel('z_2');
   
 elseif M==3
@@ -62,13 +65,16 @@ elseif M==3
       else
         scatter3(features(1,inds),features(2,inds),features(3,inds),ptsiz*ones(size(inds)),0.5*ones(numel(inds),3),'+'); hold on;
       end;
+      labellist = [labellist k];
     end;
   end
   hold off;
   grid off
   % call legend with 2 or more output arguments to fix bug in R2015b
   % see: http://www.mathworks.com/support/bugreports/1283854
-  [~,~] = legend(findobj(gca,'type','Scatter'),num2cellstr(1:K));
+  %[~,~] = legend(findobj(gca,'type','Scatter'),num2cellstr(labellist));
+  % is wrong, since findobj seems to randomize the order!
+  [~,~] = legend(num2cellstr(labellist));  % labels in correct plotted order
   xlabel('z_1'); ylabel('z_2'); zlabel('z_3');
   axis equal vis3d;       % for good aspect ratio and rotation
 else
@@ -80,7 +86,7 @@ end
 
 function test_ms_view_clusters
 X=cat(2,randn(2,200),3+randn(2,200));
-labels=cat(2,ones(1,200),ones(1,200)*2);
+labels=cat(2,ones(1,200),ones(1,200)*3); % note skips label 2 (only 1,3 there)
 figure;
 ms_view_clusters(X,labels);
 end

@@ -54,9 +54,9 @@ o.verb = 0;
 
 
 function demo_test_detect_accuracy
-o.detect_threshold = 90;
+o.detect_threshold = 90;   % absolute (uV) units, for EJ data
 o.detect_interval = 5;
 o.clip_size = 30;          % only affects ends of timeseries
-regendata = 1;
+regendata = 1;             % toggle this as you please
 test_detect_accuracy(@ms_detect,o,regendata); title('old detect');
 test_detect_accuracy(@ms_detect3,o); title('new detect3');

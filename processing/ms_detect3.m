@@ -11,7 +11,7 @@ function times=ms_detect3(X,opts)
 %                           two detected events
 %    opts.detect_threshold - detect events where the absolute value of the
 %                            signal (on some channel) exceeds this
-%                            threshold.
+%                            threshold. (Note: not in std-dev units.)
 %    opts.clip_size - this just avoids the very beginning and end of the
 %                     timeseries data, with an interval clip_size/2.
 %                     Makes sure we allow enough space to
@@ -88,7 +88,7 @@ if beta>1
   Tcen = floor((beta*opts.Tsub+1)/2);
   Z = ms_extract_clips2(X,times,opts.Tsub,beta); %figure; plot(squeeze(Z));
   if strcmp(opts.meth,'p')      % PCA on upsampled clips, smoothing of that
-    if ~isfield(opts,'num_features'), opts.num_features = 10; end
+    if ~isfield(opts,'num_features'), opts.num_features = 15; end % beats 10
     Tu = size(Z,2);
     [FF, subspace] = ms_event_features(Z,opts.num_features);  % PCA
     % now make Z a smoothed version by summing feature vectors * their coeffs...
