@@ -23,7 +23,7 @@ function [firingsfile,prefile]=simplesorter(rawfile,output_dir,o)
 if nargin==0, test_simplesorter; return; end
 
 def_sort_opts.clip_size=50;          % all opts defaults
-def_sort_opts.samplefreq=30000;
+def_sort_opts.samplerate=30000;
 def_sort_opts.freq_min=300;
 def_sort_opts.freq_max=10000; %inf;
 def_sort_opts.detect_threshold=100;   % in absolute units
@@ -34,7 +34,7 @@ def_sort_opts.num_fea = 10;           % # features
 if nargin<3 o=struct; end; o=ms_set_default_opts(o,def_sort_opts); % setup opts
 
 disp('reading...'); Y = readmda(rawfile);
-o_filter.samplefreq=o.samplefreq;
+o_filter.samplerate=o.samplerate;
 o_filter.freq_min=o.freq_min;
 o_filter.freq_max=o.freq_max;
 disp('filtering...'); Yf = ms_filter(Y,o_filter);
