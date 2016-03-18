@@ -7,7 +7,7 @@ X = zeros(M,N); X(:,N/2) = 1;    % dummy data spike
 writemda(X,in);
 samplerate = 2e4;
 T = N/samplerate; df = 1/T; f=df*[0:N/2 -N/2+1:-1];
-ofilt.samplefreq = samplerate;
+ofilt.samplerate = samplerate;
 ofilt.freq_min=300;
 ofilt.freq_max=inf;
 

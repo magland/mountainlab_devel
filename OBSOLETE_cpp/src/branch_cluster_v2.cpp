@@ -212,7 +212,7 @@ QList<int> do_cluster_with_normalized_features(Mda &clips,const Branch_Cluster_V
     Mda FF; FF.allocate(nF,L);
     get_pca_features(M*T,L,nF,FF.dataPtr(),clips.dataPtr());
     normalize_features_v2(FF);
-    return isosplit2(FF);
+    return isosplit2(FF,1.5,30,true);
 }
 
 QList<int> do_cluster_without_normalized_features(Mda &clips,const Branch_Cluster_V2_Opts &opts) {
@@ -223,7 +223,7 @@ QList<int> do_cluster_without_normalized_features(Mda &clips,const Branch_Cluste
     Mda FF; FF.allocate(nF,L);
     get_pca_features(M*T,L,nF,FF.dataPtr(),clips.dataPtr());
     //normalize_features(FF);
-    return isosplit2(FF);
+    return isosplit2(FF,1.5,30,true);
 }
 
 QList<double> compute_dists_from_template(Mda &clips,Mda &template0) {
