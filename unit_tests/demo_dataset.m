@@ -27,6 +27,7 @@ if ~exist(d.outdir,'dir'), mkdir(d.outdir); end
 d.signal = [demodir,'/demotimeseries.mda'];
 d.truefirings = [demodir,'/demotruefirings.mda'];
 d.truewaveforms = [demodir,'/demotruewaveforms.mda'];
+d.name = 'demo data from EJ 2005-04-26 elec359 K=7';
 d.samplerate = 2e4;           % samples/sec to generate
 
 if nargin<1, forceregen=0; end

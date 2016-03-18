@@ -16,7 +16,7 @@ function [firings_path,pre_path]=ds001_sort(raw_path,output_path,sort_opts)
 % Other m-files required: isosplit2, mscmd_*
 
 % Author: Jeremy Magland
-% Mar 2016; Last revision: 1-Mar-2016
+% Mar 2016; Last revision: 1-Mar-2016. Barnett tweaked for ML 3/18/16
 
 def_sort_opts.clip_size=100;
 def_sort_opts.samplerate=30000;
