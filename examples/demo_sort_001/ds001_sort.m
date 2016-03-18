@@ -19,7 +19,7 @@ function [firings_path,pre_path]=ds001_sort(raw_path,output_path,sort_opts)
 % Mar 2016; Last revision: 1-Mar-2016
 
 def_sort_opts.clip_size=100;
-def_sort_opts.samplefreq=30000;
+def_sort_opts.samplerate=30000;
 def_sort_opts.freq_min=300;
 def_sort_opts.freq_max=6000;
 def_sort_opts.outlier_threshold=500;
@@ -38,7 +38,7 @@ sort_opts.noise_subclusters.clip_size=sort_opts.clip_size;
 
 path0=output_path;
 
-o_filter.samplefreq=sort_opts.samplefreq;
+o_filter.samplerate=sort_opts.samplerate;
 o_filter.freq_min=sort_opts.freq_min;
 o_filter.freq_max=sort_opts.freq_max;
 o_filter.outlier_threshold=sort_opts.outlier_threshold;
@@ -49,6 +49,8 @@ o_detect.individual_channels=1;
 o_detect.normalize=0;
 o_noise_subclusters.detectability_threshold=sort_opts.detectability_threshold;
 o_noise_subclusters.clip_size=sort_opts.clip_size;
+o_noise_subclusters.min_shell_size=sort_opts.min_shell_size;
+o_noise_subclusters.shell_increment=sort_opts.shell_increment;
 o_branch_cluster.clip_size=sort_opts.clip_size;
 o_branch_cluster.min_shell_size=sort_opts.min_shell_size;
 o_branch_cluster.shell_increment=sort_opts.shell_increment;
@@ -60,10 +62,10 @@ mscmd_whiten([path0,'/pre1.mda'],[path0,'/pre2.mda'],struct);
 mscmd_detect([path0,'/pre2.mda'],[path0,'/detect.mda'],o_detect);
 
 %%%% Clustering
-mscmd_branch_cluster_v1([path0,'/pre2.mda'],[path0,'/detect.mda'],sort_opts.adjacency_matrix,[path0,'/firings1.mda'],o_branch_cluster);
+mscmd_branch_cluster_v2([path0,'/pre2.mda'],[path0,'/detect.mda'],sort_opts.adjacency_matrix,[path0,'/firings1.mda'],o_branch_cluster);
 
 %%%% Pruning
-mscmd_remove_duplicates([path0,'/firings1.mda'],[path0,'/firings2.mda']);
+mscmd_remove_duplicate_clusters([path0,'/firings1.mda'],[path0,'/firings2.mda']);
 mscmd_remove_noise_subclusters([path0,'/pre2.mda'],[path0,'/firings2.mda'],[path0,'/firings3.mda'],o_noise_subclusters);
 
 %%%% Copying

@@ -35,3 +35,7 @@ examples  directory contains these
 
 All commands ms_*.m do self-test when called without arguments
 test_filter: compares MATLAB and C filter pipelines
+
+= Validation = 
+
+ln -s your_external_dataset_dir ext_datasets
