@@ -29,7 +29,7 @@ Open MATLAB
 
 = Examples =
 
-sort_demo (in progress): sorts demo data derived from waveforms in unit_tests/demo_data/.   To use this, do `addpath scratch_ahb'  
+examples  directory contains these
 
 = Unit tests =
 

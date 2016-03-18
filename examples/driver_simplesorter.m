@@ -1,17 +1,14 @@
 % Show how to call the simple sorter on the demo data.
-% Run from the mountainsort top directory.
 % Barnett 3/18/16
 
 clear
-forceregen = 0;
-[Yfile,~,~,o.samplerate] = get_default_dataset([],forceregen); % Yfile: EC signal
-output_dir = 'unit_tests/demo_data/output';
-if ~exist(output_dir,'dir'), mkdir(output_dir); end
+d = demo_dataset;   % get struct pointing to demo data files
 
-[firingsfile,prefile]=simplesorter(Yfile,output_dir,o);
+opts.samplerate = d.samplerate;
+[firingsfile,~] = simplesorter(d.signal,d.outdir,opts);
 
-% load and view the EC input with firings output...
-Y = readmda(Yfile);
+% load and view the EC input signal with firings output...
+Y = readmda(d.signal);
 firings = readmda(firingsfile); times=firings(2,:); labels=firings(3,:);
 spikespy({Y,times,labels,'simple sorter'});
 K = max(labels); pops = histc(labels,1:K); disp('populations n_k vs k:');

@@ -1,9 +1,9 @@
-function Y = ms_synthesize(W,N,times,labels,ampls,opts)
-% MS_SYNTHESIZE.  Make timeseries via linear addition of spikes forward model
+function Y = synthesize_timeseries(W,N,times,labels,ampls,opts)
+% SYNTHESIZE_TIMESERIES.  Make signal via linear spike addition forward model
 %
-% Y = ms_synthesize(W,T,times,labels,ampls,opts) outputs a synthetic time series
-% given waveforms and firing information; ie, it applies the forward model.
-% No noise is added.
+% Y = synthesize_timeseries(W,T,times,labels,ampls,opts) outputs a synthetic
+%  time series given waveforms and firing information; ie, it applies the
+%  forward model. No noise is added.
 %
 % Inputs:
 %  W - waveform (templates) array, M by T by K. (note: assumed not upsampled
@@ -23,7 +23,7 @@ function Y = ms_synthesize(W,N,times,labels,ampls,opts)
 % Barnett 2/19/16 based on validspike/synthesis/spikemodel.m; 2/25/16 upsampled.
 % todo: faster C executable acting on MDAs I/O.
 
-if nargin==0, test_ms_synthesize; return; end
+if nargin==0, test_synthesize_timeseries; return; end
 if nargin<5 || isempty(ampls), ampls = 1.0+0*times; end      % default ampl
 if nargin<6, opts = []; end
 if isfield(opts,'upsamplefac'), fac = opts.upsamplefac; else fac = 1; end
@@ -42,7 +42,7 @@ for j=1:L            % loop over spikes adding in each one
   Y(:,iput) = Y(:,iput) + ampls(j)*W(:,iget,labels(j));
 end
 
-function test_ms_synthesize
+function test_synthesize_timeseries
 for fac=[1 3]
   fprintf('upsamplefac = %d...\n',fac)
   % make simple variable-width Gaussian waveforms...
@@ -63,9 +63,9 @@ for fac=[1 3]
   times = rand(1,L)*(N-1)+1;        % real-valued times
   labels = randi(K,1,L);
   tic
-  Y = ms_synthesize(W,N,times,labels,[],struct('upsamplefac',fac));
+  Y = synthesize_timeseries(W,N,times,labels,[],struct('upsamplefac',fac));
   toc
-  nam = sprintf('test ms_synthesize fac=%d',fac);
+  nam = sprintf('test synthesize_timeseries fac=%d',fac);
   spikespy({Y,round(times),labels,nam});    % only takes integer times
   figure; tmax=1e3; plot(Y(:,1:tmax)','.-'); hold on; vline(times(times<tmax));
   title(nam); xlabel('time in output samples');

@@ -15,8 +15,12 @@ function [firingsfile,prefile]=simplesorter(rawfile,output_dir,o)
 %    prefile - path to the preprocessed raw data file
 %
 % Other m-files required: isosplit2, processing/ms_*
+%
+% To test: run without arguments (requires spikespy)
 
-% Barnett based on JFM ds001_sort.m interface 3/16/16
+% Barnett based on JFM ds001_sort.m interface 3/16/16. Self-test 3/18/16
+
+if nargin==0, test_simplesorter; return; end
 
 def_sort_opts.clip_size=50;          % all opts defaults
 def_sort_opts.samplefreq=30000;
@@ -53,3 +57,17 @@ K = max(labels);
 
 %pops = histc(labels,1:K);
 %fprintf('populations (sorter ordering):\n'); fprintf('\t%d',pops); fprintf('\n');
+
+%%%%%%%%
+function test_simplesorter  % taken from examples/driver_simplesorter
+
+d = demo_dataset;   % get struct pointing to demo data files
+opts.samplerate = d.samplerate;
+[firingsfile,~] = simplesorter(d.signal,d.outdir,opts);
+
+% load and view the EC input signal with firings output...
+Y = readmda(d.signal);
+firings = readmda(firingsfile); times=firings(2,:); labels=firings(3,:);
+spikespy({Y,times,labels,'simple sorter'});
+K = max(labels); pops = histc(labels,1:K); disp('populations n_k vs k:');
+fprintf('\t%d',1:K); fprintf('\n'); fprintf('\t%d',pops); fprintf('\n');
