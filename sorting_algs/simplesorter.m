@@ -29,11 +29,14 @@ def_sort_opts.freq_max=10000; %inf;
 def_sort_opts.detect_threshold=100;   % in absolute units
 def_sort_opts.detect_interval=10;
 def_sort_opts.detect_beta=10;
+def_sort_opts.detect_meth='p';
 def_sort_opts.num_fea = 10;           % # features
+def_sort_opts.verb = 0;                % verbosity
 
 if nargin<3 o=struct; end; o=ms_set_default_opts(o,def_sort_opts); % setup opts
 
 disp('reading...'); Y = readmda(rawfile);
+fprintf('\tM=%d, N=%d (%.3g seconds)\n',size(Y,1), size(Y,2), size(Y,2)/o.samplerate)
 o_filter.samplerate=o.samplerate;
 o_filter.freq_min=o.freq_min;
 o_filter.freq_max=o.freq_max;
@@ -46,10 +49,13 @@ o_detect.detect_threshold=o.detect_threshold;
 o_detect.detect_interval=o.detect_interval;
 o_detect.clip_size=o.clip_size;
 o_detect.beta=o.detect_beta;
+o_detect.meth = o.detect_meth;
 disp('detect3...'); times = ms_detect3(Y,o_detect);   % note subsample acc
+fprintf('\tfound %d events\n',numel(times))
 disp('extract clips2...'); clips = ms_extract_clips2(Yf,times,o.clip_size);
 disp('features...'); FF = ms_event_features(clips,o.num_fea);
 disp('cluster...'); [labels, info] = isosplit2(FF);
+if o.verb, figure; ms_view_clusters(FF,labels); end
 firingsfile = [output_dir,'/firings.mda'];
 disp('write firings...');
 writemda([0*times; times; labels],firingsfile);   % use dummy channel #s
