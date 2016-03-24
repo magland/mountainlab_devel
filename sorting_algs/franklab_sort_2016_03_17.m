@@ -1,5 +1,20 @@
-function [firings,pre] = franklab_sort_2016_03_17(signal,outdir,o)
-% std sorter interface to jfm's franklab sorter from March 17 2016.
+function [firings,info] = franklab_sort_2016_03_17(signal,outdir,o)
+% matlab driver for jfm's franklab sorter from March 17 2016.
+%
+% [firingsfile,info] = franklab_sort_2016_03_17(rawfile,output_dir,opts)
+%
+% Inputs:
+%    rawfile - path to .mda of MxN raw signal data
+%    output_dir - path to existing DIRECTORY where all output will be written
+%    sort_opts - (optional) sorting options, see def_sort_opts in this
+%                   script
+%
+% Outputs:
+%    firingsfile - path to the firings.mda output file
+%    info - struct with fields:
+%           prefile - path to the preprocessed raw data file
+%
+% todo: break out some hardwired opts
 
 mfile_path=fileparts(mfilename('fullpath'));
 path=outdir;
@@ -53,7 +68,7 @@ fprintf('Total time for sorting: %g sec\n',toc(tA));
 
 % output fnames...
 firings = [path,'/firings.mda'];
-pre = [path,'/pre2.mda'];
+info.prefile = [path,'/pre2.mda'];
 
 if 0
   mv.mode='overview2';

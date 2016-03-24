@@ -1,7 +1,7 @@
-function [firingsfile,prefile]=simplesorter(rawfile,output_dir,o)
+function [firingsfile,info]=simplesorter(rawfile,output_dir,o)
 % SIMPLERSORTER   Minimal spike sorting code in MATLAB w/ std MS MDA interface.
 %
-% [firingsfile,prefile]=simplesorter(rawfile,output_dir,opts)
+% [firingsfile,info] = simplesorter(rawfile,output_dir,opts)
 %  runs a simple sorter based on clustering, treating all channels together.
 %
 % Inputs:
@@ -12,7 +12,8 @@ function [firingsfile,prefile]=simplesorter(rawfile,output_dir,o)
 %
 % Outputs:
 %    firingsfile - path to the firings.mda output file
-%    prefile - path to the preprocessed raw data file
+%    info - struct with fields:
+%           prefile - path to the preprocessed raw data file
 %
 % Other m-files required: isosplit2, processing/ms_*
 %
@@ -25,14 +26,14 @@ if nargin==0, test_simplesorter; return; end
 
 def_sort_opts.clip_size=50;          % all opts defaults
 def_sort_opts.samplerate=30000;
-def_sort_opts.freq_min=300;
+def_sort_opts.freq_min=100;
 def_sort_opts.freq_max=10000; %inf;
 
-def_sort_opts.detect_threshold=100;   % in absolute units
+def_sort_opts.detect_threshold=3.5;   % in std dev units
 def_sort_opts.detect_interval=10;
 def_sort_opts.detect_beta=10;
 def_sort_opts.detect_meth='p';
-def_sort_opts.detect_polary='b';
+def_sort_opts.detect_polarity='b';
 
 def_sort_opts.num_fea = 10;           % # features
 def_sort_opts.verb = 0;                % verbosity
@@ -44,22 +45,22 @@ fprintf('\tM=%d, N=%d (%.3g seconds)\n',size(Y,1), size(Y,2), size(Y,2)/o.sample
 o_filter.samplerate=o.samplerate;
 o_filter.freq_min=o.freq_min;
 o_filter.freq_max=o.freq_max;
-disp('filtering...'); Yf = ms_filter(Y,o_filter);
-disp('whitening...'); Yf = ms_whiten(Yf);
-prefile = [output_dir,'/pre.mda'];
+disp('filtering...'); Yf = ms_bandpass_filter(Y,o_filter);
+disp('whitening...'); Yf = ms_whiten(Yf);   % normalizes
+info.prefile = [output_dir,'/pre.mda'];
 disp('write out filt+whitened...');
-writemda(Yf,prefile);          % tell output where flit+whitened data is
+writemda(Yf,info.prefile);          % tell output where flit+whitened data is
 o_detect.detect_threshold=o.detect_threshold;
 o_detect.detect_interval=o.detect_interval;
 o_detect.clip_size=o.clip_size;
 o_detect.beta=o.detect_beta;
 o_detect.meth = o.detect_meth;
 o_detect.polarity = o.detect_polarity;
-disp('detect3...'); times = ms_detect3(Y,o_detect);   % note subsample acc
+disp('detect3...'); times = ms_detect3(Yf,o_detect);   % note subsample acc
 fprintf('\tfound %d events\n',numel(times))
 disp('extract clips2...'); clips = ms_extract_clips2(Yf,times,o.clip_size);
 disp('features...'); FF = ms_event_features(clips,o.num_fea);
-disp('cluster...'); [labels, info] = isosplit2(FF);
+disp('cluster...'); [labels, info.isosplit2info] = isosplit2(FF);
 if o.verb, figure; ms_view_clusters(FF,labels); end
 firingsfile = [output_dir,'/firings.mda'];
 disp('write firings...');

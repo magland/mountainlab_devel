@@ -1,4 +1,4 @@
-function [firings_path,pre_path]=ds001_sort(raw_path,output_path,sort_opts)
+function [firings_path,info]=ds001_sort(raw_path,output_path,sort_opts)
 %DS001_SORT - Demo sorting script
 %
 % Syntax:  firings_path=ds001_sort(raw_path,output_path,sort_opts)
@@ -11,7 +11,8 @@ function [firings_path,pre_path]=ds001_sort(raw_path,output_path,sort_opts)
 %
 % Outputs:
 %    firings_path - path to the firings.mda output file
-%    pre_path - path to the preprocessed raw data file
+%    info - struct with fields:
+%           prefile - path to the preprocessed raw data file
 %
 % Other m-files required: isosplit2, mscmd_*
 
@@ -72,7 +73,7 @@ mscmd_remove_noise_subclusters([path0,'/pre2.mda'],[path0,'/firings2.mda'],[path
 mscmd_copy([path0,'/firings3.mda'],[path0,'/firings.mda']);
 
 firings_path=[path0,'/firings.mda'];
-pre_path=[path0,'/pre2.mda'];
+info.prefile=[path0,'/pre2.mda'];
 
 end
 

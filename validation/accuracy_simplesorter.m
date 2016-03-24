@@ -3,7 +3,8 @@
 
 forceregen = 1;
 d = demo_dataset(forceregen);
-o.detect_threshold = 90;   % sorter opts: good threshold for EJ demo dataset
+o.detect_threshold = 4.0;   % sorter opts: threshold in stddev EJ demo dataset
+o.detect_polarity='m';
 fk = accuracy_anysorter_groundtrutheddata(@simplesorter,d,[],o);
 fprintf('accuracy of simplesorter done; fk accuracies vs label k are... \n')
 fprintf('\t%d',1:numel(fk)), fprintf('\n'); fprintf('\t%.3f',fk), fprintf('\n');

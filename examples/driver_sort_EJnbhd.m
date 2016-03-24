@@ -17,10 +17,10 @@ opts.detect_polarity = 'm';     % needed for EJ to prevent t-shifted duplicates
 %opts.verb = 1;           % makes figure of clustering in PCA space (unordered)
 
 % go into this code to swap clustering algs...
-[firingsfile,prefile] = simplesorter(d.signal,d.outdir,opts);
+[firingsfile,info] = simplesorter(d.signal,d.outdir,opts);
 
 % useful to standardize the ordering somewhat...
-[clips,templates] = reorderbytemplatenorm(firingsfile,prefile,opts);
+[clips,templates] = reorderbytemplatenorm(firingsfile,info.prefile,opts);
 
 % load and view the EC input signal with firings output, and waveforms
 Y = readmda(d.signal);
@@ -33,10 +33,8 @@ clips = ms_extract_clips2(Y,times,opts.clip_size);  % raw clips & wf's from them
 W = ms_templates(clips,labels);
 figure; ms_view_templates(W,struct('showcenter',1)); title('sorted W from raw');
 
-mv.mode='overview2'; mv.raw=d.signal; mv.pre=prefile; mv.firings=firingsfile;
-mv.samplerate=d.samplerate; mountainview(mv);   % nice; has cluster view
+mv.mode='overview2'; mv.raw=d.signal; mv.pre=info.prefile;  % nice view...
+mv.firings=firingsfile; mv.samplerate=d.samplerate; mountainview(mv);
 
 % [there is a duplicated type which is weird - is detection correct?
-%  FIXED: - polarity only fixed it]
-
-% we'll want to reorder them by decreasing L2 norm of W^{(k)} I think.
+%  FIXED: polarity negative only fixed it]

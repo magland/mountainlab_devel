@@ -7,7 +7,7 @@ function fk = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sort
 %
 % Inputs:
 %  sortfunc - function handle to a sorter with the interface
-%                [firingsfile,prefile] = sorter(rawfile,outdir);
+%                [firingsfile,info] = sorter(rawfile,outdir);
 %  dataset - struct with fields giving dataset with its ground truth:
 %            dataset.signal - MDA filename or M*N array, raw EC signal data
 %            dataset.truefirings - MDA filename or 4*Ns array, true firings
@@ -66,8 +66,9 @@ fprintf('\t%d',1:trueK); fprintf('\n'); fprintf('\t%d',pops); fprintf('\n');
 firingsfile=[outdir '/firings.mda'];    % make MDA for sorter to read
 
 disp('call sorter:')
-[firingsfile,prefile] = sortfunc(fnameify32(dataset.signal,outdir),outdir,o_sorter);  % DO IT
+[firingsfile,info] = sortfunc(fnameify32(dataset.signal,outdir),outdir,o_sorter);  % DO IT
 
+prefile = info.prefile;
 firings=readmda(firingsfile);       % read sort output file
 times=firings(2,:); labels=firings(3,:);
 clips=ms_extract_clips2(Y,times,o_acc.T,[],betaonesnap);
