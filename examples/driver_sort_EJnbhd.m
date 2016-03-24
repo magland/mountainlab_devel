@@ -8,7 +8,7 @@
 clear
 d = grab_EJnbhd_dataset;   % get struct pointing to tmp files
 
-opts.detect_threshold = 120;    % abs units (uV), not sure why
+opts.detect_threshold = 3.5;    % stddev units
 opts.freq_min = 100; opts.freq_max = inf;  % I think EJ already filtered anyway
 opts.samplerate = d.samplerate;
 opts.clip_size = 50;         % 2.5 ms

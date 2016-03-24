@@ -13,7 +13,8 @@ function [firingsfile,info]=simplesorter(rawfile,output_dir,o)
 % Outputs:
 %    firingsfile - path to the firings.mda output file
 %    info - struct with fields:
-%           prefile - path to the preprocessed raw data file
+%           filtfile - filtered timeseries
+%           prefile - path to the preprocessed timeseries (filt and whitened)
 %
 % Other m-files required: isosplit2, processing/ms_*
 %
@@ -46,6 +47,8 @@ o_filter.samplerate=o.samplerate;
 o_filter.freq_min=o.freq_min;
 o_filter.freq_max=o.freq_max;
 disp('filtering...'); Yf = ms_bandpass_filter(Y,o_filter);
+info.filtfile = [output_dir,'/pre0.mda'];
+disp('write out filt...'); writemda(Yf,info.filtfile);
 disp('whitening...'); Yf = ms_whiten(Yf);   % normalizes
 info.prefile = [output_dir,'/pre.mda'];
 disp('write out filt+whitened...');

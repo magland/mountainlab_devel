@@ -74,6 +74,7 @@ mscmd_copy([path0,'/firings3.mda'],[path0,'/firings.mda']);
 
 firings_path=[path0,'/firings.mda'];
 info.prefile=[path0,'/pre2.mda'];
+info.filtfile=[path0,'/pre1.mda'];
 
 end
 

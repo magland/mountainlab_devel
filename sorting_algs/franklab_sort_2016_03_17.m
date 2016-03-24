@@ -69,6 +69,7 @@ fprintf('Total time for sorting: %g sec\n',toc(tA));
 % output fnames...
 firings = [path,'/firings.mda'];
 info.prefile = [path,'/pre2.mda'];
+info.filtfile = [path,'/pre1.mda'];
 
 if 0
   mv.mode='overview2';
