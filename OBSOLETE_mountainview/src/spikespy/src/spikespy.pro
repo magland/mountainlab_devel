@@ -29,7 +29,8 @@ SOURCES += main.cpp\
     diskwritemda.cpp \
     memorymda.cpp \
     usagetracking.cpp \
-    sscommon.cpp
+    sscommon.cpp \
+    closemehandler.cpp
 
 HEADERS  += sstimeseriesplot.h \
     plotarea.h \
@@ -51,7 +52,8 @@ HEADERS  += sstimeseriesplot.h \
     diskreadmda.h \
     diskwritemda.h \
     memorymda.h \
-    usagetracking.h
+    usagetracking.h \
+    closemehandler.h
 
 SOURCES += cvwidget.cpp cvview.cpp affinetransformation.cpp cvcommon.cpp
 HEADERS += cvwidget.h cvview.h affinetransformation.h cvcommon.h

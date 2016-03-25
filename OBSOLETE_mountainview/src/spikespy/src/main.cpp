@@ -6,6 +6,7 @@
 #include "textfile.h"
 #include "usagetracking.h"
 #include "cvcommon.h"
+#include "closemehandler.h"
 
 /*
  * TO DO:
@@ -17,6 +18,7 @@ int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);
 	//MainWindow w;
 	//w.show();
+	CloseMeHandler::start();
 
 	QStringList args;
 	for (int i=1; i<argc; i++) {
