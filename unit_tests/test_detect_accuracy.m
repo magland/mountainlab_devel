@@ -17,7 +17,7 @@ function test_detect_accuracy(detfunc,o_det,forceregen)
 
 % todo: make standard output values (MAE, frac of correct found, ...)
 
-% Barnett 3/3/16, 3/11/16, used demo_dataset 3/25/16
+% Barnett 3/3/16, 3/11/16, used demo_dataset & jiggle 3/25/16
 
 if nargin==0, demo_test_detect_accuracy; return; end
 if nargin<2, o_det = []; end
@@ -52,8 +52,18 @@ o.detect_threshold = 90;   % absolute (uV) units, for EJ data
 o.detect_interval = 5;
 o.clip_size = 30;          % only affects ends of timeseries
 regendata = 1;             % toggle this as you please
-test_detect_accuracy(@ms_detect3,o,regendata); title('new detect3');
-
+% ahb trying various detection algs...
+fprintf('\nold detect:\n')
 addpath OBSOLETE_processing
-test_detect_accuracy(@ms_detect,o); title('old detect');
+test_detect_accuracy(@ms_detect,o,regendata); title('old detect');
 rmpath OBSOLETE_processing
+fprintf('\ndetect3:\n')
+test_detect_accuracy(@ms_detect3,o); title('detect3');
+o.jiggle = 1; fprintf('\ndetect4 jiggle=1:\n')
+test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=1');
+o.jiggle = 2; fprintf('\ndetect4 jiggle=2:\n')
+test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2');
+o.num_features=10; fprintf('\ndetect4 jiggle=2 numfea=10:\n')
+test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2 numfea=30');
+% seems like jiggle=1 helps, but not any higher, and numfea around 15 best
+% Also, adding jiggle to single times set is slightly worse than appending.
