@@ -17,26 +17,21 @@ function test_detect_accuracy(detfunc,o_det,forceregen)
 
 % todo: make standard output values (MAE, frac of correct found, ...)
 
-% Barnett 3/3/16, 3/11/16
+% Barnett 3/3/16, 3/11/16, used demo_dataset 3/25/16
 
 if nargin==0, demo_test_detect_accuracy; return; end
 if nargin<2, o_det = []; end
 if nargin<3, forceregen = 0; end
 
-[Yfile truefiringsfile trueWfile o.samplefreq] = get_default_dataset([],forceregen); % make demo data and return names of its files
-
-mfile_path=fileparts(mfilename('fullpath'));
-outdir=[mfile_path,'/demo_data/output'];
-if ~exist(outdir,'dir') mkdir(outdir); end;
-
-Y=readmda(Yfile);                 % use raw
+d = demo_dataset(forceregen);
+Y=readmda(d.signal);                 % use raw
 
 %o.freq_min = 100; o.freq_max = 5000; Y = ms_filter(Y,o); % doesn't help
 
 times = detfunc(Y,o_det);   % do the thing
 
 % compare to true
-truefirings=readmda(truefiringsfile);       % read sort output files
+truefirings=readmda(d.truefirings);       % read sort output files
 truetimes=truefirings(2,:); truelabels=truefirings(3,:);
 maxdt = 5;
 CC = ms_cross_correlograms([truetimes, times], [1+0*truetimes, 2+0*times],maxdt);
@@ -52,11 +47,13 @@ o.verb = 0;
 
 %%%%%%%%%%%%%%%%%%% 
 
-
 function demo_test_detect_accuracy
 o.detect_threshold = 90;   % absolute (uV) units, for EJ data
 o.detect_interval = 5;
 o.clip_size = 30;          % only affects ends of timeseries
 regendata = 1;             % toggle this as you please
-test_detect_accuracy(@ms_detect,o,regendata); title('old detect');
-test_detect_accuracy(@ms_detect3,o); title('new detect3');
+test_detect_accuracy(@ms_detect3,o,regendata); title('new detect3');
+
+addpath OBSOLETE_processing
+test_detect_accuracy(@ms_detect,o); title('old detect');
+rmpath OBSOLETE_processing
