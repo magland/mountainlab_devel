@@ -19,6 +19,8 @@ function Y = synthesize_timeseries(W,N,times,labels,ampls,opts)
 %                            the output timeseries.
 % Outputs:
 %  Y - (MxN, real-valued) timeseries
+%
+% See also: examples/makesynthtimeseries  which shows example usage
 
 % Barnett 2/19/16 based on validspike/synthesis/spikemodel.m; 2/25/16 upsampled.
 % todo: faster C executable acting on MDAs I/O.

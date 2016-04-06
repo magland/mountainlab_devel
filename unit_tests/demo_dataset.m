@@ -7,7 +7,7 @@ function d = demo_dataset(forceregen)
 %    forceregen: if true, force regeneration w/ random seed (default false)
 % Outputs:
 %    d struct with fields:
-%            d.signal - MDA filename for raw EC signal timeseries
+%            d.timeseries - MDA filename for raw EC signal timeseries (signal)
 %            d.truefirings - MDA filename for true firings
 %            d.truewaveforms - MDA filename for true waveforms
 %            d.samplerate - time series sample rate in samples/sec
@@ -24,14 +24,14 @@ if ~exist(demodir,'dir'), mkdir(demodir); end
 d.outdir = [demodir,'/output'];
 if ~exist(d.outdir,'dir'), mkdir(d.outdir); end
 
-d.signal = [demodir,'/demotimeseries.mda'];
+d.timeseries = [demodir,'/demotimeseries.mda'];
 d.truefirings = [demodir,'/demotruefirings.mda'];
 d.truewaveforms = [demodir,'/demotruewaveforms.mda'];
 d.name = 'demo data from EJ 2005-04-26 elec359 K=7';
 d.samplerate = 2e4;           % samples/sec to generate
 
 if nargin<1, forceregen=0; end
-if forceregen | ~exist(d.signal,'file')  % could check other out files too?
+if forceregen | ~exist(d.timeseries,'file')  % could check other out files too?
   disp('generating demo timeseries...')
   info = gen_demo_data(d);
 end
@@ -60,5 +60,5 @@ writemda64([peakchans;times;labels;ampls],d.truefirings);
 tic; Y = synthesize_timeseries(W,N,times,labels,ampls,o_synth); toc
 eta = 20;               % noise std deviation per sample per channel
 Y = Y + eta * randn(size(Y));
-writemda32(Y,d.signal);
+writemda32(Y,d.timeseries);
 info = [];    % dummy for now

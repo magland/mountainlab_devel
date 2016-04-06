@@ -42,7 +42,7 @@ function [confusion_matrix T1 T2 T2w permL2]=times_labels_confusion_matrix(T1,L1
 % 8/14/15: ahb switched to use bestcolpermconfmat
 
 % todo: check "unexpected problem" when there's no labels of a certain type
-%       (see testcase below)
+%       (see testcase below).
 
 % run the test if no arguments
 if nargin==0, test_times_labels_confusion_matrix; return; end
@@ -66,7 +66,8 @@ if (strcmp(opts.internal_run_code,'main'))
         L2(ii) = permL2(L2(ii));              % reshuffle L2's classified labels
 	[DDD,T1,T2,T2w]=times_labels_confusion_matrix(T1,L1,T2,L2,opts2);
 	if ((size(DDD,1)~=K1+1)||(size(DDD,2)~=K2+1))
-		disp (size(DDD)); disp ([K1+1,K2+1]);
+		disp('sizes of two confusion matrices:');
+                disp (size(DDD)); disp ([K1+1,K2+1]);
 		error('Unexpected problem: confusion matrix size problem - maybe not all labels are represented? Can fix');
 	end;
 	confusion_matrix=DDD; % ahb removed permuting conf-mat since it's already permuted! :

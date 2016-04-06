@@ -1,5 +1,6 @@
 function [firings,info] = franklab_sort_2016_03_17(signal,outdir,o)
-% matlab driver for jfm's franklab sorter from March 17 2016.
+% matlab driver for jfm's franklab sorter from March 17 2016, with detection
+%  updated to detect3
 %
 % [firingsfile,info] = franklab_sort_2016_03_17(rawfile,output_dir,opts)
 %
@@ -54,10 +55,10 @@ tA=tic;
 mscmd_bandpass_filter(signal,[path,'/pre1.mda'],o_filter);
 mscmd_mask_out_artifacts([path,'/pre1.mda'],[path,'/pre1b.mda'],o_mask_out_artifacts);
 mscmd_whiten([path,'/pre1b.mda'],[path,'/pre2.mda']);
-mscmd_detect([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);
+mscmd_detect3([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);
 
 mscmd_branch_cluster_v2([path,'/pre2.mda'],[path,'/detect.mda'],'',[path,'/firings1.mda'],o_branch_cluster);
-mscmd_remove_duplicate_clusters([path,'/firings1.mda'],[path,'/firings2.mda'],o_remove_duplicate_clusters);
+mscmd_remove_duplicate_clusters([path,'/pre2.mda'],[path,'/firings1.mda'],[path,'/firings2.mda'],o_remove_duplicate_clusters);  % ahb added 1st arg
 mscmd_remove_noise_subclusters([path,'/pre2.mda'],[path,'/firings2.mda'],[path,'/firings3.mda'],o_remove_noise_subclusters);
 mscmd_compute_outlier_scores([path,'/pre2.mda'],[path,'/firings3.mda'],[path,'/firings4.mda'],o_compute_outlier_scores);
 

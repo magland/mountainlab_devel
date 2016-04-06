@@ -1,4 +1,4 @@
-% test filter, Matlab vs C.  Barnett 2/16/16
+% test bandpass filter, Matlab vs C.  Barnett 2/16/16
 
 clear; in = [tempdir 'testfilt0.mda']; out = [tempdir 'testfilt1.mda'];
 M=8; N=1e7;
@@ -12,7 +12,7 @@ ofilt.freq_min=300;
 ofilt.freq_max=inf;
 
 mscmd_bandpass_filter(in,out,ofilt); Y = readmda(out);
-tic; Ym = ms_filter(X,ofilt); fprintf('ms matlab filter %.3g\n',toc)
+tic; Ym = ms_bandpass_filter(X,ofilt); fprintf('ms matlab filter %.3g sec\n',toc)
 fprintf('rel output err btw matlab & C: %.3g\n',norm(Ym-Y)/norm(Y))
 figure; subplot(2,1,1); t = (1:N)/samplerate;
 trng = T/2 + [-1 1]*.002; i = (t>trng(1) & t<trng(2));  % t indices to plot

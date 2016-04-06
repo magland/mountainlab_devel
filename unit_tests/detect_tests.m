@@ -2,7 +2,7 @@ function detect_tests(noise_level)
 
 if (nargin<1) noise_level=4; end; %try noise_level=0
 
-close all;
+%close all; % nah
 
 N=400;
 num_cycles=40;

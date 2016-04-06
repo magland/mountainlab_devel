@@ -78,10 +78,10 @@ function test_simplesorter  % taken from examples/driver_simplesorter
 
 d = demo_dataset;   % get struct pointing to demo data files
 opts.samplerate = d.samplerate;
-[firingsfile,~] = simplesorter(d.signal,d.outdir,opts);
+[firingsfile,~] = simplesorter(d.timeseries,d.outdir,opts);
 
 % load and view the EC input signal with firings output...
-Y = readmda(d.signal);
+Y = readmda(d.timeseries);
 firings = readmda(firingsfile); times=firings(2,:); labels=firings(3,:);
 spikespy({Y,times,labels,'simple sorter'});
 K = max(labels); pops = histc(labels,1:K); disp('populations n_k vs k:');
