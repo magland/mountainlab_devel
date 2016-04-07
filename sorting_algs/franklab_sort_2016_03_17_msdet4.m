@@ -1,4 +1,4 @@
-function [firings,info] = franklab_sort_2016_03_17(signal,outdir,o)
+function [firings,info] = franklab_sort_2016_03_17_msdet4(signal,outdir,o)
 % matlab driver for jfm's franklab sorter from March 17 2016, with detection
 %  updated to mscmd_detect3 - this is in progress.
 %
@@ -31,13 +31,15 @@ o_filter.freq_min=300;
 o_filter.freq_max=6000;
 o_mask_out_artifacts.threshold=3;
 o_mask_out_artifacts.interval_size=100;
-o_detect.detect_threshold=3.5;
+
+o_detect.detect_threshold=3.5;       % opts now for ms_detect4
 o_detect.detect_interval=detect_interval;
 o_detect.clip_size=clip_size;
-o_detect.sign=-1;                 % equiv of 'm', for demo data
-o_detect.upsampling_factor = 5;   % jfm suggestion for detect3
-o_detect.num_pca_denoise_components = 5;   %%% ?
-o_detect.pca_denoise_jiggle = 2;   %%%
+o_detect.polarity = 'm';
+o_detect.beta = 10;
+o_detect.num_features = 5;    % since individ chan
+o_detect.individual_channels = 1;        % for jfm
+
 o_branch_cluster.clip_size=clip_size;
 o_branch_cluster.min_shell_size=min_shell_size;
 o_branch_cluster.shell_increment=shell_increment;
@@ -58,7 +60,10 @@ tA=tic;
 mscmd_bandpass_filter(signal,[path,'/pre1.mda'],o_filter);
 mscmd_mask_out_artifacts([path,'/pre1.mda'],[path,'/pre1b.mda'],o_mask_out_artifacts);
 mscmd_whiten([path,'/pre1b.mda'],[path,'/pre2.mda']);
-mscmd_detect3([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);
+
+disp('--- MS_DETECT4 ---'); % insert pure-Matlab detection...
+[times,peakchans] = ms_detect4(readmda([path,'/pre2.mda']),o_detect);
+writemda([peakchans;times], [path,'/detect.mda'], 'float64');  % just 2 rows
 
 mscmd_branch_cluster_v2([path,'/pre2.mda'],[path,'/detect.mda'],'',[path,'/firings1.mda'],o_branch_cluster);
 mscmd_remove_duplicate_clusters([path,'/pre2.mda'],[path,'/firings1.mda'],[path,'/firings2.mda'],o_remove_duplicate_clusters);  % ahb added 1st arg
