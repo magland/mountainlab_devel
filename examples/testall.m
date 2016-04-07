@@ -23,9 +23,12 @@ bestcolpermconfmat
 times_labels_accuracy
 times_labels_confusion_matrix
 compare_two_sortings
+% use ground-truthed synth data...
 accuracy_simplesorter
 accuracy_ds001
 accuracy_franksort_2016_03_17
+% use IC electrode...
+accuracyharris2000_simplesorter
 
 % EXAMPLES WITH DEMO DATA
 
@@ -39,6 +42,7 @@ driver_sort_EJnbhd
 grab_buzsaki_dataset
 driver_sort_buzsaki
 grab_harris2000_dataset
+driver_sort_harris2000
 
 % ML PROCESSING
 

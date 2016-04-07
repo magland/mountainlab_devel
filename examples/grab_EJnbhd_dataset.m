@@ -12,7 +12,7 @@ d.outdir = '/tmp/output';
 if ~exist(d.outdir,'dir'), mkdir(d.outdir); end
 fname = strcat(dir,'/',rawfile);
 load(fname);  % is a .mat
-d.signal = [d.outdir,'/EJnbhd_raw.mda'];
-writemda(data, d.signal,'float32'); 
+d.timeseries = [d.outdir,'/EJnbhd_raw.mda'];
+writemda(data, d.timeseries,'float32'); 
 d.samplerate = samplingRate;
 d.name = 'EJ nbhd M=7 2005-04-26 elec359';

@@ -55,15 +55,17 @@ regendata = 1;             % toggle this as you please
 % ahb trying various detection algs...
 fprintf('\nold detect:\n')             % kept in scratch_ahb
 v = path; addpath scratch_ahb
-test_detect_accuracy(@ms_detect,o,regendata); title('old detect');
+test_detect_accuracy(@ms_detect,o,regendata); title('old detect'); drawnow
 fprintf('\ndetect3:\n')
-test_detect_accuracy(@ms_detect3,o); title('detect3');
+test_detect_accuracy(@ms_detect3,o); title('detect3'); drawnow
 o.jiggle = 1; fprintf('\ndetect4 jiggle=1:\n')
-test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=1');
+test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=1'); drawnow
+o.jiggle = -1; fprintf('\ndetect4 jiggle=-1 (increase jiggle):\n')
+test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=-1'); drawnow
 o.jiggle = 2; fprintf('\ndetect4 jiggle=2:\n')
-test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2');
+test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2'); drawnow
 o.num_features=10; fprintf('\ndetect4 jiggle=2 numfea=10:\n')
-test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2 numfea=30');
+test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2 numfea=30'); drawnow
 path(v);
 % seems like jiggle=1 helps, but not any higher, and numfea around 15 best
 % Also, adding jiggle to single times set is slightly worse than appending.

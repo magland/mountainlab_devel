@@ -21,7 +21,7 @@ function [firingsfile,info]=simplesorter(rawfile,output_dir,o)
 % To test: run without arguments (requires spikespy)
 
 % Barnett based on JFM ds001_sort.m interface 3/16/16. Self-test 3/18/16
-% added polarity 3/21/16
+% added polarity 3/21/16, added detect4 4/7/16
 
 if nargin==0, test_simplesorter; return; end
 
@@ -59,7 +59,7 @@ o_detect.clip_size=o.clip_size;
 o_detect.beta=o.detect_beta;
 o_detect.meth = o.detect_meth;
 o_detect.polarity = o.detect_polarity;
-disp('detect3...'); times = ms_detect3(Yf,o_detect);   % note subsample acc
+disp('detect4...'); times = ms_detect4(Yf,o_detect);   % note subsample acc
 fprintf('\tfound %d events\n',numel(times))
 disp('extract clips2...'); clips = ms_extract_clips2(Yf,times,o.clip_size);
 disp('features...'); FF = ms_event_features(clips,o.num_fea);

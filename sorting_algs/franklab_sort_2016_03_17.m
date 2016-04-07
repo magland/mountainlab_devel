@@ -1,6 +1,6 @@
 function [firings,info] = franklab_sort_2016_03_17(signal,outdir,o)
 % matlab driver for jfm's franklab sorter from March 17 2016, with detection
-%  updated to detect3
+%  updated to mscmd_detect3 - this is in progress.
 %
 % [firingsfile,info] = franklab_sort_2016_03_17(rawfile,output_dir,opts)
 %
@@ -34,7 +34,10 @@ o_mask_out_artifacts.interval_size=100;
 o_detect.detect_threshold=3.5;
 o_detect.detect_interval=detect_interval;
 o_detect.clip_size=clip_size;
-o_detect.sign=0;
+o_detect.sign=0;                 % needs to 
+o_detect.upsampling_factor = 5; %o.upsampling_factor
+o_detect.num_pca_denoise_components = 5;   %%% ?
+o_detect.pca_denoise_jiggle = 2;   %%%
 o_branch_cluster.clip_size=clip_size;
 o_branch_cluster.min_shell_size=min_shell_size;
 o_branch_cluster.shell_increment=shell_increment;

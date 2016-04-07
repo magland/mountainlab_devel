@@ -1,9 +1,9 @@
-function times=ms_detect4(X,opts)
+function [times peakchans] = ms_detect4(X,opts)
 %MS_DETECT4 - Detect super-threshold events in a raw/preprocessed dataset
 %
-%Consider using mscmd_detect
+% Consider using mscmd_detect*
 %
-% Syntax:  [times] = ms_detect4(X,opts)
+% Syntax:  [times peakchans] = ms_detect4(X,opts)
 %
 % Inputs:
 %    X - MxN array of raw or preprocessed data (M channels by N timepoints)
@@ -25,10 +25,14 @@ function times=ms_detect4(X,opts)
 %    opts.polarity - 'b' (both + and -), 'p' (+ only), 'm' (- only)
 %                controls which signs of peaks used. Note: the mean must be
 %                close to zero for all of these to be meaningful.
-%
+%    opts.individual_channels - 0: detect peaks across channels (default)
+%                               1: peaks on each channel & report channel #s
+%                                  (needed by JFM's sorting chain)
 % Outputs:
-%    times - 1xL array of real-valued timepoints where an event has been
-%            detected.
+%    times - 1xL array of integer- or real-valued timepoints where an event has
+%          been detected.
+%    peakchans - 1xL array of peak channel numbers matching the times array
+%          (is a dummy array of 1's for default opts.individual_channels = 0).
 %
 % Example:
 %    times=ms_detect4(X,struct('detect_threshold',5,'detect_interval',15,'clip_size',100));
@@ -43,11 +47,11 @@ function times=ms_detect4(X,opts)
 %
 % Other m-files required: none
 %
-% See also: mscmd_detect, ms_extract_clips, spikespy, test_detect_accuracy
+% See also: mscmd_detect*, ms_extract_clips*, spikespy, test_detect_accuracy
 
 % based on ms_detect, Jeremy Magland Jan 2016. Alex Barnett 3/11/16-3/16/16
-% 3/21/16: polarity options (ahb)
-% exploring jfm's jiggle.
+% 3/21/16: polarity options (ahb). exploring jfm's jiggle.
+% 4/7/16: add individual_channels opt so can drop in for mscmd_detect*
 
 if nargin==0, test_ms_detect4; return; end
 
@@ -57,8 +61,21 @@ T = opts.clip_size;
 if isfield(opts,'beta'), beta = opts.beta; else, beta = 10; end
 if ~isfield(opts,'meth'), opts.meth = 'p'; end                  % default
 if ~isfield(opts,'polarity'), opts.polarity = 'b'; end          % default
-if ~isfield(opts,'jiggle'), opts.jiggle = 1; end
+if ~isfield(opts,'jiggle'), opts.jiggle = 1; end                % seems best
+if ~isfield(opts,'individual_channels'), opts.individual_channels = 0; end
 
+if opts.individual_channels       % run once for each channel & collate (crude)
+  opts.individual_channels = 0;   % overrides
+  times = []; peakchans = [];     % will collate all data
+  M = size(X,1);
+  for m=1:M
+    [tm pm] = ms_detect4(X(m,:),opts);
+    times = [times,tm]; peakchans = [peakchans,m*pm];     % append
+  end
+  [times,ind] = sort(times); peakchans = peakchans(ind);  % time-order
+  return
+end
+  
 % create absX which is a "detection signal" restricted to certain polarities...
 if strcmp(opts.polarity,'b')
   absX=abs(X);
@@ -92,13 +109,16 @@ end;
 times=find(use_it==1);
 NC = numel(times);
 
-if opts.jiggle  % jeremy's idea - add extra jiggle then fit it (?)
-  times = [times, times+randi([-opts.jiggle opts.jiggle],size(times))]; % append jiggled times
-  %times = times + randi([-opts.jiggle opts.jiggle],size(times)); % equally good, for jiggle=1, so could go back to this and skip the discard step below...
-end
-
 % the above code was integer t, from ms_detect. Now do sub-sample adjustments...
 if beta>1
+  if opts.jiggle  % jeremy's idea - add extra jiggle to enlarge PCA space
+    if opts.jiggle>0
+      times = [times, times+randi([-opts.jiggle opts.jiggle],size(times))]; % append jiggled times to improve PCA space, but don't change the true jiggles
+    else
+      opts.jiggle = abs(opts.jiggle);   % interpret as size of jiggle
+      times = times + randi([-opts.jiggle opts.jiggle],size(times)); % bit worse
+    end
+  end
   maxjit = beta;  % maximum peak move allowed, in upsampled timepoints, small
   % (otherwise it can jump to another peak entirely)
   if ~isfield(opts,'Tsub')                    % default
@@ -131,11 +151,12 @@ if beta>1
     times(i) = times(i) + jit/beta;   % jitter by # subsamples
   end
 end
+peakchans = 1+0*times;   % dummy
 %%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-function test_ms_detect4
-% single-channel test...
+function test_ms_detect4                 % (also see test_detect_accuracy)
+disp('single-channel test...')
 rng(1); X=[rand(1,150)*20,rand(1,150)*10,rand(1,150)*20];  % white noise data
 
 opts.detect_threshold=10;
@@ -149,4 +170,17 @@ for i=1:numel(betas)
   subplot(numel(betas),1,i); plot(1:length(X),X,'k'); hold on;
   for j=1:length(times), plot(times(j)*[1 1],ylim,'r'); end   % times as vlines
   title(sprintf('detection on white noise signal: \\beta = %d\n',opts.beta))
+end
+
+disp('multichannel test on demo timeseries...')
+opts.detect_threshold = 90;   % absolute (uV) units, for EJ data
+opts.detect_interval = 5;
+opts.clip_size = 30;          % only affects ends of timeseries
+d = demo_dataset;
+Y = readmda(d.timeseries);
+maxT = 1e3;
+for i=0:1, opts.individual_channels = i;    % try both styles
+  [T C] = ms_detect4(Y,opts);
+  fprintf('individ_chan=%d: %d spikes found, first few (chan;time) pairs are...\n',i,numel(T))
+  ii = T<maxT; [C(ii); T(ii)]
 end

@@ -1,7 +1,7 @@
 % Showing how to use the accuracy-measuring function on the simple sorter
 % Barnett 3/16/16
 
-forceregen = 1;
+clear; forceregen = 1;
 d = demo_dataset(forceregen); d.name = 'demo';
 o.detect_threshold = 4.0;   % sorter opts: threshold in stddev EJ demo dataset
 o.detect_polarity = 'm';
