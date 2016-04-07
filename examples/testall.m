@@ -47,12 +47,13 @@ driver_sort_harris2000
 % ML PROCESSING
 
 ms_detect3
+ms_detect4
 mscmd_detect3
 
 % THINGS IN DEVEL (SCRATCH) TO GO TO ML
-addpath scratch_ahb
-
-ms_detect4
+v = path; addpath scratch_ahb
+%...
+path(v);
 
 if 0  % OBSOLETE THINGS STILL IN VARIOUS TESTERS
   ms_detect

@@ -6,7 +6,7 @@ function test_detect_accuracy(detfunc,o_det,forceregen)
 %  ability to measure peak time to subsample accuracy.
 %
 % Inputs:
-%  detfunc - handle to detection function
+%  detfunc - handle to detection function w/ interface: times = detfunc(Y,o_det)
 %  o_det - options struct for detection function
 %  forceregen (optional) - flag stating whether to force regeneration of demo
 %        data (default 0).
@@ -47,10 +47,34 @@ o.verb = 0;
 
 %%%%%%%%%%%%%%%%%%% 
 
+%%% helpers for the demo...
+
+function fname = fnameify32(X,outdir)
+% FNAMEIFY  if array, writes to file and returns filename, otherwise keeps name
+
+% v crude for now.
+
+if nargin<2, outdir=tempdir; end
+if ischar(X) || isstring(X)
+  fname = X;
+else
+  fname = [outdir,'/',num2str(randi(1e10)),'.mda'];  % random filename
+  writemda32(X,fname);
+end
+
+function times = run_mscmd_detect3(Y,o);
+outdir = tempdir; detectfile = [outdir,'/detect.mda']; 
+mscmd_detect3(fnameify32(Y,outdir),detectfile,o);
+firings = readmda(detectfile);
+times = firings(2,:);
+
+%%%%%%%
+
 function demo_test_detect_accuracy
 o.detect_threshold = 90;   % absolute (uV) units, for EJ data
 o.detect_interval = 5;
 o.clip_size = 30;          % only affects ends of timeseries
+o.polarity='m';
 regendata = 1;             % toggle this as you please
 % ahb trying various detection algs...
 fprintf('\nold detect:\n')             % kept in scratch_ahb
@@ -65,7 +89,11 @@ test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=-1'); drawnow
 o.jiggle = 2; fprintf('\ndetect4 jiggle=2:\n')
 test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2'); drawnow
 o.num_features=10; fprintf('\ndetect4 jiggle=2 numfea=10:\n')
-test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2 numfea=30'); drawnow
+test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2 numfea=10'); drawnow
+o.sign=-1; o.upsampling_factor = 10; o.num_pca_denoise_components = 5;
+o.pca_denoise_jiggle = 2;
+o.individual_channels = 0;   % jfm to implement (1 find duplicates of spikes!)
+test_detect_accuracy(@run_mscmd_detect3,o); title('mscmd_detect3'); drawnow
 path(v);
 % seems like jiggle=1 helps, but not any higher, and numfea around 15 best
 % Also, adding jiggle to single times set is slightly worse than appending.
