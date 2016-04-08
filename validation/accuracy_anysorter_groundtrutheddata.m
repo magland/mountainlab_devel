@@ -1,9 +1,10 @@
-function fk = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sorter)
+function [fk Q perm] = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sorter)
 % ACCURACY_ANYSORTER_GROUNDTRUTHEDDATA  meas accuracy of sorter on gnd-truth data
 %
 % fk = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sorter)
 %   measures any sorter's accuracy vs known firing times on synthetic demo data.
 %   Also pops up a bunch of windows showing accuracy.
+% [fk Q perm] = ... also outputs comparison info.
 %
 % Inputs:
 %  sortfunc - function handle to a sorter with the interface
@@ -16,14 +17,17 @@ function fk = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sort
 %            dataset.samplerate - samplerate in samples/sec for raw data
 %            dataset.outdir - path to existing directory for MDA output files
 %            dataset.name - (optional) string name of dataset
-%  o_acc - accuracy measuring options: (passed wto compare_two_sortings)
-%               o_acc.T          - clip size
+%  o_acc - accuracy measuring options:
+%            o_acc.usepre          - if true, use preprocessed (pre.mda) not raw.
+%            (others passed to compare_two_sortings; see its help)
 %  o_sorter (optional) - passed to last argument of sortfunc, as in:
 %                [firingsfile,info] = sortfunc(rawfile,outdir,o_sorter)
 %                Note: the sorter opts will already be passed the samplerate
 %                      as given in the dataset struct.
 % Outputs:
 %  fk - (1xK) accuracy metrics on the neuron types labeled by ground truth labels
+%  Q, perm - extended confusion matrix and best perm, as output by
+%            compare_two_sortings
 %
 % Run without options runs a test on demo data (accuracy_simplesorter)
 
@@ -31,7 +35,7 @@ function fk = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sort
 % 3/16/16 Barnett changed to use non-integer firing time resampling
 % todo: * make various switches below into options.
 % 3/18/16 struct not text input for dataset. truewaveforms optional
-% 4/6/16 vastly simplified by using compare_two_sortings
+% 4/6/16 vastly simplified by using compare_two_sortings. 4/8/16 prefile
 
 if nargin==0, accuracy_simplesorter; return; end             % is in validation/
 if nargin<2|isempty(dataset), dataset = demo_dataset; dataset.name = 'demo'; end
@@ -51,6 +55,15 @@ db = da; db.name = [dataset.name ' sorted'];            % dataset B, from sorter
 disp('call sorter:')
 [db.firings,info] = sortfunc(da.timeseries,outdir,o_sorter);
 
+if isfield(o_acc,'usepre') & o_acc.usepre
+  if exist(info.prefile,'file')
+    disp('using pre-proc (not raw) timeseries for comparsion plots...');
+    da.timeseries = info.prefile; db.timeseries = da.timeseries;
+  else
+    warning('no pre-proc file found, using reaw timeseries!');
+  end
+end
+  
 [fk Q perm] = compare_two_sortings(da,db,o_acc);
 %disp('accuracies:'), fk
 %%%%%%%%%%%%%%%

@@ -1,13 +1,13 @@
 function [firingsfile,info]=simplesorter(rawfile,output_dir,o)
 % SIMPLERSORTER   Minimal spike sorting code in MATLAB w/ std MS MDA interface.
 %
-% [firingsfile,info] = simplesorter(rawfile,output_dir,opts)
+% [firingsfile,info] = simplesorter(rawfile,output_dir,o)
 %  runs a simple sorter based on clustering, treating all channels together.
 %
 % Inputs:
 %    rawfile - path to .mda of MxN raw signal data
 %    output_dir - path to existing DIRECTORY where all output will be written
-%    sort_opts - (optional) sorting options, see def_sort_opts in this
+%    o - (optional) sorting options, see def_sort_opts in this
 %                   script
 %
 % Outputs:
@@ -27,7 +27,7 @@ if nargin==0, test_simplesorter; return; end
 
 def_sort_opts.clip_size=50;          % all opts defaults
 def_sort_opts.samplerate=30000;
-def_sort_opts.freq_min=100;
+def_sort_opts.freq_min=300;
 def_sort_opts.freq_max=10000; %inf;
 
 def_sort_opts.detect_threshold=3.5;   % in std dev units

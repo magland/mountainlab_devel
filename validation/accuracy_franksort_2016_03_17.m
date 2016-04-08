@@ -7,4 +7,3 @@ clear
 fk = accuracy_anysorter_groundtrutheddata(@franklab_sort_2016_03_17_msdet4,[],[]);
 fprintf('franklab sort done; fk accuracies vs label k are... \n')
 fprintf('\t%d',1:numel(fk)), fprintf('\n'); fprintf('\t%.3f',fk), fprintf('\n');
-

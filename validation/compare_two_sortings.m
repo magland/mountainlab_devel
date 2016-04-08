@@ -11,7 +11,7 @@ function [fk Q perm] = compare_two_sortings(da,db,o)
 %           firings    - MDA filename or 4*Ns array, firings
 %                        (row 1 is peak channels, row 2 firing times t_j, row 3
 %                        is firing identities k_j, row 4 is firing amplitudes)
-%           name       - string giving short name of sorting (defaults A, B)
+%           name       - optional string giving short name of sortings
 %  o - optional struct with optional fields:
 %      T - clip size in samples
 %      max_matching_offset - passed to accuracy measuring

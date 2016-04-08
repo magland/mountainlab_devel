@@ -27,8 +27,9 @@ compare_two_sortings
 accuracy_simplesorter
 accuracy_ds001
 accuracy_franksort_2016_03_17
+accuracy_jfm_april_sort
 % use IC electrode...
-accuracyharris2000_simplesorter
+accuracyharris2000_allsorters
 
 % EXAMPLES WITH DEMO DATA
 
