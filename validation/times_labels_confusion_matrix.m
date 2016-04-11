@@ -52,6 +52,17 @@ if nargin<5, opts = []; end
 if (~isfield(opts,'max_matching_offset')) opts.max_matching_offset=3; end;
 if (~isfield(opts,'internal_run_code')) opts.internal_run_code='main'; end;
 
+% handle some trivial cases to prevent later crashes...
+if isempty(T1), confusion_matrix = histc(L2,1:max(L2));
+  confusion_matrix = [confusion_matrix(:)', 0];        % row. T2 all unmatched
+  T2w = []; permL2 = 1:max(L2); return
+end
+if isempty(T2), confusion_matrix = histc(L1,1:max(L1));
+  confusion_matrix = [confusion_matrix(:); 0];        % col
+  T2w = []; permL2 = 1:max(L2); return
+end
+ 
+
 [T1,i] = sort(T1); L1 = L1(i); [T2,i] = sort(T2); L2 = L2(i); % time sort both lists
 
 if (strcmp(opts.internal_run_code,'main'))

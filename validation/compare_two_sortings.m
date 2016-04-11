@@ -81,6 +81,7 @@ fprintf('\t%d',1:Ka); fprintf('\n'); fprintf('\t%d',popsa); fprintf('\n');
 popsb = histc(perm(Lb),1:Kb);
 fprintf('%s populations for each label (best permuted):\n',db.name);
 fprintf('\t%d',1:Kb); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
+if isempty(Lb), warning('Lb labels are empty (no spikes found); make no plots!'); return; end
 
 if o.verb
   Cb = ms_extract_clips2(Yb,Tb,o.T,[],o.betaonesnap);    % real t, resamples
@@ -103,9 +104,9 @@ if o.verb
 end
 
 if o.verb>1          % show timeseries and firings overlaid...
-  %addpath ~/spikespy/matlab/  % prefer old spikespy
+  addpath ~/spikespy/matlab/  % prefer old spikespy
   spikespy({Ya,Ta,La,sprintf('Y, %s',da.name)},{Yb,Tb,perm(Lb),sprintf('Y, %s',db.name)},{[t.tmiss';t.tfals';t.twrng'],[1+0*t.tmiss';2+0*t.tfals';3+0*t.twrng']});
-  %rmpath ~/spikespy/matlab/
+  rmpath ~/spikespy/matlab/
 end
 
 

@@ -72,7 +72,9 @@ o_fit_stage.shell_increment=o.shell_increment;
 tA=tic;
 
 mscmd_bandpass_filter(tsfile,[path,'/pre1.mda'],o_filter);
-mscmd_mask_out_artifacts([path,'/pre1.mda'],[path,'/pre1b.mda'],o_mask_out_artifacts);
+%mscmd_mask_out_artifacts([path,'/pre1.mda'],[path,'/pre1b.mda'],o_mask_out_artifacts);
+mscmd_copy([path,'/pre1.mda'],[path,'/pre1b.mda']);
+
 mscmd_whiten([path,'/pre1b.mda'],[path,'/pre2.mda']);
 mscmd_detect3([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);
 
