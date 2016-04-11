@@ -15,10 +15,11 @@ function [fk Q perm] = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_a
 %            dataset.truewaveforms - MDA filename or M*T*K array, true waveforms
 %                                    (optional)
 %            dataset.samplerate - samplerate in samples/sec for raw data
-%            dataset.outdir - path to existing directory for MDA output files
+%            dataset.outdir - path to directory for MDA output (needn't exist)
 %            dataset.name - (optional) string name of dataset
 %  o_acc - accuracy measuring options:
-%            o_acc.usepre          - if true, use preprocessed (pre.mda) not raw.
+%            o_acc.usepre          - if true, use preprocessed (pre.mda) not raw
+%                                    (default false)
 %            (others passed to compare_two_sortings; see its help)
 %  o_sorter (optional) - passed to last argument of sortfunc, as in:
 %                [firingsfile,info] = sortfunc(rawfile,outdir,o_sorter)
@@ -43,13 +44,14 @@ if nargin<3, o_acc=[]; end
 if nargin<4, o_sorter=[]; end
 if ~isfield(dataset,'name'), dataset.name = ''; end
 
-outdir = dataset.outdir;
+outdir = dataset.outdir; if ~exist(outdir,'dir'), mkdir(outdir); end
 samplerate = dataset.samplerate;
 o_sorter.samplerate = samplerate;
 
 da.timeseries = fnameify32(dataset.timeseries,outdir);  % dataset A struct "true"
 da.firings = dataset.truefirings; da.name = [dataset.name ' true'];
 db = da; db.name = [dataset.name ' sorted'];            % dataset B, from sorter
+db.samplerate = samplerate;
 % note da and db just point to the same timeseries but different firings files
 
 disp('call sorter:')
@@ -60,7 +62,7 @@ if isfield(o_acc,'usepre') & o_acc.usepre
     disp('using pre-proc (not raw) timeseries for comparsion plots...');
     da.timeseries = info.prefile; db.timeseries = da.timeseries;
   else
-    warning('no pre-proc file found, using reaw timeseries!');
+    warning('no pre-proc file found, using raw timeseries!');
   end
 end
   

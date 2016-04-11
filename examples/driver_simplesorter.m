@@ -25,3 +25,6 @@ figure; ms_view_templates(W,struct('showcenter',1)); title('sorted W from raw');
 
 mv.raw=d.timeseries; mv.pre=info.prefile;  % nice view...
 mv.firings=firingsfile; mv.samplerate=d.samplerate; mountainview(mv);
+
+%o.dtau = 1e-3*opts.samplerate; o.taumax = 20e-3*opts.samplerate;
+%show_crosscorr(labels,times,[],o);  % seems way too slow

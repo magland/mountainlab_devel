@@ -11,6 +11,7 @@ function [fk Q perm] = compare_two_sortings(da,db,o)
 %           firings    - MDA filename or 4*Ns array, firings
 %                        (row 1 is peak channels, row 2 firing times t_j, row 3
 %                        is firing identities k_j, row 4 is firing amplitudes)
+%           samplerate - timeseries samples/sec (at least db must have this).
 %           name       - optional string giving short name of sortings
 %  o - optional struct with optional fields:
 %      T - clip size in samples
@@ -51,14 +52,17 @@ if o.verb, figure; set(gcf,'position',[1000 500 1000 1500]); tsubplot(3,2,1);
   Wopts.showcenter = 1;
   Wa = ms_templates(Ca,La);      % get mean waveforms (templates)
   tsubplot(3,2,2); ms_view_templates(Wa,Wopts); title([da.name ' templates']);
+  drawnow
 end
 
 Yb = arrayify(db.timeseries);  % sorting B... (note timeseries could differ)
 Fb = arrayify(db.firings);
-Tb = Fb(2,:); Lb = Fb(3,:); Kb = max(Lb);
-ii = Lb>0;        % B's classified labels
-Lb(~ii) = Kb+1; Kb = max(Lb);    % treat all unclass as one new label type
-
+if ~isempty(Fb)
+  Tb = Fb(2,:); Lb = Fb(3,:); Kb = max(Lb);
+  ii = Lb>0;        % B's classified labels
+  Lb(~ii) = Kb+1; Kb = max(Lb);    % treat all unclass as one new label type
+else, Tb = []; Lb = []; Kb = 0; end    % proceed with no-spike case
+  
 % match up B to A...
 fprintf('best-permed accuracy of %s, treating %s as truth...\n',db.name,da.name)
 if 1     % old matlab validspike way (3-pass)
@@ -81,7 +85,9 @@ fprintf('\t%d',1:Ka); fprintf('\n'); fprintf('\t%d',popsa); fprintf('\n');
 popsb = histc(perm(Lb),1:Kb);
 fprintf('%s populations for each label (best permuted):\n',db.name);
 fprintf('\t%d',1:Kb); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
-if isempty(Lb), warning('Lb labels are empty (no spikes found); make no plots!'); return; end
+if isempty(Lb), warning('Lb labels are empty (no spikes found); no plots!');
+  if o.verb, close(gcf); end
+return; end
 
 if o.verb
   Cb = ms_extract_clips2(Yb,Tb,o.T,[],o.betaonesnap);    % real t, resamples
@@ -103,12 +109,15 @@ if o.verb
   ylabel('accuracy metric f_k');
 end
 
-if o.verb>1          % show timeseries and firings overlaid...
+if o.verb==2          % show timeseries and firings overlaid...
   addpath ~/spikespy/matlab/  % prefer old spikespy
   spikespy({Ya,Ta,La,sprintf('Y, %s',da.name)},{Yb,Tb,perm(Lb),sprintf('Y, %s',db.name)},{[t.tmiss';t.tfals';t.twrng'],[1+0*t.tmiss';2+0*t.tfals';3+0*t.twrng']});
   rmpath ~/spikespy/matlab/
 end
-
+if o.verb==3           % mountainview...
+  mv.mode='overview2'; mv.raw=db.timeseries; mv.samplerate=db.samplerate;
+  mv.firings=db.firings; mountainview(mv);
+end
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
