@@ -1,5 +1,5 @@
 # mountainlab_devel: spike-sorting
-validation and development codes for mountainlab
+# validation and development codes for mountainlab
 
 Authors: Jeremy Magland and Alex Barnett
 
