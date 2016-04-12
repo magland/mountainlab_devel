@@ -6,34 +6,26 @@ function d = grab_martinez2009_dataset(n)
 
 % Barnett 4/11/16
 
+if nargin<1, n=1; end   % default
+
 d.outdir = '/tmp/output'; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end  % fix
 
 mfile_path=fileparts(mfilename('fullpath'));
 ext = [mfile_path,'/../ext_datasets'];
 dir = [ext,'/MartinezQuiroga2009_sims'];
-rawfile = sprintf('simulation-%d');
+rawfile = sprintf('simulation-%d',n);
 fname = strcat(dir,'/',rawfile);
 fprintf('reading %s ...\n',fname)
 load(fname);
-
-
-
-d.samplerate = 1e4;
-t = (1:N)/d.samplerate;   % time indices
-j = find((t>26 & t<109.49) | t>110.29);   % cut out bad parts & forget absolute t
-N = numel(j);
-Y = Y(:,j);
-
-YEC = Y(6,:); % pull out the IC (intra-cellular), for ground truth
-trig = (max(YEC)+min(YEC))/2;   % trigger level (checked by eye)
-truetimes = 1+find(diff(YEC>trig)==1); % upwards-going times, sample units
-%figure; plot(1:N, YEC); vline(truetimes); xlabel('t (in samples)');
-truefirings = [0*truetimes; truetimes; 1+0*truetimes];  % chan; time; label
-d.truefirings = [d.outdir,'/harris2000_truefirings.mda'];
+d.samplerate = 1e3/samplingInterval;                  % was in ms
+d.timeseries = [d.outdir,'/martinez2009_raw.mda'];
+writemda(data, d.timeseries,'float32');
+d.name = ['Martinez2009 ' rawfile];
+truelabels = 1+spike_class{1};        % convert from 0-indexed labels
+K = max(truelabels);
+fprintf('dataset has K=%d true labels\n',K)
+timeoff = 22.0;    % seems like firing times were # samples behind actual peaks
+truetimes = spike_times{1} + timeoff;
+truefirings = [0*truetimes; truetimes; truelabels];  % chan; time; label
+d.truefirings = [d.outdir,'/martinez2009_truefirings.mda'];
 writemda(truefirings, d.truefirings,'float64');
-
-Y = Y(2:5,:);  % the EC channels
-d.timeseries = [d.outdir,'/harris2000_raw.mda'];
-writemda(Y, d.timeseries,'float32'); 
-d.name = 'Harris2000 d5331';
-

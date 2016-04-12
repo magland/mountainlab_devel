@@ -1,11 +1,12 @@
 % Show how to call the simple sorter on Martinez 2009 simulations & do accuracy
 % Barnett 4/11/16
 
-clear; d = grab_martinez2009_dataset;
+clear; n = 1; d = grab_martinez2009_dataset(n);      % choose one of 5
 
 opts.samplerate = d.samplerate;
-opts.clip_size = 50;
-%opts.detect_polarity = 'm';
+opts.clip_size = 80;
+opts.detect_threshold = 3.0;
+%opts.detect_polarity = 'm'; % terrible!
 [firingsfile,info] = simplesorter(d.timeseries,d.outdir,opts);
 
 % useful to standardize the ordering somewhat...
@@ -26,9 +27,6 @@ figure; ms_view_templates(W,struct('showcenter',1)); title('sorted W from raw');
 mv.mode='overview2'; mv.raw=d.timeseries; mv.pre=info.prefile;  % nice view...
 mv.firings=firingsfile; mv.samplerate=d.samplerate; mountainview(mv);
 
-%o.dtau = 1e-3*opts.samplerate; o.taumax = 20e-3*opts.samplerate;
-%show_crosscorr(labels,times,[],o);  % seems way too slow
-
 % set up 2 datasets to do comparison to IC truth...
 da = d; da.firings = d.truefirings; da.name = [d.name ' IC'];
 db = d; db.firings = firingsfile; db.name = [d.name ' sorted'];
@@ -36,3 +34,8 @@ db = d; db.firings = firingsfile; db.name = [d.name ' sorted'];
 fprintf('Accuracies vs label k are... \n')
 fprintf('k   :'); fprintf('\t%d',1:numel(fk)), fprintf('\n');
 fprintf('f_k :'); fprintf('\t%.3f',fk), fprintf('\n');
+
+% Cross-corr plot:
+%o.dtau = 1e-3*opts.samplerate; o.taumax = 20e-3*opts.samplerate;
+%show_crosscorr(labels,times,[],o);  % seems way too slow
+
