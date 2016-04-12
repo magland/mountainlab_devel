@@ -11,15 +11,36 @@ This is a collection of MATLAB codes for running tests on `mountainlab`
 which is a C++/qt5-based package for automatic spike-sorting of extracellular
 neuronal recordings, and visualization.
 
-Currently accuracy is measured.
-Stability-based validation is not yet implemented; see for this
-[validspike](https://github.com/ahbarnett/validspike)
+Currently accuracy is measured on various synthetic and intracellular
+ground-truthed datasets.
+Stability-based validation is not yet implemented; for now see 
+[validspike](https://github.com/ahbarnett/validspike) for this.
 
 ### Requirements
 
 * recent MATLAB (eg R2012b or newer). No toolboxes are needed.  
 
 * `mountainlab`. Be sure to compile mountainsort and mountainview.
+
+
+### Installation
+
+As usual, `git clone https://github.com/magland/mountainlab_devel`
+
+Make sure you have `mountainlab` installed and compiled. Optionally
+install `spikespy` in at `~/spikespy`
+
+Start MATLAB from the `mountainlab_devel` directory.
+
+Make sure `mountainlab/matlab` is in your path, and run
+`mountainlab_setup`
+
+Run `ms_setup`
+
+To check the MATLAB code works, run `simplesorter`. If spikespy
+is installed you'll see a window pop up.
+
+To check the interface to ML works, run eg `accuracy_jfm_april_sort`
 
 
 ### Guide to directories

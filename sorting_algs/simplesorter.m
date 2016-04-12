@@ -83,6 +83,8 @@ opts.samplerate = d.samplerate;
 % load and view the EC input signal with firings output...
 Y = readmda(d.timeseries);
 firings = readmda(firingsfile); times=firings(2,:); labels=firings(3,:);
-spikespy({Y,times,labels,'simple sorter'});
+if exist('spikespy')
+  spikespy({Y,times,labels,'simple sorter'});
+end
 K = max(labels); pops = histc(labels,1:K); disp('populations n_k vs k:');
 fprintf('\t%d',1:K); fprintf('\n'); fprintf('\t%d',pops); fprintf('\n');
