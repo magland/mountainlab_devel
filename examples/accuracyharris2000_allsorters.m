@@ -25,7 +25,7 @@ for i=testlist
   [fk{i} Q{i}] = accuracy_anysorter_groundtrutheddata(sorters{i},d,o_acc,os{i});
   if o_acc.verb, set(gcf,'name',snames{i}); end % label fig window
   fprintf('Harris-accuracy of sorter %s done: fk accuracies vs label k are... \n',snames{i})
-  fprintf('k   :'); fprintf('\t%d',1:numel(fk)), fprintf('\n');
+  fprintf('k   :'); fprintf('\t%d',1:numel(fk{i})), fprintf('\n');
   fprintf('f_k :'); fprintf('\t%.3f',fk{i}), fprintf('\n');
   fprintf('extended confusion matrix:\n')
   for j=1:size(Q,1), fprintf('%d\t',Q{i}(j,:)), fprintf('\n'); end
