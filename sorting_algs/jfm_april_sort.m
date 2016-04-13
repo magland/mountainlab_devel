@@ -18,7 +18,7 @@ function [firingsfile,info] = jfm_april_sort(tsfile,path,o)
 %        whiten = 0 or 1
 %        fit = 0 or 1
 %        artifacts = 0 or 1
-%        merge_threshold
+%        merge_threshold, eg 0.9
 %        outlier_threshold, eg 5
 %        detectability_threshold, eg 5
 %
@@ -44,7 +44,7 @@ defo.whiten=1; %added 4/13/16
 defo.fit=1; %added 4/13/16
 defo.artifacts=0; %added 4/13/16
 defo.merge_threshold=0.9; %added 4/13/16
-defo.detectability_threshold=5; %added 4/13/16
+defo.detectability_threshold=6; %added 4/13/16
 defo.outlier_threshold=5; %added 4/13/16
 if nargin<3 o=struct; end; o = ms_set_default_opts(o,defo); % setup opts
 
