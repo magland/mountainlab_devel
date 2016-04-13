@@ -1,9 +1,0 @@
-Put the following files into this directory:
-
-ms11d45.dat
-2016_01_21/
-    ms11d45_new.kwik
-hippocampal/tetrode/
-    dl12_20151208_NNF_r1_tet16_17.description
-    dl12_20151208_NNF_r1_tet16_17.mat
-

@@ -1,3 +1,0 @@
-make new driver which takes usual C arrays,
-call it from MEX file
-new Makefile which does MWrap

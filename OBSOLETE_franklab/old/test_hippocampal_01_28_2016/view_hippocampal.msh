@@ -1,9 +1,0 @@
-if [ "$#" -ne 1 ]; then
-    echo "You must provide one argument."
-    echo "It is the output directory, e.g., tetrode1_output"
-    exit -1
-fi
-
-
-$mountainview \
-	--raw=$1/pre2.mda --templates=$1/templates.mda --clips=$1/clips.mda --clusters=$1/clusters.mda --clips-index=$1/clips_index.mda --cross-correlograms=$1/cross_correlograms.mda --locations=$scriptdir/locations.mda
