@@ -86,7 +86,7 @@ popsb = histc(perm(Lb),1:Kb);
 fprintf('%s populations for each label (best permuted):\n',db.name);
 fprintf('\t%d',1:Kb); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
 if isempty(Lb), warning('Lb labels are empty (no spikes found); no plots!');
-  if o.verb, close(gcf); end
+  %if o.verb, close(gcf); end %removed by jfm 4/13/16
 return; end
 
 if o.verb
