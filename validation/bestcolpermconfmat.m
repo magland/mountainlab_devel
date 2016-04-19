@@ -15,6 +15,8 @@ function [colperm Qperm] = bestcolpermconfmat(Q)
 % If you wish to find a row permutation, send in Q' and do Qperm=Qperm' after.
 %
 % With no arguments, a self-test is done.
+%
+% Needs Hungarian.m from ml/matlab/msutils/
 
 % Barnett 8/14/15, supercedes getbestshuffling by Magland/Barnett
 if nargin==0, test_bestcolpermconfmat; return; end

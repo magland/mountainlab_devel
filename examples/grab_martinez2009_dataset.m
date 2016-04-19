@@ -20,7 +20,7 @@ load(fname);
 d.samplerate = 1e3/samplingInterval;                  % was in ms
 d.timeseries = [d.outdir,'/martinez2009_raw.mda'];
 writemda(data, d.timeseries,'float32');
-d.name = ['Martinez2009 ' rawfile];
+d.name = sprintf('Martinez09-sim%d',n);
 truelabels = 1+spike_class{1};        % convert from 0-indexed labels
 K = max(truelabels);
 fprintf('dataset has K=%d true labels\n',K)

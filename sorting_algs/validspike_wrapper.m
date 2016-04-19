@@ -20,7 +20,7 @@ function [firingsfile,info] = validspike_wrapper(tsfile,outdir,o)
 % Note: if validspike not found, returns raw timeseries even as filtered/pre
 %  and no firings.
 %
-% See: validspike package.
+% See: accuracy_validspike_sorter (for test); validspike package
 %
 % User must adjust code to point to their compiled validspike installation!
 
@@ -43,10 +43,11 @@ addpath(validspikepath); run('vs_startup');  % also points to spikespy
 rmpath([validspikepath,'/../spikespy/matlab'])   % since writemda clash
 
 defo.samplerate = 30000; % default opts
-defo.freq_min = 300;   % filter
-defo.beta = 3;      % upsampling for det. >3 seems worse for Harris
-defo.num_fea = 15;   % PCA
+defo.freq_min = 300;  % filter
+defo.beta = 3;        % upsampling for detection. >3 seems worse for Harris
+defo.num_fea = 15;    % PCA
 defo.nlps = 10;       % neg log prior for fit
+defo.verb = 1;        % verbosity
 if nargin<3, o=struct; end; o = ms_set_default_opts(o,defo); % setup opts
 
 disp('reading...'); Y = readmda(tsfile);
@@ -63,10 +64,13 @@ writemda(d.A,info.prefile);          % tell output where flit+whitened data is
 
 copts.upsampfac = o.beta;
 copts.num_fea=o.num_fea;
+copts.verb = o.verb;
 sopts.nlps = o.nlps;
-[times labels] = spikesort_timeseries(d.A,d.samplefreq,copts,[],sopts); % do it!
+[times labels p wf] = spikesort_timeseries(d.A,d.samplefreq,copts,[],sopts); % do it!
 
 disp('write firings...');
 writemda([0*times(:)'; times(:)'; labels(:)'],firingsfile);  % dummy channel #s
+
+if o.verb>1, vo.showcenter=1; figure; ms_view_templates(wf.W,vo); end % plot
 
 path(savedpath);  % restore path

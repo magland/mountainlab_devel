@@ -1,4 +1,4 @@
-function [fk Q perm] = compare_two_sortings(da,db,o)
+function [fk Q perm iperm] = compare_two_sortings(da,db,o)
 % COMPARE_TWO_SORTINGS  accuracy metrics between two sortings treating one true
 %
 % fk = compare_two_sortings(da,db,o) compares sorted output in db treating that
@@ -21,15 +21,16 @@ function [fk Q perm] = compare_two_sortings(da,db,o)
 % Output:
 %  fk - (1xK) accuracy metrics of d2 treating d1 as ground truth.
 %  Q - extended best-permuted confusion matrix
-%  perm - best permutation of B's labels to match A
+%  perm - best permutation of B's labels to match A, ie LA ~ perm(LB)
+%         (if there are no types k in LB, kth entry of perm is NaN).
+%  iperm - best permutation of A's labels to match B.
 %
 % Without arguments, does self-test
 %
 % Used by: accuracy_anysorter_groundtrutheddata.m
 
-% todo: update mscmd_conf_mat to consider better perms
-%
-% Barnett 4/5/16
+% todo: opt to switch to mscmd_conf_mat for speed, test.
+% Barnett 4/5/16. Kb absent label issue 4/19/16
 
 if nargin==0, test_compare_two_sortings; return; end
 if nargin<3, o = []; end
@@ -47,7 +48,7 @@ Fa = arrayify(da.firings);
 Ta = Fa(2,:); La = Fa(3,:); Ka = max(La);
 Ca = ms_extract_clips2(Ya,Ta,o.T,[],o.betaonesnap);    % real t, resamples
 Xa = ms_event_features(Ca,3);       % 3 features for viz
-if o.verb, figure; set(gcf,'position',[1000 500 1000 1500]); tsubplot(3,2,1);
+if o.verb, g=figure; set(gcf,'position',[1000 500 1000 1500]); tsubplot(3,2,1);
   ms_view_clusters(Xa,La); title([da.name ' labels in fea space']);
   Wopts.showcenter = 1;
   Wa = ms_templates(Ca,La);      % get mean waveforms (templates)
@@ -58,7 +59,7 @@ end
 Yb = arrayify(db.timeseries);  % sorting B... (note timeseries could differ)
 Fb = arrayify(db.firings);
 if ~isempty(Fb)
-  Tb = Fb(2,:); Lb = Fb(3,:); Kb = max(Lb);
+  Tb = Fb(2,:); Lb = Fb(3,:); Kb = max(Lb); % K = # label types in sorting
   ii = Lb>0;        % B's classified labels
   Lb(~ii) = Kb+1; Kb = max(Lb);    % treat all unclass as one new label type
 else, Tb = []; Lb = []; Kb = 0; end    % proceed with no-spike case
@@ -68,7 +69,7 @@ fprintf('best-permed accuracy of %s, treating %s as truth...\n',db.name,da.name)
 if 1     % old matlab validspike way (3-pass)
   oo = o; oo.verb = 0;      % override output
   [perm Q acc t]=times_labels_accuracy(Ta,La,Tb,Lb,oo);
-else     % C fast way, but doesn't do full times-labels best search
+else     % C fast way, but doesn't do full times-labels best search. todo: use
   outf = [tempdir '/accconfmat.mda'];    % lame for now
   mscmd_confusion_matrix(fnameify64(da.firings,tempdir),fnameify64(db.firings,tempdir),outf,o.max_matching_offset);   % todo: fix tempdir, don't overwrite
   Q = readmda(outf);   % un-permed
@@ -78,41 +79,44 @@ else     % C fast way, but doesn't do full times-labels best search
   [~,acc] = labels_similarity(Q);
 end
 fk = acc.p;   % accuracy measure
+[kblist,iperm] = sort(perm(1:Kb));  % best-permed labels present; inverse perm
+meaningful = ~isnan(kblist);
+kblist = kblist(meaningful); iperm = iperm(meaningful);
 
 popsa = histc(La,1:Ka);  % print info...
 fprintf('%s populations for each label:\n',da.name);
 fprintf('\t%d',1:Ka); fprintf('\n'); fprintf('\t%d',popsa); fprintf('\n');
-popsb = histc(perm(Lb),1:Kb);
+popsb = histc(perm(Lb),kblist);   % B's pops only in the kblist labels
 fprintf('%s populations for each label (best permuted):\n',db.name);
-fprintf('\t%d',1:Kb); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
+fprintf('\t%d',kblist); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
 if isempty(Lb), warning('Lb labels are empty (no spikes found); no plots!');
-  %if o.verb, close(gcf); end %removed by jfm 4/13/16
+  if o.verb, close(g); end    % removed by jfm 4/13/16; close only g, ahb 4/19
 return; end
 
 if o.verb
   Cb = ms_extract_clips2(Yb,Tb,o.T,[],o.betaonesnap);    % real t, resamples
   Xb = ms_event_features(Cb,3);       % 3 features for viz
-  Wb = ms_templates(Cb,Lb);      % get mean waveforms (templates)
+  Wb = ms_templates(Cb,perm(Lb));     % get mean waveforms (templates) up to mKb
   % show B output now we know the best perm...
   tsubplot(3,2,3); ms_view_clusters(Xb,perm(Lb));
   title([db.name ' labels in fea space, best-permed']);
-  [~,iperm] = sort(perm(1:Kb));          % invert permutation
-  tsubplot(3,2,4); ms_view_templates(Wb(:,:,iperm),Wopts);
+  tsubplot(3,2,4); ms_view_templates(Wb,Wopts);  % NB Wb already permed
   title([db.name ' templates, best-permed']);
 
   % summarize confusion & accuracy...
   subplot(3,2,5); imagesc(Q); colorbar;ylabel([da.name ' label']);xlabel([db.name ' label']);
-  hold on; plot([.5,Kb+.5;Kb+1.5,Kb+.5], [Ka+.5,.5;Ka+.5,Kb+1.5],'w-');
+  mKb = max(kblist)  % largest permed B type, should match size(Q,2)-1
+  hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,mKb+1.5],'w-');
   title('best extended accuracy confusion matrix');
-  subplot(3,2,6); plot(fk,'.','markersize',20); axis([1 Kb 0 1]);
+  subplot(3,2,6); plot(fk,'.','markersize',20); axis([1 mKb 0 1]);
   xlabel(sprintf('k (best permuted %s label)',db.name));
   ylabel('accuracy metric f_k');
 end
 
 if o.verb==2          % show timeseries and firings overlaid...
-  addpath ~/spikespy/matlab/  % prefer old spikespy
+  %addpath ~/spikespy/matlab/  % prefer old spikespy
   spikespy({Ya,Ta,La,sprintf('Y, %s',da.name)},{Yb,Tb,perm(Lb),sprintf('Y, %s',db.name)},{[t.tmiss';t.tfals';t.twrng'],[1+0*t.tmiss';2+0*t.tfals';3+0*t.twrng']});
-  rmpath ~/spikespy/matlab/
+  %rmpath ~/spikespy/matlab/
 end
 if o.verb==3           % mountainview...
   mv.mode='overview2'; mv.raw=db.timeseries; mv.samplerate=db.samplerate;

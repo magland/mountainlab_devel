@@ -1,9 +1,9 @@
-function [confusion_matrix T1 T2 T2w permL2]=times_labels_confusion_matrix(T1,L1,T2,L2,opts)
-% TIMES_LABELS_CONFUSION_MATRIX - confusion matrix between two {t,l} event lists
+function [Q T1 T2 T2w permL2]=times_labels_confusion_matrix(T1,L1,T2,L2,opts)
+% TIMES_LABELS_CONFUSION_MATRIX - best confusion matrix for two {t,l} event lists
 %
-% [P t1 t2 t2w permL2] = times_labels_confusion_matrix(T1,L1,T2,L2,opts)
-%  returns confusion matrix P of size (K1+1)-by-(K2+1) where Ki is the number
-%  of types in the label list Li, i=1,2. The last row and column of P count
+% [Q t1 t2 t2w permL2] = times_labels_confusion_matrix(T1,L1,T2,L2,opts)
+%  returns confusion matrix Q of size (K1+1)-by-(K2+1) where Ki is the number
+%  of types in the label list Li, i=1,2. The last row and column of Q count
 %  the unclassified or missed events in one of the event lists. The list L2 is
 %  permuted in the best fashion to match.
 %
@@ -16,16 +16,19 @@ function [confusion_matrix T1 T2 T2w permL2]=times_labels_confusion_matrix(T1,L1
 %                                     T1,T2 are in. Default 3.0)
 %          opts.internal_run_code (default='main') -- an internal parameter 
 % Outputs:
-%  P - confusion matrix (extended, ie size (K1+1)-by-(K2+1)), best permuted.
+%  Q - confusion matrix (extended, ie size (K1+1)-by-(K2+1)), best permuted.
 %  t1,t2,t2w - the lists of unmatched times in T1, unmatched times in T2, and
 %            wrongly matched times in T2.
 %  permL2 - best permutation of L2, ie the labels permL2(L2) are best matching
-%           against L1, given the times.
+%           against L1, given the times. Entries of permL2 for which there are no
+%           occurrences in L2 are set to NaN.
 %
-% Notes: has 3 passes, in order to find best permutation of labels.
-%  Time offsets are only compared to the nearest integer in whatever units T1
+% Notes: a) has 3 passes, in order to find best permutation of labels.
+%  b) Time offsets are only compared to the nearest integer in whatever units T1
 %  and T2 are in, due to the integer stepping in offset.
-% 
+%  c) It is possible for Q to have at least one column with all zeros, if there
+%     are no matching events for one of the types in (T1,L1).
+%
 % Run without arguments gives a self-test
 
 % JFM. doc & extra outputs & self-test by AHB 5/15/15
@@ -40,9 +43,8 @@ function [confusion_matrix T1 T2 T2w permL2]=times_labels_confusion_matrix(T1,L1
 % 7/20/15: ahb sped up the offending O(N1.N2.max_matching_offset) lines,
 %  pinned down issue of mismatches due to greedy-in-time-offset.
 % 8/14/15: ahb switched to use bestcolpermconfmat
-
-% todo: check "unexpected problem" when there's no labels of a certain type
-%       (see testcase below). made error->warning for now.
+% 4/19/16: ahb fixed crash when unrepresented label types; non-contiguous L2
+%          labelings
 
 % run the test if no arguments
 if nargin==0, test_times_labels_confusion_matrix; return; end
@@ -53,36 +55,34 @@ if (~isfield(opts,'max_matching_offset')) opts.max_matching_offset=3; end;
 if (~isfield(opts,'internal_run_code')) opts.internal_run_code='main'; end;
 
 % handle some trivial cases to prevent later crashes...
-if isempty(T1), confusion_matrix = histc(L2,1:max(L2));
-  confusion_matrix = [confusion_matrix(:)', 0];        % row. T2 all unmatched
+if isempty(T1), Q = histc(L2,1:max(L2));
+  Q = [Q(:)', 0];        % row. T2 all unmatched
   T2w = []; permL2 = 1:max(L2); return
 end
-if isempty(T2), confusion_matrix = histc(L1,1:max(L1));
-  confusion_matrix = [confusion_matrix(:); 0];        % col
+if isempty(T2), Q = histc(L1,1:max(L1));
+  Q = [Q(:); 0];        % col
   T2w = []; permL2 = 1:max(L2); return
 end
- 
 
 [T1,i] = sort(T1); L1 = L1(i); [T2,i] = sort(T2); L2 = L2(i); % time sort both lists
 
 if (strcmp(opts.internal_run_code,'main'))
-	%first we need to find the best permutation as described a bit above
-	opts2=opts; opts2.internal_run_code='skip_first_pass';
-	CCC=times_labels_confusion_matrix(T1,L1,T2,L2,opts2);
-	CCC=CCC(1:end-1,1:end-1); %exclude unclassified row/column
-        [permL2] = bestcolpermconfmat(CCC);
-	[K1,K2]=size(CCC);
-	opts2=opts; opts2.internal_run_code='normal'; % normal means don't find the permutation again
-        ii = (L2>=1 & L2<=K2);                % classified indices in L2
-        L2(ii) = permL2(L2(ii));              % reshuffle L2's classified labels
-	[DDD,T1,T2,T2w]=times_labels_confusion_matrix(T1,L1,T2,L2,opts2);
-	if ((size(DDD,1)~=K1+1)||(size(DDD,2)~=K2+1))
-		disp('sizes of two confusion matrices:');
-                disp (size(DDD)); disp ([K1+1,K2+1]);
-		warning('Unexpected problem: confusion matrix size problem - maybe not all labels are represented? Can fix');
-	end;
-	confusion_matrix=DDD; % ahb removed permuting conf-mat since it's already permuted! :
-	return;
+  %first we need to find the best permutation as described a bit above
+  opts2=opts; opts2.internal_run_code='skip_first_pass';
+  Q = times_labels_confusion_matrix(T1,L1,T2,L2,opts2);
+  Q = Q(1:end-1,1:end-1);               % exclude unclassified row/column
+  permL2 = bestcolpermconfmat(Q);
+  [K1,K2]=size(Q);
+  opts2=opts; opts2.internal_run_code='normal'; % normal means don't find the permutation again
+  ii = (L2>=1 & L2<=K2);                % classified indices in L2
+  for k=1:numel(permL2)                 % ahb put nans into meaningless entries
+    if isempty(find(L2==k)), permL2(k) = nan; end
+  end
+  L2(ii) = permL2(L2(ii));              % reshuffle L2's classified labels
+  [QQ,T1,T2,T2w]=times_labels_confusion_matrix(T1,L1,T2,L2,opts2);
+  if size(QQ,1)~=K1+1, error('skip_1st_pass and normal runs give Q with different number of rows - impossible'); end
+  Q=QQ; % ahb removed permuting conf-mat since it's already permuted!
+  return;
 end;
 
 skip_first_pass=strcmp(opts.internal_run_code,'skip_first_pass');
@@ -93,7 +93,7 @@ num_labels2=max(L2);
 T2w = [];   % AHB keep list of wrongly-matched
 
 %initialize the output confusion matrix
-confusion_matrix=zeros(num_labels1+1,num_labels2+1); %the last row and column are for unclassified events
+Q=zeros(num_labels1+1,num_labels2+1); %the last row and column are for unclassified events
 	
 %first we handle the pairs that are 0 close, then 1 close, then 2 close,
 %all the way up to max_offset close.
@@ -121,7 +121,7 @@ for pass=1:2 %first pass handles case where matching events should be given prio
 				inds=ii(find((abs(T2(ii)-T1(it))<=offset).*(inds2_to_remove(ii)==0).*condition_for_pass_1)); % ahb sped up
 				if (length(inds)>0)
 				  ind0=inds(1);  % Handles case of a double match
-				  confusion_matrix(L1(it),L2(ind0))=confusion_matrix(L1(it),L2(ind0))+1; %increment the entry in the confusion matrix
+				  Q(L1(it),L2(ind0))=Q(L1(it),L2(ind0))+1; %increment the entry in the confusion matrix
 				  inds1_to_remove(it)=1; %we've handled the event, so let's remove it!
 				  inds2_to_remove(ind0)=1; %we've handled the event, so let's remove it!
 				  if L2(ind0)~=L1(it), T2w = [T2w T1(it)]; end % AHB - keep track of the wrongly classified events
@@ -138,10 +138,10 @@ for pass=1:2 %first pass handles case where matching events should be given prio
 end;
 %The remaining are unclassified
 for it=1:length(T1)
-  confusion_matrix(L1(it),num_labels2+1)=confusion_matrix(L1(it),num_labels2+1)+1;
+  Q(L1(it),num_labels2+1)=Q(L1(it),num_labels2+1)+1;
 end
 for it=1:length(T2)
-  confusion_matrix(num_labels1+1,L2(it))=confusion_matrix(num_labels1+1,L2(it))+1;
+  Q(num_labels1+1,L2(it))=Q(num_labels1+1,L2(it))+1;
 end
 
 %%%%%%%
@@ -193,7 +193,7 @@ T2 = T; T(3) = 40; L2 = L;
 [P t1 t2 t2w] = times_labels_confusion_matrix([10 12],[1 2],[11 10],[1 2]);
 end
 
-if 0  % jfm's debugging
+if 1  % jfm's debugging
 [P t1 t2 t2w] = times_labels_confusion_matrix([10 12 15 20],[1 1 2 2],[11 14 16 21],[2 2 1 1],struct('internal_run_code','main'));
 disp(P);
 T1=[10 1 2 12 15 18 80 80 80 21 52 54]; L1=[1 1 1 1 2 2 2 2 2 3 3 3];
@@ -209,12 +209,14 @@ if 1 % these caused it to crash (should be fixed -- jfm)
 [P t1 t2 t2w] = times_labels_confusion_matrix([10 20 30],[1 1 2],[12 20],[1 2])
 end
 
-if 1 % "unexpected problem" testcase
-T = [2905.3       2908.5       2909.6]; L=[2 1 2];   %L = [7     6     7];
-T2 = [2907.4       2908.1       2911.5]; L2=[1 2 2]; %L2=[6     2     2];
-T = [T 1e4+(10:10:100)]; T2 = [T2 1e4+(10:10:100)]; L=[L ones(1,10)]; L2=[L2 ones(1,10)];
-o.max_matching_offset = 10;
-[Q tmiss tfals twrng Pfound] = times_labels_confusion_matrix(T,L,T2,L2,o)
+if 1 
+  L = [7     6     7]; L2=[3     2     2]; % "unexpected problem" absent labels
+  %L=[2 1 2];  L2=[1 2 2];                % is fine
+  T = [2905.3       2908.5       2909.6];
+  T2 = [2907.4       2908.1       2911.5];
+  T = [T 1e4+(10:10:100)]; T2 = [T2 1e4+(10:10:100)]; L=[L ones(1,10)]; L2=[L2 ones(1,10)];
+  o.max_matching_offset = 10;
+  [Q tmiss tfals twrng Pfound] = times_labels_confusion_matrix(T,L,T2,L2,o)
 end
 
 if 1 % Alex's test on random long list of times & labels...

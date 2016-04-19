@@ -28,7 +28,7 @@ for i=testlist
   fprintf('k   :'); fprintf('\t%d',1:numel(fk{i})), fprintf('\n');
   fprintf('f_k :'); fprintf('\t%.3f',fk{i}), fprintf('\n');
   fprintf('extended confusion matrix:\n')
-  for j=1:size(Q,1), fprintf('%d\t',Q{i}(j,:)), fprintf('\n'); end
+  for j=1:size(Q{i},1), fprintf('%d\t',Q{i}(j,:)), fprintf('\n'); end
   fprintf('\n')
 end
 
