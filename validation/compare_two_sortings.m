@@ -91,7 +91,7 @@ fprintf('\t%d',1:Ka); fprintf('\n'); fprintf('\t%d',popsa); fprintf('\n');
 popsb = histc(perm(Lb),kblist);   % B's pops only in the kblist labels
 fprintf('%s populations for each label (best permuted):\n',db.name);
 fprintf('\t%d',kblist); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
-if isempty(Lb), warning('Lb labels are empty (no spikes found); no plots!');
+if isempty(Lb), warning('Lb labels are empty (no spikes found)');
   if o.verb, close(bigfig); end % removed by jfm 4/13/16; close only g, ahb 4/19
 return; end
 
@@ -107,13 +107,15 @@ if o.verb
 
   % summarize confusion & accuracy...
   subplot(3,2,5); imagesc(Q); colorbar;ylabel([da.name ' label']);xlabel([db.name ' label']);
-  mKb = max(kblist);  % largest permed B type, should match size(Q,2)-1
+  mKb = max(kblist);   % largest permed B type, should match size(Q,2)-1
   hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,mKb+1.5],'w-');
   title('best extended accuracy confusion matrix');
-  subplot(3,2,6); plot(fk,'.','markersize',20); axis([1 mKb 0 1]);
+  subplot(3,2,6); %plot(fk,'.','markersize',20);
+  bar(fk); axis([0.5 mKb+0.5 0 1]);
   xlabel(sprintf('k (best permuted %s label)',db.name));
   ylabel('accuracy metric f_k');
 end
+drawnow
 
 if o.verb==2          % show timeseries and firings overlaid...
   %addpath ~/spikespy/matlab/  % prefer old spikespy

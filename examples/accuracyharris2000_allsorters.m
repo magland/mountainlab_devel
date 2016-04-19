@@ -4,20 +4,20 @@
 clear; addpath('sorting_algs/demo_sort_001');
 d = grab_harris2000_dataset;
 
-o_acc.verb = 2; o_acc.usepre = 1;  % accuracy-testing opts
+o_acc.verb = 1; o_acc.usepre = 1;  % accuracy-testing opts
 
 % common options for sorters
-oc.detect_threshold = 3.5;   % sorter opts: threshold in stddev
+oc.detect_threshold = 3.0;   % sorter opts: threshold in stddev
 oc.detect_polarity = 'm'; oc.sign=-1;
 
 sorters = {@simplesorter, @ds001_sort, @franklab_sort_2016_03_17_msdet4, @jfm_april_sort, @validspike_wrapper};
 snames = {'simple','demosort001','franklab 3-17 det4','jfm april','validspike'};
 for i=1:numel(sorters), os{i} = oc; end    % use common opts
-% any variations from common opts here:
-os{2}.detect_threshold = 3.0;
-os{3}.detect_threshold = 3.0;
+% ... put any variations from common opts here:...
+%os{2}.detect_threshold = 3.0;
+%os{3}.detect_threshold = 3.0;
 
-testlist = 1:numel(sorters);   % which sorters to run
+testlist = 1:4; %numel(sorters);   % which sorters to run
 
 for i=testlist
   fprintf('RUNNING sorter %s...\n',snames{i})
