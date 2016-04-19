@@ -1,8 +1,9 @@
-% accuracy vs IC on Harris 2000, for various sorters. (5th one is optional)
-% Barnett 4/8/16
+% accuracy vs IC on Martinez 2009 synth, for various sorters.
+% Barnett 4/8/16, 4/19/16
 
 clear; addpath('sorting_algs/demo_sort_001');
-n = 1; d = grab_martinez2009_dataset(n);      % choose one of 5
+n = 1; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
+% Compare accuracies to Table 2 in their paper (given as false pos, missed).
 
 o_acc.verb = 1; o_acc.usepre = 1;  % accuracy-testing opts
 
@@ -12,10 +13,11 @@ oc.detect_threshold = 3.0;   % sorter opts: threshold in stddev
 sorters = {@simplesorter, @ds001_sort, @franklab_sort_2016_03_17_msdet4, @jfm_april_sort, @validspike_wrapper};
 snames = {'simple','demosort001','franklab 3-17 det4','jfm april','validspike'};
 for i=1:numel(sorters), os{i} = oc; end    % use common opts
-% ... any variations from common opts here: ...
-os{5}.num_fea = 5;  % doesn't help much, still bad
+% ... put any variations from common opts here: ...
+%os{4}.fit = 0;
+%os{5}.num_fea = 5;  % doesn't help much, still bad
 
-testlist = 4 %1:4 %numel(sorters);   % which sorters to run
+testlist = 1:4; %numel(sorters);   % which sorters to run (5 needs validspike)
 
 for i=testlist
   fprintf('RUNNING sorter %s...\n',snames{i})

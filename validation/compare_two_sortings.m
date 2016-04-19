@@ -17,7 +17,8 @@ function [fk Q perm iperm] = compare_two_sortings(da,db,o)
 %      T - clip size in samples
 %      max_matching_offset - passed to accuracy measuring
 %      betaonesnap - passed to clip extraction
-%      verb - verbosity: 0 (text only), 1 (figure), 2 (figs+spikespy)
+%      verb - verbosity: 0 (text only), 1 (figure), 2 (fig+spikespy),
+%                        3 (fig+MV), 4 (fig+clipclouds).
 % Output:
 %  fk - (1xK) accuracy metrics of d2 treating d1 as ground truth.
 %  Q - extended best-permuted confusion matrix
@@ -48,7 +49,8 @@ Fa = arrayify(da.firings);
 Ta = Fa(2,:); La = Fa(3,:); Ka = max(La);
 Ca = ms_extract_clips2(Ya,Ta,o.T,[],o.betaonesnap);    % real t, resamples
 Xa = ms_event_features(Ca,3);       % 3 features for viz
-if o.verb, g=figure; set(gcf,'position',[1000 500 1000 1500]); tsubplot(3,2,1);
+if o.verb, bigfig=figure; set(gcf,'position',[1000 500 1000 1500]);
+  tsubplot(3,2,1);
   ms_view_clusters(Xa,La); title([da.name ' labels in fea space']);
   Wopts.showcenter = 1;
   Wa = ms_templates(Ca,La);      % get mean waveforms (templates)
@@ -90,7 +92,7 @@ popsb = histc(perm(Lb),kblist);   % B's pops only in the kblist labels
 fprintf('%s populations for each label (best permuted):\n',db.name);
 fprintf('\t%d',kblist); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
 if isempty(Lb), warning('Lb labels are empty (no spikes found); no plots!');
-  if o.verb, close(g); end    % removed by jfm 4/13/16; close only g, ahb 4/19
+  if o.verb, close(bigfig); end % removed by jfm 4/13/16; close only g, ahb 4/19
 return; end
 
 if o.verb
@@ -105,7 +107,7 @@ if o.verb
 
   % summarize confusion & accuracy...
   subplot(3,2,5); imagesc(Q); colorbar;ylabel([da.name ' label']);xlabel([db.name ' label']);
-  mKb = max(kblist)  % largest permed B type, should match size(Q,2)-1
+  mKb = max(kblist);  % largest permed B type, should match size(Q,2)-1
   hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,mKb+1.5],'w-');
   title('best extended accuracy confusion matrix');
   subplot(3,2,6); plot(fk,'.','markersize',20); axis([1 mKb 0 1]);
@@ -122,7 +124,11 @@ if o.verb==3           % mountainview...
   mv.mode='overview2'; mv.raw=db.timeseries; mv.samplerate=db.samplerate;
   mv.firings=db.firings; mountainview(mv);
 end
-
+if o.verb==4           % clip clouds...
+  figure; ms_view_clip_clouds(Ca,La); set(gcf,'name','true clips');
+  figure; ms_view_clip_clouds(Cb,perm(Lb)); set(gcf,'name','sorted clips');
+  figure(bigfig);
+end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % helpers...
