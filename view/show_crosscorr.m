@@ -27,9 +27,11 @@ K = size(C,1);
 figure;
 for i=1:K, for j=1:K, tsubplot(K,K,j+(i-1)*K);
     h = bar(taus,squeeze(C(i,j,:)),'edgecolor','none','barwidth',1.0);
+    if 0
     ch=get(h,'children');     % sign indicated by color
     caxis([-1 1]); set(ch,'FaceVertexCData',-sign(squeeze(C(i,j,:))));
     %axis([-maxtau maxtau sc1 sc2]);
+    end
     axis tight off
     %axis tight; set(gca,'xtick',[]);
   end, end

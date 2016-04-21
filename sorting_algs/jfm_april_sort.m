@@ -44,8 +44,9 @@ defo.whiten=1; %added 4/13/16
 defo.fit=1;%1; %added 4/13/16
 defo.artifacts=0; %added 4/13/16
 defo.merge_threshold=0.9; %added 4/13/16
-defo.detectability_threshold=6; %added 4/13/16
+defo.detectability_threshold=3; %added 4/13/16
 defo.outlier_threshold=5; %added 4/13/16
+defo.num_fea = 10;
 if nargin<3 o=struct; end; o = ms_set_default_opts(o,defo); % setup opts
 
 disp('sorter opts:'); o
@@ -68,7 +69,7 @@ o_detect.pca_denoise_jiggle = 2;           % "
 o_branch_cluster.clip_size=o.clip_size;
 o_branch_cluster.min_shell_size=o.min_shell_size;
 o_branch_cluster.shell_increment=o.shell_increment;
-o_branch_cluster.num_features=3;
+o_branch_cluster.num_features=o.num_fea;
 o_branch_cluster.detect_interval=o.detect_interval;
 o_branch_cluster.consolidation_factor=o.consolidation_factor; %added 4/12/16
 
@@ -116,7 +117,17 @@ mscmd_detect3([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);
 mscmd_branch_cluster_v2([path,'/pre2.mda'],[path,'/detect.mda'],'',[path,'/firings1.mda'],o_branch_cluster);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-mscmd_copy([path,'/firings1.mda'],[path,'/firings2.mda']);
+%mscmd_copy([path,'/firings1.mda'],[path,'/firings2.mda']);
+
+%try new merge before fit:                                          4/21/16
+firings1 = readmda([path,'/firings1.mda']);
+raw = readmda([path,'/pre2.mda']);
+clips = ms_extract_clips2(raw,firings1(2,:),o.clip_size);  % integer for now
+templates = ms_templates(clips,firings1(3,:));
+firings2=ms_merge_across_channels(templates,firings1);
+%firings2
+writemda64(firings2,[path,'/firings2.mda']);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if o.fit
@@ -126,7 +137,8 @@ else
 end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-mscmd_merge_labels([path,'/pre2.mda'],[path,'/firings3.mda'],[path,'/firings4.mda'],o_merge_labels);
+%mscmd_merge_labels([path,'/pre2.mda'],[path,'/firings3.mda'],[path,'/firings4.mda'],o_merge_labels);
+mscmd_copy([path,'/firings3.mda'],[path,'/firings4.mda']);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 mscmd_compute_outlier_scores([path,'/pre2.mda'],[path,'/firings4.mda'],[path,'/firings5.mda'],o_compute_outlier_scores);
@@ -142,7 +154,7 @@ mscmd_copy([path,'/firings7.mda'],[path,'/firings.mda']);
 
 info.filtfile = [path,'/pre1b.mda'];
 info.prefile = [path,'/pre2.mda'];
-firingsfile = [path,'/firings.mda'];
+firingsfile = [path,'/firings2.mda'];
 
 %mscmd_mda2txt([path,'/firings.mda'],[path,'/firings.txt']);
 

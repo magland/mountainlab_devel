@@ -127,8 +127,9 @@ if o.verb==3           % mountainview...
   mv.firings=db.firings; mountainview(mv);
 end
 if o.verb==4           % clip clouds...
-  figure; ms_view_clip_clouds(Ca,La); set(gcf,'name','true clips');
-  figure; ms_view_clip_clouds(Cb,perm(Lb)); set(gcf,'name','sorted clips');
+  cco=[]; cco.vzoom = 1.0;
+  figure; ms_view_clip_clouds(Ca,La,cco); set(gcf,'name','true clips');
+  figure; ms_view_clip_clouds(Cb,perm(Lb),cco); set(gcf,'name','sorted clips');
   figure(bigfig);
 end
 

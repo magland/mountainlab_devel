@@ -20,6 +20,7 @@ function [fk Q perm] = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_a
 %  o_acc - accuracy measuring options:
 %            o_acc.usepre          - if true, use preprocessed (pre.mda) not raw
 %                                    (default false)
+%            o_acc.xc - if true, show cross-correlograms
 %            (others passed to compare_two_sortings; see its help)
 %  o_sorter (optional) - passed to last argument of sortfunc, as in:
 %                [firingsfile,info] = sortfunc(rawfile,outdir,o_sorter)
@@ -57,6 +58,9 @@ db.samplerate = samplerate;
 disp('call sorter:')
 [db.firings,info] = sortfunc(da.timeseries,outdir,o_sorter);
 
+%mv.pre = info.prefile; mv.firings=db.firings; mountainview(mv); return
+%%%%%%%%%%%%%%%%%%% debugging
+
 if isfield(o_acc,'usepre') & o_acc.usepre
   if exist(info.prefile,'file')
     disp('using pre-proc (not raw) timeseries for comparsion plots...');
@@ -68,6 +72,13 @@ end
   
 [fk Q perm] = compare_two_sortings(da,db,o_acc);
 %disp('accuracies:'), fk
+
+if isfield(o_acc,'xc') && o_acc.xc % do cross-corr plot....
+  f = readmda(db.firings);   % arrayify?
+  t = f(2,:); l = f(3,:);
+  show_crosscorr(l,t);  % is v slow to plot
+end
+
 %%%%%%%%%%%%%%%
 
 % helpers...

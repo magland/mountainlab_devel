@@ -2,10 +2,10 @@
 % Barnett 4/8/16, 4/19/16
 
 clear; addpath('sorting_algs/demo_sort_001');
-n = 1; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
+n = 5; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
 % Compare accuracies to Table 2 in their paper (given as false pos, missed).
 
-o_acc.verb = 1; o_acc.usepre = 1;  % accuracy-testing opts
+o_acc.verb = 1; o_acc.xc = 1; o_acc.usepre = 1;  % accuracy-testing opts
 
 % common options for sorters
 oc.detect_threshold = 3.0;   % sorter opts: threshold in stddev
@@ -14,10 +14,12 @@ sorters = {@simplesorter, @ds001_sort, @franklab_sort_2016_03_17_msdet4, @jfm_ap
 snames = {'simple','demosort001','franklab 3-17 det4','jfm april','validspike'};
 for i=1:numel(sorters), os{i} = oc; end    % use common opts
 % ... put any variations from common opts here: ...
-%os{4}.fit = 0;
+os{1}.detect_polarity = 'p';
+% ds001 has no sign option
+os{4}.sign = +1; os{4}.detectability_threshold = 0;  % no filtering of det score
 %os{5}.num_fea = 5;  % doesn't help much, still bad
 
-testlist = 1:4; %numel(sorters);   % which sorters to run (5 needs validspike)
+testlist = [1 4]; %numel(sorters);   % which sorters to run (5 needs validspike)
 
 for i=testlist
   fprintf('RUNNING sorter %s...\n',snames{i})
