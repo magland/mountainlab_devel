@@ -4,7 +4,7 @@
 clear; addpath('sorting_algs/demo_sort_001');
 d = grab_harris2000_dataset;
 
-o_acc.verb = 2; o_acc.xc = 0; o_acc.usepre = 1;  % accuracy-testing opts
+o_acc.verb = 2; o_acc.xc = 1; o_acc.usepre = 1;  % accuracy-testing opts
 
 % common options for sorters
 oc.detect_threshold = 3.0;   % sorter opts: threshold in stddev
@@ -18,12 +18,12 @@ for i=1:numel(sorters), os{i} = oc; end    % use common opts
 %os{3}.detect_threshold = 3.0;
 os{4}.detectability_threshold=5;
 
-testlist = 4; %1:4; %numel(sorters);   % which sorters to run
+testlist = 1; %1:4; %numel(sorters);   % which sorters to run
 
 for i=testlist
   fprintf('RUNNING sorter %s...\n',snames{i})
   d.outdir = sprintf('%s/output%d',tempdir,i);  % separate output dirs for mv
-  [fk{i} Q{i}] = accuracy_anysorter_groundtrutheddata(sorters{i},d,o_acc,os{i});
+  [fk{i},Q{i},perm{i},info{i}] = accuracy_anysorter_groundtrutheddata(sorters{i},d,o_acc,os{i});
   if o_acc.verb, set(gcf,'name',snames{i}); end % label fig window
   fprintf('Harris-accuracy of sorter %s done: fk accuracies vs label k are... \n',snames{i})
   fprintf('k   :'); fprintf('\t%d',1:numel(fk{i})), fprintf('\n');
@@ -38,3 +38,5 @@ for i=testlist, fprintf('sorter %s:\n',snames{i})
   fprintf('k   :'); fprintf('\t%d',1:numel(fk{i})), fprintf('\n');
   fprintf('f_k :'); fprintf('\t%.3f',fk{i}), fprintf('\n');
 end
+
+%diagnose_merge(info{4}); % NB perm{i} and info{i} useful for diagnosing ith sorter

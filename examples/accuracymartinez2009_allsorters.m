@@ -2,7 +2,7 @@
 % Barnett 4/8/16, 4/19/16
 
 clear; addpath('sorting_algs/demo_sort_001');
-n = 5; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
+n = 2; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
 % Compare accuracies to Table 2 in their paper (given as false pos, missed).
 
 o_acc.verb = 1; o_acc.xc = 1; o_acc.usepre = 1;  % accuracy-testing opts
@@ -24,7 +24,7 @@ testlist = [1 4]; %numel(sorters);   % which sorters to run (5 needs validspike)
 for i=testlist
   fprintf('RUNNING sorter %s...\n',snames{i})
   d.outdir = sprintf('%s/output%d',tempdir,i);  % separate output dirs for mv
-  [fk{i} Q{i}] = accuracy_anysorter_groundtrutheddata(sorters{i},d,o_acc,os{i});
+  [fk{i} Q{i}, perm{i}, info{i}] = accuracy_anysorter_groundtrutheddata(sorters{i},d,o_acc,os{i});
   if o_acc.verb, set(gcf,'name',snames{i}); end % label this fig window
   fprintf('Martinez-accuracy of sorter %s done: fk accuracies vs label k are... \n',snames{i})
   fprintf('k   :'); fprintf('\t%d',1:numel(fk{i})), fprintf('\n');
@@ -39,3 +39,5 @@ for i=testlist, fprintf('sorter %s:\n',snames{i})
   fprintf('k   :'); fprintf('\t%d',1:numel(fk{i})), fprintf('\n');
   fprintf('f_k :'); fprintf('\t%.3f',fk{i}), fprintf('\n');
 end
+
+%diagnose_merge(info{4}); % NB perm{i} and info{i} useful for diagnosing ith sorter

@@ -1,10 +1,10 @@
-function [fk Q perm] = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sorter)
+function [fk Q perm info] = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sorter)
 % ACCURACY_ANYSORTER_GROUNDTRUTHEDDATA  meas accuracy of sorter on gnd-truth data
 %
 % fk = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_acc,o_sorter)
 %   measures any sorter's accuracy vs known firing times on synthetic demo data.
 %   Also pops up a bunch of windows showing accuracy.
-% [fk Q perm] = ... also outputs comparison info.
+% [fk Q perm info] = ... also outputs comparison info.
 %
 % Inputs:
 %  sortfunc - function handle to a sorter with the interface
@@ -30,6 +30,7 @@ function [fk Q perm] = accuracy_anysorter_groundtrutheddata(sortfunc,dataset,o_a
 %  fk - (1xK) accuracy metrics on the neuron types labeled by ground truth labels
 %  Q, perm - extended confusion matrix and best perm, as output by
 %            compare_two_sortings
+%  info -    any info struct returned by the sorter.
 %
 % Run without options runs a test on demo data (accuracy_simplesorter)
 

@@ -1,5 +1,5 @@
 function [firingsfile,info] = jfm_april_sort(tsfile,path,o)
-% JFM_APRIL_SORT   JFM 4/8/16 sorter w/ std MS MDA interface.
+% JFM_APRIL_SORT   JFM 4/8/16 sorter w/ std MS MDA interface; now 4/22/16
 %
 % [firingsfile,info] = jfm_april_sort(rawfile,output_dir,o)
 %
@@ -27,6 +27,7 @@ function [firingsfile,info] = jfm_april_sort(tsfile,path,o)
 %    info - struct with fields:
 %           filtfile - filtered timeseries
 %           prefile - path to the preprocessed timeseries (filt and whitened)
+%           mergeinfo - stuff from merge_across_channels
 %
 % Other m-files required: mscmd_*
 %
@@ -124,8 +125,7 @@ firings1 = readmda([path,'/firings1.mda']);
 raw = readmda([path,'/pre2.mda']);
 clips = ms_extract_clips2(raw,firings1(2,:),o.clip_size);  % integer for now
 templates = ms_templates(clips,firings1(3,:));
-firings2=ms_merge_across_channels(templates,firings1);
-%firings2
+[firings2,info.mergeinfo]=ms_merge_across_channels(templates,firings1);
 writemda64(firings2,[path,'/firings2.mda']);
 
 
@@ -137,7 +137,7 @@ else
 end;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%mscmd_merge_labels([path,'/pre2.mda'],[path,'/firings3.mda'],[path,'/firings4.mda'],o_merge_labels);
+%mscmd_merge_labels([path,'/pre2.mda'],[path,'/firings3.mda'],[path,'/firings4.mda'],o_merge_labels);     % post-fit merge OBSOLETE
 mscmd_copy([path,'/firings3.mda'],[path,'/firings4.mda']);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -154,7 +154,7 @@ mscmd_copy([path,'/firings7.mda'],[path,'/firings.mda']);
 
 info.filtfile = [path,'/pre1b.mda'];
 info.prefile = [path,'/pre2.mda'];
-firingsfile = [path,'/firings6.mda'];
+firingsfile = [path,'/firings.mda'];   % use firings6 get before filter_events, etc
 
 %mscmd_mda2txt([path,'/firings.mda'],[path,'/firings.txt']);
 
