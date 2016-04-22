@@ -108,7 +108,7 @@ if o.verb
   % summarize confusion & accuracy...
   subplot(3,2,5); imagesc(Q); colorbar;ylabel([da.name ' label']);xlabel([db.name ' label']);
   mKb = max(kblist);   % largest permed B type, should match size(Q,2)-1
-  hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,mKb+1.5],'w-');
+  hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,Ka+1.5],'w-');
   title('best extended accuracy confusion matrix');
   subplot(3,2,6); %plot(fk,'.','markersize',20);
   bar(fk); axis([0.5 mKb+0.5 0 1]);

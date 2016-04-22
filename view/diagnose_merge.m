@@ -1,11 +1,11 @@
 function diagnose_merge(info)
-% DIAGNOSE_MERGE.  plot figures showing merge_across_channels diagnostic output
+% DIAGNOSE_MERGE.  plot figures from merge_across_channels's diagnostic output
 %
 % Input: info is the struct returned by ms_merge_across_channels
-% ahb 4/22/16
+% Barnett 4/22/16
 
 mi = info.mergeinfo;
-Kpm = numel(mi.premergelabelchans);
+Kpm = numel(mi.premergelabelchans);  % # label types per-merge
 mi.premergelabelchans
 S = nan(Kpm); r = S; pr = S; cf = S; sdc = S; % extract merge info struct...
 for j=1:Kpm, for k=1:Kpm, s = mi.Sinfo{j,k};
