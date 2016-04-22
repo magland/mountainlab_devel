@@ -2,7 +2,8 @@
 % Barnett 4/8/16, 4/19/16
 
 clear; addpath('sorting_algs/demo_sort_001');
-n = 2; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
+n = 3; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
+% (n=3 is most challenging, small ampl).
 % Compare accuracies to Table 2 in their paper (given as false pos, missed).
 
 o_acc.verb = 1; o_acc.xc = 1; o_acc.usepre = 1;  % accuracy-testing opts

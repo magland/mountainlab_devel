@@ -76,7 +76,7 @@ end
 
 if isfield(o_acc,'xc') && o_acc.xc % do cross-corr plot....
   f = readmda(db.firings);   % arrayify?
-  t = f(2,:); l = f(3,:);
+  t = f(2,:); l = perm(f(3,:));       % so labels match those in compare plots
   show_crosscorr(l,t);  % is v slow to plot
 end
 

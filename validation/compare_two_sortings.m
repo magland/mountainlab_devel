@@ -52,7 +52,7 @@ Xa = ms_event_features(Ca,3);       % 3 features for viz
 if o.verb, bigfig=figure; set(gcf,'position',[1000 500 1000 1500]);
   tsubplot(3,2,1);
   ms_view_clusters(Xa,La); title([da.name ' labels in fea space']);
-  Wopts.showcenter = 1;
+  Wopts.showcenter = 1; Wopts.pops = histc(La,1:max(La));  % cluster sizes
   Wa = ms_templates(Ca,La);      % get mean waveforms (templates)
   tsubplot(3,2,2); ms_view_templates(Wa,Wopts); title([da.name ' templates']);
   drawnow
@@ -84,11 +84,13 @@ fk = acc.p;   % accuracy measure
 [kblist,iperm] = sort(perm(1:Kb));  % best-permed labels present; inverse perm
 meaningful = ~isnan(kblist);
 kblist = kblist(meaningful); iperm = iperm(meaningful);
+mKb = max(kblist);   % largest permed B type, should match size(Q,2)-1
 
 popsa = histc(La,1:Ka);  % print info...
 fprintf('%s populations for each label:\n',da.name);
 fprintf('\t%d',1:Ka); fprintf('\n'); fprintf('\t%d',popsa); fprintf('\n');
-popsb = histc(perm(Lb),kblist);   % B's pops only in the kblist labels
+popsbwempties = histc(perm(Lb),1:mKb);   % B's permed pops including empty labels
+popsb = popsbwempties(kblist);   % B's permed pops only in the kblist labels
 fprintf('%s populations for each label (best permuted):\n',db.name);
 fprintf('\t%d',kblist); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
 if isempty(Lb), warning('Lb labels are empty (no spikes found)');
@@ -102,12 +104,12 @@ if o.verb
   % show B output now we know the best perm...
   tsubplot(3,2,3); ms_view_clusters(Xb,perm(Lb));
   title([db.name ' labels in fea space, best-permed']);
+  Wopts.pops = popsbwempties;
   tsubplot(3,2,4); ms_view_templates(Wb,Wopts);  % NB Wb already permed
   title([db.name ' templates, best-permed']);
 
   % summarize confusion & accuracy...
   subplot(3,2,5); imagesc(Q); colorbar;ylabel([da.name ' label']);xlabel([db.name ' label']);
-  mKb = max(kblist);   % largest permed B type, should match size(Q,2)-1
   hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,Ka+1.5],'w-');
   title('best extended accuracy confusion matrix');
   subplot(3,2,6); %plot(fk,'.','markersize',20);

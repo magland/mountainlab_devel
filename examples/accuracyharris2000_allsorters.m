@@ -4,7 +4,7 @@
 clear; addpath('sorting_algs/demo_sort_001');
 d = grab_harris2000_dataset;
 
-o_acc.verb = 2; o_acc.xc = 1; o_acc.usepre = 1;  % accuracy-testing opts
+o_acc.verb = 1; o_acc.xc = 0; o_acc.usepre = 1;  % accuracy-testing opts
 
 % common options for sorters
 oc.detect_threshold = 3.0;   % sorter opts: threshold in stddev
@@ -18,7 +18,7 @@ for i=1:numel(sorters), os{i} = oc; end    % use common opts
 %os{3}.detect_threshold = 3.0;
 os{4}.detectability_threshold=5;
 
-testlist = 1; %1:4; %numel(sorters);   % which sorters to run
+testlist = [1 4];; %1:4; %numel(sorters);   % which sorters to run
 
 for i=testlist
   fprintf('RUNNING sorter %s...\n',snames{i})
