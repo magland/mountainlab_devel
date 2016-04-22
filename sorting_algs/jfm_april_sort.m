@@ -154,7 +154,7 @@ mscmd_copy([path,'/firings7.mda'],[path,'/firings.mda']);
 
 info.filtfile = [path,'/pre1b.mda'];
 info.prefile = [path,'/pre2.mda'];
-firingsfile = [path,'/firings2.mda'];
+firingsfile = [path,'/firings6.mda'];
 
 %mscmd_mda2txt([path,'/firings.mda'],[path,'/firings.txt']);
 

@@ -4,7 +4,7 @@
 clear; addpath('sorting_algs/demo_sort_001');
 d = grab_harris2000_dataset;
 
-o_acc.verb = 2; o_acc.xc = 0; o_acc.usepre = 1;  % accuracy-testing opts
+o_acc.verb = 3; o_acc.xc = 0; o_acc.usepre = 1;  % accuracy-testing opts
 
 % common options for sorters
 oc.detect_threshold = 3.0;   % sorter opts: threshold in stddev

@@ -53,8 +53,9 @@ if meth=='a'  % version via making discrete A signal array
   fprintf('creating quantized array, size %.3gGB...\n',K*T*8/1e9)
   LA = zeros(K,T); for j=1:N, LA(l(j),round(t(j)))=LA(l(j),round(t(j)))+a(j); end
   %LA = bsxfun(@minus,LA,mean(LA,2));  % make zero-mean - decided against
-  fprintf('computing C... ')
-  for j=1:N, if mod(j,round(N/10))==0, fprintf('%d%% ',round(100*j/N)); end
+  %fprintf('computing C... ')
+  %for j=1:N, if mod(j,round(N/10))==0, fprintf('%d%% ',round(100*j/N)); end
+  for j=1:N
     tj = t(j); lj = l(j);
     for d=-n:n
       i = round(tj)+d*o.dtau+shs;
@@ -67,12 +68,13 @@ if meth=='a'  % version via making discrete A signal array
   end
   
 elseif meth=='d'  % work directly w/ t,l: faster, 1 min 50bins N=1e6 K=10, 1core
-  fprintf('computing C... ')
+  %fprintf('computing C... ')
   j0=1; while t(j0)<tend, j0=j0+1; end % get range 
   j1=N; while t(j1)>T-tend, j1=j1-1; end
   jm = 1;        % start index of events to include rel to jth event
   jp = j0; while t(jp)<2*tend, jp=jp+1; end % end index of same
-  for j=j0:j1, if mod(j,round(N/10))==0, fprintf('%d%% ',round(100*j/N)); end
+  %for j=j0:j1, if mod(j,round(N/10))==0, fprintf('%d%% ',round(100*j/N)); end
+  for j=j0:j1
     tj = t(j); lj = l(j);
     while t(jm)<tj-tend, jm=jm+1; end  % update [jm,jp] index range to include...
     while t(jp)<tj+tend, jp=jp+1; end
