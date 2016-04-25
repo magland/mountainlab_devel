@@ -120,14 +120,17 @@ mscmd_branch_cluster_v2([path,'/pre2.mda'],[path,'/detect.mda'],'',[path,'/firin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %mscmd_copy([path,'/firings1.mda'],[path,'/firings2.mda']);
 
-%try new merge before fit:                                          4/21/16
-firings1 = readmda([path,'/firings1.mda']);
-raw = readmda([path,'/pre2.mda']);
-clips = ms_extract_clips2(raw,firings1(2,:),o.clip_size);  % integer for now
-templates = ms_templates(clips,firings1(3,:));
-[firings2,info.mergeinfo]=ms_merge_across_channels(templates,firings1);
-writemda64(firings2,[path,'/firings2.mda']);
-
+if 1 % matlab try new merge before fit:      4/21/16
+  firings1 = readmda([path,'/firings1.mda']);
+  raw = readmda([path,'/pre2.mda']);
+  clips = ms_extract_clips2(raw,firings1(2,:),o.clip_size);  % integer for now
+  templates = ms_templates(clips,firings1(3,:));
+  [firings2,info.mergeinfo]=ms_merge_across_channels(templates,firings1);
+  writemda64(firings2,[path,'/firings2.mda']);
+else   % *** awaiting C++ version of same...
+  %mscmd_merge_across_channels([path,'/pre2.mda'],[path,'/firings1.mda'],[path,'/firings2.mda']);
+end
+  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if o.fit

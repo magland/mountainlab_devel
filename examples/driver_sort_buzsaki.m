@@ -13,7 +13,7 @@ opts.detect_polarity = 'm';     % prevent t-shifted duplicates
 
 % go into this code to swap clustering algs...
 [firingsfile,info] = simplesorter(d.signal,d.outdir,opts);
-%[firingsfile,info] = franklab_sort_2016_03_17(d.signal,d.outdir,opts);
+%[firingsfile,info] = jfm_april_sort(d.signal,d.outdir,opts);
 
 % useful to standardize the ordering somewhat (rewrites firingsfile)...
 [clips,templates] = reorderbytemplatenorm(firingsfile,info.prefile,opts);
@@ -27,7 +27,7 @@ K = max(labels); pops = histc(labels,1:K); disp('populations n_k vs k:');
 fprintf('\t%d',1:K); fprintf('\n'); fprintf('\t%d',pops); fprintf('\n');
 %clips = ms_extract_clips2(Y,times,opts.clip_size);  % raw clips & wf's from them
 %W = ms_templates(clips,labels);
-figure; ms_view_templates(templates,struct('showcenter',1));title('sorted W from pre');
+figure; ms_view_templates(templates,struct('showcenter',1,'pops',pops));title('sorted W from pre');
 
 mv.raw=d.signal; mv.pre=info.prefile; mv.filt=info.filtfile; % nice view...
 mv.firings=firingsfile; mv.samplerate=d.samplerate; mountainview(mv);

@@ -41,4 +41,4 @@ for i=testlist, fprintf('sorter %s:\n',snames{i})
   fprintf('f_k :'); fprintf('\t%.3f',fk{i}), fprintf('\n');
 end
 
-%diagnose_merge(info{4}); % NB perm{i} and info{i} useful for diagnosing ith sorter
+%diagnose_merge(info{4}.mergeinfo); % NB perm{i} and info{i} useful for diagnosing ith sorter
