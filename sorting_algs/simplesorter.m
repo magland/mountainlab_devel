@@ -3,6 +3,8 @@ function [firingsfile,info]=simplesorter(rawfile,output_dir,o)
 %
 % [firingsfile,info] = simplesorter(rawfile,output_dir,o)
 %  runs a simple sorter based on clustering, treating all channels together.
+%  There is no merge stage, so if a template has similar amplitudes on different
+%  channels, it will appear >1 times as a template.
 %
 % Inputs:
 %    rawfile - path to .mda of MxN raw signal data

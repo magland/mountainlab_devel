@@ -18,7 +18,6 @@ function [firingsfile,info] = jfm_april_sort(tsfile,path,o)
 %        whiten = 0 or 1
 %        fit = 0 or 1
 %        artifacts = 0 or 1
-%        merge_threshold, eg 0.9
 %        outlier_threshold, eg 5
 %        detectability_threshold, eg 5
 %
@@ -33,6 +32,8 @@ function [firingsfile,info] = jfm_april_sort(tsfile,path,o)
 %
 % wrapped from jfm, Barnett 4/8/16. todo: break out some more opts
 
+% todo: make some opts to control merge_across..
+
 defo.clip_size = 60;       % default opts
 defo.detect_threshold = 3.0;
 defo.samplerate = 30000;
@@ -44,7 +45,6 @@ defo.consolidation_factor=0.9; %added 4/12/16
 defo.whiten=1; %added 4/13/16
 defo.fit=1;%1; %added 4/13/16
 defo.artifacts=0; %added 4/13/16
-defo.merge_threshold=0.9; %added 4/13/16
 defo.detectability_threshold=3; %added 4/13/16
 defo.outlier_threshold=5; %added 4/13/16
 defo.num_fea = 10;
@@ -85,9 +85,6 @@ o_compute_outlier_scores.min_shell_size=o.min_shell_size;
 o_fit_stage.clip_size=o.clip_size;
 o_fit_stage.min_shell_size=o.min_shell_size;
 o_fit_stage.shell_increment=o.shell_increment;
-
-o_merge_labels.clip_size=o.clip_size;
-o_merge_labels.merge_threshold=o.merge_threshold;
 
 o_filter_events.detectability_threshold=o.detectability_threshold;
 o_filter_events.outlier_threshold=o.outlier_threshold;
@@ -130,7 +127,8 @@ if 1 % matlab try new merge before fit:      4/21/16
 else   % *** awaiting C++ version of same...
   %mscmd_merge_across_channels([path,'/pre2.mda'],[path,'/firings1.mda'],[path,'/firings2.mda']);
 end
-  
+%mscmd_copy([path,'/firings1.mda'],[path,'/firings2.mda']);  % undo the merge
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 if o.fit
