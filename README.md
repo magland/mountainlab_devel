@@ -126,11 +126,25 @@ Place these files in `extdata/NeuroCube/mat/`; this has been done on the SCDA ne
 
 Test with `accuracyneurocube_allsorters`
 
+#### Neto-Kampff 2016, 32 EC channels, 1 juxtacellular channel (1GB, 2GB)
+
+Datasets are placed in one subdirectory per experiment in `extdata/Kampff/`
+
+The code `scratch_ahb/convert_kampff_to_mda.m` when run in `extdata/Kampff`
+generates MDA raw timeseries and the true firings.
+There are two datasets, a "good" one where the JC neuron is close to the MEA
+(2014_11_25_Pair_3_0, around 10 mins), and a "bad" one where
+the JC is far (2014_03_26_Pair_2_0, around 5 mins).
+
+Test with `accuracykampffjuxta_allsorters`
+
 
 
 ### To do list
 
-* more ground-truthed datasets
+* more ground-truthed datasets (Harris hybrid, etc)
 
 * stability metrics
+
+* other sorters
 

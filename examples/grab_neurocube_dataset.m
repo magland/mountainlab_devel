@@ -27,8 +27,8 @@ elseif n==2
   d.name = 'NeuroCube-tet-5min';
 end
 writemda32(data,d.timeseries);
-Wthresh = 20.0;                   % template abs threshold
-gnd = find(max(abs(Close_Spikeshapes),[],2)>Wthresh); % labels to call "ground truth"
+Wthresh = 20.0;                   % template abs threshold (set to 0 for all 600!)
+gnd = find(max(abs(Close_Spikeshapes),[],2)>=Wthresh); % labels to call "ground truth"
 % a few neurons that have large peaks
 times = []; labels = [];
 % relabel them 1,..,K and output as ground truth...

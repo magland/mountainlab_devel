@@ -20,6 +20,7 @@ function [firingsfile,info] = jfm_april_sort(tsfile,path,o)
 %        artifacts = 0 or 1
 %        outlier_threshold, eg 5
 %        detectability_threshold, eg 5
+%        elecadjmat = file with MDA of M-by-M adjacency matrix of electrodes
 %
 % Outputs:
 %    firingsfile - path to the firings.mda output file
@@ -31,6 +32,7 @@ function [firingsfile,info] = jfm_april_sort(tsfile,path,o)
 % Other m-files required: mscmd_*
 %
 % wrapped from jfm, Barnett 4/8/16. todo: break out some more opts
+% 4/27/16: included elecadjmat opt
 
 % todo: make some opts to control merge_across..
 
@@ -48,6 +50,7 @@ defo.artifacts=0; %added 4/13/16
 defo.detectability_threshold=3; %added 4/13/16
 defo.outlier_threshold=5; %added 4/13/16
 defo.num_fea = 10;
+defo.elecadjmat = '';
 if nargin<3 o=struct; end; o = ms_set_default_opts(o,defo); % setup opts
 
 disp('sorter opts:'); o
@@ -112,7 +115,7 @@ end
 mscmd_detect3([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-mscmd_branch_cluster_v2([path,'/pre2.mda'],[path,'/detect.mda'],'',[path,'/firings1.mda'],o_branch_cluster);
+mscmd_branch_cluster_v2([path,'/pre2.mda'],[path,'/detect.mda'],o.elecadjmat,[path,'/firings1.mda'],o_branch_cluster);        % AHB added ajd mat 4/27/16
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %mscmd_copy([path,'/firings1.mda'],[path,'/firings2.mda']);

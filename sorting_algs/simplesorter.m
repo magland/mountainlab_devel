@@ -43,6 +43,7 @@ def_sort_opts.verb = 0;                % verbosity
 
 if nargin<3 o=struct; end; o=ms_set_default_opts(o,def_sort_opts); % setup opts
 
+tA = tic;
 disp('reading...'); Y = readmda(rawfile);
 fprintf('\tM=%d, N=%d (%.3g seconds)\n',size(Y,1), size(Y,2), size(Y,2)/o.samplerate)
 o_filter.samplerate=o.samplerate;
@@ -71,6 +72,7 @@ firingsfile = [output_dir,'/firings.mda'];
 disp('write firings...');
 writemda([0*times; times; labels],firingsfile);   % use dummy channel #s
 K = max(labels);
+fprintf('Total time for simplesorter: %.3g sec\n',toc(tA))
 
 %pops = histc(labels,1:K);
 %fprintf('populations (sorter ordering):\n'); fprintf('\t%d',pops); fprintf('\n');
