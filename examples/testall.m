@@ -1,5 +1,5 @@
 % Script to run all unit tests and examples for ml_devel
-% Barnett 4/6/16
+% Barnett 4/26/16
 
 clear; close all
 
@@ -28,8 +28,12 @@ accuracy_simplesorter
 accuracy_ds001
 accuracy_franksort_2016_03_17
 accuracy_jfm_april_sort
-% use IC electrode...
+%accuracy_validspike_sorter   % if validspike installed
+accuracytestmerge_allsorters
+% use IC electrode data (see datasets in top-level README.md):
 accuracyharris2000_allsorters
+accuracymartinez2009_allsorters
+accuracyneurocube_allsorters
 
 % EXAMPLES WITH DEMO DATA
 
@@ -57,5 +61,5 @@ v = path; addpath scratch_ahb
 path(v);
 
 if 0  % OBSOLETE THINGS STILL IN VARIOUS TESTERS
-  ms_detect
+  %...
 end

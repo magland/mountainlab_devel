@@ -2,13 +2,15 @@
 % Barnett 3/24/16
 
 clear
-d = grab_buzsaki_dataset(1);
+d = grab_buzsaki_dataset(2);
 
-opts.detect_threshold = 4.0;    % stddev units
+opts.detect_threshold = 3.5;    % stddev units
 opts.freq_min = 400; opts.freq_max = 10000;  % don't make min too low
 opts.samplerate = d.samplerate;
 opts.clip_size = 50;         % 2.5 ms
-opts.detect_polarity = 'm';     % prevent t-shifted duplicates
+opts.detect_polarity = 'm';     % (simplesorter) prevents t-shifted duplicates
+opts.sign=-1;
+opts.detectability_threshold=0;  % why so low otherwise no events?? for (1)
 %opts.verb = 1;           % makes figure of clustering in PCA space (unordered)
 
 % go into this code to swap clustering algs...
