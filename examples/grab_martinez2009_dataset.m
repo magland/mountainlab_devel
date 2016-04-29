@@ -1,4 +1,4 @@
-function d = grab_martinez2009_dataset(n)
+function d = grab_martinez2009_dataset(n,datapath)
 % Get Martinez-Quiroga 2009 JNM 1-chan sim datasets w/ known firings.
 %
 % d = grab_martinez2009_dataset(n) where n = 1...5 returns struct pointing
@@ -12,7 +12,11 @@ d.outdir = '/tmp/output'; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end  % fix
 
 mfile_path=fileparts(mfilename('fullpath'));
 ext = [mfile_path,'/../ext_datasets'];
-dir = [ext,'/MartinezQuiroga2009_sims'];
+if nargin<2
+    dir = [ext,'/MartinezQuiroga2009_sims'];
+else
+    dir=datapath;
+end;
 rawfile = sprintf('simulation-%d',n);
 fname = strcat(dir,'/',rawfile);
 fprintf('reading %s ...\n',fname)
