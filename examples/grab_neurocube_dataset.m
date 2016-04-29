@@ -1,4 +1,4 @@
-function d = grab_neurocube_dataset(n)
+function d = grab_neurocube_dataset(n,datapath)
 % gets Camunas-Mesa-Quiroga '14 NeuroCube synthetic tetrode w/ known firings
 %
 % d = grab_neurocube_dataset(n)
@@ -13,7 +13,11 @@ d.outdir = [tempdir,'output']; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end
 
 mfile_path=fileparts(mfilename('fullpath'));
 ext = [mfile_path,'/../ext_datasets'];
-dir = [ext,'/NeuroCube/mat'];
+if (nargin<2)
+    dir = [ext,'/NeuroCube/mat'];
+else
+    dir = datapath;
+end;
 
 d.samplerate = 24000;        % see Par_sim.sr in neurocube.m
 d.timeseries = [d.outdir,'/neurocube_default_tet.mda'];
