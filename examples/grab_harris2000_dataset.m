@@ -1,13 +1,19 @@
-function d = grab_harris2000_dataset()
+function d = grab_harris2000_dataset(raw_fname)
 % Get classic d5331 dataset w/ IC channel output as true firings. Barnett 4/6/16
+
+mfile_path=fileparts(mfilename('fullpath'));
+
+if nargin<1
+    ext = [mfile_path,'/../ext_datasets'];
+    dir = [ext,'/Harris2000/d5331'];
+    rawfile = 'd533101.dat';
+    fname = strcat(dir,'/',rawfile);
+else
+    fname=raw_fname;
+end;
 
 d.outdir = '/tmp/output'; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end  % fix
 
-mfile_path=fileparts(mfilename('fullpath'));
-ext = [mfile_path,'/../ext_datasets'];
-dir = [ext,'/Harris2000/d5331'];
-rawfile = 'd533101.dat';
-fname = strcat(dir,'/',rawfile);
 fprintf('reading %s ...\n',fname)
 fid = fopen(fname,'r');
 if fid==-1, error('Harris data not found!'); end
