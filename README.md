@@ -122,7 +122,7 @@ this is a 30 second dataset with around 600 ground-truth neurons (total 20000 ne
 To make a 5-minute dataset, enter 300 in Duration, and rerun (run-time around 40 minutes, even with Parallel Toolbox), Save as `Spikesim_tet_5min.mat`.
 Place these files in `extdata/NeuroCube/mat/`; this has been done on the SCDA network.
 
-`grab_martinez2009_dataset(n)` with `n=1` accesses the 30-second dataset, and `n=2` the 5-minute dataset.
+`edit grab_neurocube_dataset(n)` with `n=1` accesses the 30-second dataset, and `n=2` the 5-minute dataset.
 
 Test with `accuracyneurocube_allsorters`
 
