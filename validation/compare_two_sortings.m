@@ -1,5 +1,5 @@
 function [fk Q perm iperm] = compare_two_sortings(da,db,o)
-% COMPARE_TWO_SORTINGS  accuracy metrics between two sortings treating one true
+% COMPARE_TWO_SORTINGS  accuracy metrics between two sortings treating one as true
 %
 % fk = compare_two_sortings(da,db,o) compares sorted output in db treating that
 %  in da as truth. Produces several figures and text output. Dataset B may
@@ -14,9 +14,12 @@ function [fk Q perm iperm] = compare_two_sortings(da,db,o)
 %           samplerate - timeseries samples/sec (at least db must have this).
 %           name       - optional string giving short name of sortings
 %  o - optional struct with optional fields:
+%      ts - (default true). If true, read timeseries, otherwise just firings
+%      rowcol - (default true), if verb>0 output 2nd plot of row- & col-normed Q
 %      T - clip size in samples
 %      max_matching_offset - passed to accuracy measuring
 %      betaonesnap - passed to clip extraction
+%      permfirings (default true) - output permuted B firings
 %      verb - verbosity: 0 (text only), 1 (figure), 2 (fig+spikespy),
 %                        3 (fig+MV), 4 (fig+clipclouds).
 % Output:
@@ -31,11 +34,14 @@ function [fk Q perm iperm] = compare_two_sortings(da,db,o)
 % Used by: accuracy_anysorter_groundtrutheddata.m
 
 % todo: opt to switch to mscmd_conf_mat for speed, test.
-% Barnett 4/5/16. Kb absent label issue 4/19/16
+% Barnett 4/5/16. Kb absent label issue 4/19/16. opts.ts 5/12/16
 
 if nargin==0, test_compare_two_sortings; return; end
 if nargin<3, o = []; end
 if ~isfield(o,'verb'), o.verb = 1; end
+if ~isfield(o,'ts'), o.ts = 1; end
+if ~isfield(o,'rowcol'), o.rowcol = 1; end
+if ~isfield(o,'permfirings'), o.permfirings = 1; end
 if ~isfield(o,'T'), o.T = 50; end
 if ~isfield(o,'max_matching_offset'), o.max_matching_offset = 10; end  % in samples; eg 0.5 ms at 20 kHz
 if ~isfield(o,'betaonesnap'), o.betaonesnap=10; end  % subsampling
@@ -44,28 +50,31 @@ if ~isfield(db,'timeseries'), db.timeseries=db.signal; db=rmfield(db,'signal'); 
 if ~isfield(da,'name'), da.name='A'; end
 if ~isfield(db,'name'), db.name='B'; end
 
-Ya = arrayify(da.timeseries);  % sorting A...
-Fa = arrayify(da.firings);
+Fa = arrayify(da.firings);                      % sorting A...
 Ta = Fa(2,:); La = Fa(3,:); Ka = max(La);
-Ca = ms_extract_clips2(Ya,Ta,o.T,[],o.betaonesnap);    % real t, resamples
-Xa = ms_event_features(Ca,3);       % 3 features for viz
-if o.verb, bigfig=figure; set(gcf,'position',[1000 500 1000 1500]);
-  tsubplot(3,2,1);
-  ms_view_clusters(Xa,La); title([da.name ' labels in fea space']);
-  Wopts.showcenter = 1; Wopts.pops = histc(La,1:max(La));  % cluster sizes
-  Wa = ms_templates(Ca,La);      % get mean waveforms (templates)
-  tsubplot(3,2,2); ms_view_templates(Wa,Wopts); title([da.name ' templates']);
-  drawnow
+if o.ts, Ya = arrayify(da.timeseries); 
+  Ca = ms_extract_clips2(Ya,Ta,o.T,[],o.betaonesnap);    % real t, resamples
+  Xa = ms_event_features(Ca,3);       % 3 features for viz
+end
+if o.verb, bigfig=figure;
+  if o.ts, set(gcf,'position',[1000 500 1000 1500]);
+    tsubplot(3,2,1);
+    ms_view_clusters(Xa,La); title([da.name ' labels in fea space']);
+    Wopts.showcenter = 1; Wopts.pops = histc(La,1:max(La));  % cluster sizes
+    Wa = ms_templates(Ca,La);      % get mean waveforms (templates)
+    tsubplot(3,2,2); ms_view_templates(Wa,Wopts); title([da.name ' templates']);
+    drawnow
+  else, set(gcf,'position',[1000 500 2000 1000]);
+  end
 end
 
-Yb = arrayify(db.timeseries);  % sorting B... (note timeseries could differ)
-Fb = arrayify(db.firings);
+Fb = arrayify(db.firings);    % sorting B... (note timeseries could differ)
 if ~isempty(Fb)
   Tb = Fb(2,:); Lb = Fb(3,:); Kb = max(Lb); % K = # label types in sorting
   ii = Lb>0;        % B's classified labels
   Lb(~ii) = Kb+1; Kb = max(Lb);    % treat all unclass as one new label type
 else, Tb = []; Lb = []; Kb = 0; end    % proceed with no-spike case
-  
+
 % match up B to A...
 fprintf('best-permed accuracy of %s, treating %s as truth...\n',db.name,da.name)
 if 1     % old matlab validspike way (3-pass)
@@ -96,35 +105,67 @@ fprintf('\t%d',kblist); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
 if isempty(Lb), warning('Lb labels are empty (no spikes found)');
   if o.verb, close(bigfig); end % removed by jfm 4/13/16; close only g, ahb 4/19
 return; end
+if o.permfirings
+  [path,nam] = fileparts(db.firings);
+  pffile = [path,'/',nam,'_permed.mda'];
+  writemda64([0*Tb;Tb;perm(Lb)],pffile);  % output best-permed B firings
+end
 
 if o.verb
-  Cb = ms_extract_clips2(Yb,Tb,o.T,[],o.betaonesnap);    % real t, resamples
-  Xb = ms_event_features(Cb,3);       % 3 features for viz
-  Wb = ms_templates(Cb,perm(Lb));     % get mean waveforms (templates) up to mKb
-  % show B output now we know the best perm...
-  tsubplot(3,2,3); ms_view_clusters(Xb,perm(Lb));
-  title([db.name ' labels in fea space, best-permed']);
-  Wopts.pops = popsbwempties;
-  tsubplot(3,2,4); ms_view_templates(Wb,Wopts);  % NB Wb already permed
-  title([db.name ' templates, best-permed']);
+  if o.ts, Yb = arrayify(db.timeseries);
+    Cb = ms_extract_clips2(Yb,Tb,o.T,[],o.betaonesnap);    % real t, resamples
+    Xb = ms_event_features(Cb,3);       % 3 features for viz
+    Wb = ms_templates(Cb,perm(Lb));     % get mean waveforms (templates) up to mKb
+    % show B output now we know the best perm...
+    tsubplot(3,2,3); ms_view_clusters(Xb,perm(Lb));
+    title([db.name ' labels in fea space, best-permed']);
+    Wopts.pops = popsbwempties;
+    tsubplot(3,2,4); ms_view_templates(Wb,Wopts);  % NB Wb already permed
+    title([db.name ' templates, best-permed']);
+  end
 
   % summarize confusion & accuracy...
-  subplot(3,2,5); imagesc(Q); colorbar;ylabel([da.name ' label']);xlabel([db.name ' label']);
-  hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,Ka+1.5],'w-');
-  title('best extended accuracy confusion matrix');
-  subplot(3,2,6); %plot(fk,'.','markersize',20);
+  if o.ts, subplot(3,2,5); else, subplot(1,2,1); end
+  imagesc(Q); colorbar; title('best extended accuracy confusion matrix');
+  ylabel([da.name ' label']);xlabel([db.name ' label']);
+  if o.ts, subplot(3,2,6); else, subplot(1,2,2); end
   bar(fk); axis([0.5 mKb+0.5 0 1]);
   xlabel(sprintf('k (best permuted %s label)',db.name));
   ylabel('accuracy metric f_k');
 end
 drawnow
 
+if o.verb & o.rowcol      % 2nd figure w/ more detail on normed Q etc.....
+  na = sum(Q,2); nb = sum(Q,1); K = min(numel(na),numel(nb));
+  Qa = Q./repmat(na,[1 numel(nb)]); % row sum normalize
+  Qb = Q./repmat(nb,[numel(na) 1]); % col "
+  figure; set(gcf,'position',[1100 400 3000 1000]);  % huge, 4k monitor!
+  subplot(1,6,1:2);
+  imagesc(Qa); colormap(1-gray(256)); title('best Q, row-normalized');
+  ylabel([da.name ' label']); xlabel([db.name ' label']);
+  hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,Ka+1.5],'r-');
+  subplot(1,6,3:4);
+  imagesc(Qb); colormap(1-gray(256)); title('best Q, col-normalized');
+  ylabel([da.name ' label']); xlabel([db.name ' label']);
+  hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,Ka+1.5],'r-');
+  subplot(1,6,5);
+  recall = diag(Q)./na(1:K); [srecall,sri] = sort(recall,'descend'); % sri=sorted indices
+  plot(srecall,'+-'); text(1:K,srecall,num2cellstr(sri)); title('sorted recalls');
+  axis([1 K 0 1]); xlabel('how many labels');
+  subplot(1,6,6);
+  prec = diag(Q)./nb(1:K)'; [sprec,spi] = sort(prec,'descend');
+  plot(sprec,'+-');text(1:K,sprec,num2cellstr(spi)); title('sorted precisions');
+  axis([1 K 0 1]); xlabel('how many labels'); drawnow
+end
+
+
+if o.ts %
 if o.verb==2          % show timeseries and firings overlaid...
   %addpath ~/spikespy/matlab/  % prefer old spikespy
   spikespy({Ya,Ta,La,sprintf('Y, %s',da.name)},{Yb,Tb,perm(Lb),sprintf('Y, %s',db.name)},{[t.tmiss';t.tfals';t.twrng'],[1+0*t.tmiss';2+0*t.tfals';3+0*t.twrng']});
   %rmpath ~/spikespy/matlab/
 end
-if o.verb==3           % mountainview...
+if o.verb==3           % mountainview... (not best-permuted!)
   mv.mode='overview2'; mv.raw=db.timeseries; mv.samplerate=db.samplerate;
   mv.firings=db.firings; mountainview(mv);
 end
@@ -134,6 +175,7 @@ if o.verb==4           % clip clouds...
   figure; ms_view_clip_clouds(Cb,perm(Lb),cco); set(gcf,'name','sorted clips');
   figure(bigfig);
 end
+end %
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % helpers...
@@ -184,8 +226,11 @@ db.timeseries = d.timeseries;
 db.outdir = [d.outdir 'b']; mkdir(db.outdir);
 [db.firings,info] = simplesorter(db.timeseries,db.outdir,o);
 
-oo.verb = 0; fk = compare_two_sortings(da,db,oo);  % check different verbosities
-oo.verb = 1; fk = compare_two_sortings(da,db,oo);
+%oo.verb = 0; fk = compare_two_sortings(da,db,oo);  % check different verbosities
+%oo.verb = 1; fk = compare_two_sortings(da,db,oo);
+oo.verb = 1; oo.ts = 0; [fk Q perm iperm] = compare_two_sortings(da,db,oo);
+perm
+ls(db.outdir)  % check firings_permed.mat is there
 
 disp(['cleaning up temp dirs ' da.outdir ' and ' db.outdir ' ...'])
 delete([da.outdir '/*']); rmdir(da.outdir);
