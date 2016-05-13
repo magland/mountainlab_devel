@@ -14,8 +14,8 @@ opts.detectability_threshold=0;  % why so low otherwise no events?? for (1)
 %opts.verb = 1;           % makes figure of clustering in PCA space (unordered)
 
 % go into this code to swap clustering algs...
-[firingsfile,info] = simplesorter(d.signal,d.outdir,opts);
-%[firingsfile,info] = jfm_april_sort(d.signal,d.outdir,opts);
+[firingsfile,info] = simplesorter(d.timeseries,d.outdir,opts);
+%[firingsfile,info] = jfm_april_sort(d.timeseries,d.outdir,opts);
 
 % useful to standardize the ordering somewhat (rewrites firingsfile)...
 [clips,templates] = reorderbytemplatenorm(firingsfile,info.prefile,opts);
@@ -31,5 +31,5 @@ fprintf('\t%d',1:K); fprintf('\n'); fprintf('\t%d',pops); fprintf('\n');
 %W = ms_templates(clips,labels);
 figure; ms_view_templates(templates,struct('showcenter',1,'pops',pops));title('sorted W from pre');
 
-mv.raw=d.signal; mv.pre=info.prefile; mv.filt=info.filtfile; % nice view...
+mv.raw=d.timeseries; mv.pre=info.prefile; mv.filt=info.filtfile; % nice view...
 mv.firings=firingsfile; mv.samplerate=d.samplerate; mountainview(mv);

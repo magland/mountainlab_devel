@@ -52,7 +52,7 @@ o_filter.freq_max=o.freq_max;
 disp('filtering...'); Yf = ms_bandpass_filter(Y,o_filter);
 info.filtfile = [output_dir,'/pre0.mda'];
 disp('write out filt...'); writemda(Yf,info.filtfile);
-disp('whitening...'); Yf = ms_whiten(Yf);   % normalizes
+disp('whitening...'); Yf = ms_whiten(Yf);   % also normalizes
 info.prefile = [output_dir,'/pre.mda'];
 disp('write out filt+whitened...');
 writemda(Yf,info.prefile);          % tell output where flit+whitened data is

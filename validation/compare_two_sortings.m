@@ -7,7 +7,7 @@ function [fk Q perm iperm] = compare_two_sortings(da,db,o)
 %
 % Inputs:
 %  da, db - each a dataset struct with at least the following fields:
-%           timeseries - MDA filename or M*N array, raw EC signal
+%           timeseries - MDA filename or M*N array, raw or filtered EC signal
 %           firings    - MDA filename or 4*Ns array, firings
 %                        (row 1 is peak channels, row 2 firing times t_j, row 3
 %                        is firing identities k_j, row 4 is firing amplitudes)
@@ -52,7 +52,7 @@ if ~isfield(db,'name'), db.name='B'; end
 
 Fa = arrayify(da.firings);                      % sorting A...
 Ta = Fa(2,:); La = Fa(3,:); Ka = max(La);
-if o.ts, Ya = arrayify(da.timeseries); 
+if o.ts, Ya = arrayify(da.timeseries);
   Ca = ms_extract_clips2(Ya,Ta,o.T,[],o.betaonesnap);    % real t, resamples
   Xa = ms_event_features(Ca,3);       % 3 features for viz
 end

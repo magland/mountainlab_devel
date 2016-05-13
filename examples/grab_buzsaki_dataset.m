@@ -26,11 +26,11 @@ d.outdir = '/tmp/output';
 %d.outdir = [dir,'/output'];   % is on ceph so is super slow to seek
 if ~exist(d.outdir,'dir'), mkdir(d.outdir); end
 fname = strcat(dir,'/',head,'.dat');
-d.signal = [d.outdir,'/',head,'.mda'];
-if ~exist(d.signal,'file')
+d.timeseries = [d.outdir,'/',head,'.mda'];
+if ~exist(d.timeseries,'file')
   fid=fopen(fname);
   raw = fread(fid,[10 inf],'float'); fclose(fid); % read as many rows as exist
-  writemda(raw, d.signal,'float32');
+  writemda(raw, d.timeseries,'float32');
 end
 d.samplerate = 2e4;
 
