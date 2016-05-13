@@ -108,7 +108,11 @@ return; end
 if o.permfirings
   [path,nam] = fileparts(db.firings);
   pffile = [path,'/',nam,'_permed.mda'];
-  writemda64([0*Tb;Tb;perm(Lb)],pffile);  % output best-permed B firings
+  try
+    writemda64([0*Tb;Tb;perm(Lb)],pffile);  % output best-permed B firings
+  catch
+    warning('writemda failed');
+  end
 end
 
 if o.verb
@@ -136,28 +140,8 @@ end
 drawnow
 
 if o.verb & o.rowcol      % 2nd figure w/ more detail on normed Q etc.....
-  na = sum(Q,2); nb = sum(Q,1); K = min(numel(na),numel(nb));
-  Qa = Q./repmat(na,[1 numel(nb)]); % row sum normalize
-  Qb = Q./repmat(nb,[numel(na) 1]); % col "
-  figure; set(gcf,'position',[1100 400 3000 1000]);  % huge, 4k monitor!
-  subplot(1,6,1:2);
-  imagesc(Qa); colormap(1-gray(256)); title('best Q, row-normalized');
-  ylabel([da.name ' label']); xlabel([db.name ' label']);
-  hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,Ka+1.5],'r-');
-  subplot(1,6,3:4);
-  imagesc(Qb); colormap(1-gray(256)); title('best Q, col-normalized');
-  ylabel([da.name ' label']); xlabel([db.name ' label']);
-  hold on; plot([.5,mKb+.5;mKb+1.5,mKb+.5], [Ka+.5,.5;Ka+.5,Ka+1.5],'r-');
-  subplot(1,6,5);
-  recall = diag(Q)./na(1:K); [srecall,sri] = sort(recall,'descend'); % sri=sorted indices
-  plot(srecall,'+-'); text(1:K,srecall,num2cellstr(sri)); title('sorted recalls');
-  axis([1 K 0 1]); xlabel('how many labels');
-  subplot(1,6,6);
-  prec = diag(Q)./nb(1:K)'; [sprec,spi] = sort(prec,'descend');
-  plot(sprec,'+-');text(1:K,sprec,num2cellstr(spi)); title('sorted precisions');
-  axis([1 K 0 1]); xlabel('how many labels'); drawnow
+  display_confusion(Q,da.name,db.name);
 end
-
 
 if o.ts %
 if o.verb==2          % show timeseries and firings overlaid...
