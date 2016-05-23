@@ -1,8 +1,24 @@
-% function testwhitening
-% basic tests of prewhitening theory.
+% basic tests of prewhitening theory. OBSOLETE: see: comparecommonmode.m
 % Barnett 5/18/16
 
-addpath ~/validspike/stageA
+if 0 % really basic no-spike tests, iid noise and CM, check analytical model:
+Ms = 2.^(2:6);  % range of channel #s
+N = 1e5;
+alpha = 0.5;     % cm std dev rel to signal std dev
+for i=1:numel(Ms), M = Ms(i);
+  Y = randn(M,N);               % iid
+  cm = randn(1,N);
+  Y = Y + repmat(alpha*cm,[M 1]);  % CM, ampl
+  [V D] = eig(Y*Y'); D = diag(D); Yw = (V*diag(1./sqrt(D/N))*V')*Y; % jfm
+  fprintf('M=%d:\tD/N=[%.3g,%.3g,..] (pred %.3g,%.3g)\tcm rej ratio=%.3g (pred %.3g)\n',M,D(end)/N,mean(D(1:end-1))/N,1+alpha^2*M,1-2*alpha^2,mean(Y*cm')/mean(Yw*cm'),sqrt(1+alpha^2*M))
+end
+return
+% verifies reduction ratio is sqrt(1+alpha^2M).
+% So, not much use for small CM signals.
+end
+
+
+addpath ~/validspike/stageA       % generate spikes
 
 clear
 M = 16;   % # channels
@@ -26,7 +42,7 @@ for k=1:K
 end
 figure; ms_view_templates(W);
 
-Tsec = 120;
+Tsec = 60;  % duration
 N = round(Tsec*d.samplerate);         % number of time points
 rates = 2.^(0:K-1)/d.samplerate;    % dyadic set of rates
 o.amplsig = 0.0;
@@ -35,18 +51,17 @@ d.truefirings = 'wh_truefirings.mda';
 writemda64([0*times;times;labels],d.truefirings);
 Y = synthesize_timeseries(W,N,times,labels,ampls);
 
-Y = 0*Y;   % kill all spikes
+%Y = 0*Y;   % kill all spikes
 
-cm = 0.2*randn(1,N);
+cm = 0*0.2*randn(1,N);
 o = []; o.freq_min=0; o.freq_max = 6000; o.samplerate = d.samplerate;
 cm = ms_bandpass_filter(cm,o);
 Y = Y + ones(M,1)*cm;    % outer prod.  same across all chans
 eta = 0.2;               % noise std deviation per sample per channel
 noi = eta * randn(size(Y));
 noi = ms_bandpass_filter(noi,o);
-Y = Y + noi;
+%Y = Y + noi;
 
-%Y = ms_bandpass_filter(Y,o); % no, since did noise and did CM
 Y = Y/sqrt(mean(Y(:).^2));      % make unit variance
 
 d.timeseries = 'wh_raw.mda';
@@ -59,27 +74,29 @@ end % way too slow to plot M^2 bar graphs!!!
 
 %spikespy({Y,times,labels})
 
-Y*cm'   % how much CM in typ chan
-disp('whiten...')
-Yw = ms_whiten(Y);
+%Y*cm'   % how much CM in chans
+disp('whiten...'), Yw = ms_whiten(Y);
+%Yw = Yw/sqrt(mean(Yw(:).^2));      % make unit variance
 %[V D] = eig(Y*Y'); Yw = (diag(1./sqrt(diag(D)/N))*V')*Y;  % 1/N so var stays 1 
-% puts it all in last channel
+% ahb old method, puts it all in last channel
 
-Yw*cm'   % how much CM in typ chan
+%Yw*cm'   % how much CM in chans
 
-mean(Y(:).^2), mean(Yw(:).^2)  % check
+mean(Y(:).^2), mean(Yw(:).^2)  % check rms same
 
+spikespy({Y,'Y'},{Yw,'Yw'});
 
 fprintf('CM proj ratio = %.3g\n',mean(Y*cm')/mean(Yw*cm'))  % 2.9x reduction in projection onto CM
 % (why not 4x = sqrt(M) ? )
 
-[V D] = eig(Y*Y'); %V
-disp('eigvals YYt:')
-diag(D)/N/M  % one eigval 16x the others, with const eigvec
-% (since uncorr noise and CM noise are equal ampl)
-disp('eigvals YwYwt:')
-[V D] = eig(Yw*Yw'); %V
-diag(D)/N/M  % all eigvals equal as expect
+if 0, [V D] = eig(Y*Y'); %V
+  disp('eigvals YYt:')
+  diag(D)/N/M  % one eigval 16x the others, with const eigvec
+               % (since uncorr noise and CM noise are equal ampl)
+  disp('eigvals YwYwt:')
+  [V D] = eig(Yw*Yw'); %V
+  diag(D)/N/M  % all eigvals equal as expect
+end
 
 
 
