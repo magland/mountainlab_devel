@@ -45,6 +45,7 @@ function [Q T1 T2 T2w permL2]=times_labels_confusion_matrix(T1,L1,T2,L2,opts)
 % 8/14/15: ahb switched to use bestcolpermconfmat
 % 4/19/16: ahb fixed crash when unrepresented label types; non-contiguous L2
 %          labelings
+% 6/8/16: ahb ignore zero labels
 
 % run the test if no arguments
 if nargin==0, test_times_labels_confusion_matrix; return; end
@@ -65,6 +66,8 @@ if isempty(T2), Q = histc(L1,1:max(L1));
 end
 
 [T1,i] = sort(T1); L1 = L1(i); [T2,i] = sort(T2); L2 = L2(i); % time sort both lists
+
+ii = L1>0; T1 = T1(ii); L1 = L1(ii); ii = L2>0; T2 = T2(ii); L2 = L2(ii); % kill zero-labels
 
 if (strcmp(opts.internal_run_code,'main'))
   %first we need to find the best permutation as described a bit above

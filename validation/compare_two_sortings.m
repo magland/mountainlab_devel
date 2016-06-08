@@ -34,6 +34,7 @@ function [fk Q perm iperm] = compare_two_sortings(da,db,o)
 % Used by: accuracy_anysorter_groundtrutheddata.m
 
 % todo: opt to switch to mscmd_conf_mat for speed, test.
+% todo: handle zero-valued labels
 % Barnett 4/5/16. Kb absent label issue 4/19/16. opts.ts 5/12/16
 
 if nargin==0, test_compare_two_sortings; return; end
@@ -45,8 +46,10 @@ if ~isfield(o,'permfirings'), o.permfirings = 1; end
 if ~isfield(o,'T'), o.T = 50; end
 if ~isfield(o,'max_matching_offset'), o.max_matching_offset = 10; end  % in samples; eg 0.5 ms at 20 kHz
 if ~isfield(o,'betaonesnap'), o.betaonesnap=10; end  % subsampling
-if ~isfield(da,'timeseries'), da.timeseries=da.signal; da=rmfield(da,'signal'); warning('dataset signal field obsolete; use timeseries!'); end
-if ~isfield(db,'timeseries'), db.timeseries=db.signal; db=rmfield(db,'signal'); warning('dataset signal field obsolete; use timeseries!'); end
+if o.ts
+  if ~isfield(da,'timeseries'), da.timeseries=da.signal; da=rmfield(da,'signal'); warning('dataset signal field obsolete; use timeseries!'); end
+  if ~isfield(db,'timeseries'), db.timeseries=db.signal; db=rmfield(db,'signal'); warning('dataset signal field obsolete; use timeseries!'); end
+end
 if ~isfield(da,'name'), da.name='A'; end
 if ~isfield(db,'name'), db.name='B'; end
 
@@ -105,7 +108,7 @@ fprintf('\t%d',kblist); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
 if isempty(Lb), warning('Lb labels are empty (no spikes found)');
   if o.verb, close(bigfig); end % removed by jfm 4/13/16; close only g, ahb 4/19
 return; end
-if o.permfirings
+if ischar(db.firings) && o.permfirings
   [path,nam] = fileparts(db.firings);
   pffile = [path,'/',nam,'_permed.mda'];
   try
@@ -151,7 +154,7 @@ if o.verb==2          % show timeseries and firings overlaid...
 end
 if o.verb==3           % mountainview... (not best-permuted!)
   mv.mode='overview2'; mv.raw=db.timeseries; mv.samplerate=db.samplerate;
-  mv.firings=db.firings; mountainview(mv);
+  mv.firings=fnameify64(db.firings); mountainview(mv);
 end
 if o.verb==4           % clip clouds...
   cco=[]; cco.vzoom = 1.0;
