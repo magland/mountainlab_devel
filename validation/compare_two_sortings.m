@@ -38,6 +38,7 @@ function [fk Q perm iperm] = compare_two_sortings(da,db,o)
 % Barnett 4/5/16. Kb absent label issue 4/19/16. opts.ts 5/12/16
 
 if nargin==0, test_compare_two_sortings; return; end
+
 if nargin<3, o = []; end
 if ~isfield(o,'verb'), o.verb = 1; end
 if ~isfield(o,'ts'), o.ts = 1; end
@@ -85,7 +86,7 @@ if 1     % old matlab validspike way (3-pass)
   [perm Q acc t]=times_labels_accuracy(Ta,La,Tb,Lb,oo);
 else     % C fast way, but doesn't do full times-labels best search. todo: use
   outf = [tempdir '/accconfmat.mda'];    % lame for now
-  mscmd_confusion_matrix(fnameify64(da.firings,tempdir),fnameify64(db.firings,tempdir),outf,o.max_matching_offset);   % todo: fix tempdir, don't overwrite
+  mscmd_confusion_matrix(pathify64(da.firings,tempdir),pathify64(db.firings,tempdir),outf,o.max_matching_offset);   % todo: fix tempdir, don't overwrite
   Q = readmda(outf);   % un-permed
   [perm Q] = bestcolpermconfmat(Q);
   fprintf('best permed extended confusion matrix (%s down, %s across):\n',da.name, db.name)
@@ -150,11 +151,12 @@ if o.ts %
 if o.verb==2          % show timeseries and firings overlaid...
   %addpath ~/spikespy/matlab/  % prefer old spikespy
   spikespy({Ya,Ta,La,sprintf('Y, %s',da.name)},{Yb,Tb,perm(Lb),sprintf('Y, %s',db.name)},{[t.tmiss';t.tfals';t.twrng'],[1+0*t.tmiss';2+0*t.tfals';3+0*t.twrng']});
+  % can't include : '1:miss 2:false 3:wrong'  since need Y data too! (spikespy issue)
   %rmpath ~/spikespy/matlab/
 end
 if o.verb==3           % mountainview... (not best-permuted!)
   mv.mode='overview2'; mv.raw=db.timeseries; mv.samplerate=db.samplerate;
-  mv.firings=fnameify64(db.firings); mountainview(mv);
+  mv.firings=pathify64(db.firings); mountainview(mv);
 end
 if o.verb==4           % clip clouds...
   cco=[]; cco.vzoom = 1.0;
@@ -163,39 +165,6 @@ if o.verb==4           % clip clouds...
   figure(bigfig);
 end
 end %
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% helpers...
-
-function fname = fnameify32(X,outdir)
-% FNAMEIFY  if array, writes to file and returns filename, otherwise keeps name
-
-% v crude for now.
-
-if nargin<2, outdir=tempdir; end
-if ischar(X) || isstring(X)
-  fname = X;
-else
-  fname = [outdir,'/',num2str(randi(1e10)),'.mda'];  % random filename
-  writemda32(X,fname);
-end
-
-function fname = fnameify64(X,outdir)
-% FNAMEIFY  if array, writes to file and returns filename, otherwise keeps name
-
-% v crude for now.
-
-if nargin<2, outdir=tempdir; end
-if ischar(X) || isstring(X)
-  fname = X;
-else
-  fname = [outdir,'/',num2str(randi(1e10)),'.mda'];  % random filename
-  writemda64(X,fname);
-end
-
-function X = arrayify(X)
-if ischar(X) || isstring(X), X = readmda(X); end
-
 
 %%%%%%%%%%%
 function test_compare_two_sortings   % tests default data and sorter

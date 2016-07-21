@@ -22,7 +22,7 @@ figure; set(gcf,'position',[1100 400 3000 1000]);  % huge, 4k monitor!
 
 h(1) = subplot(1,6,1:2);
 imagesc(Qa); colormap(1-gray(256)); hold on;
-popsc = 1e3/(Ka*sqrt(max(na)));  % blob size scale (propto area)
+popsc = 2e3/(max(Ka,Kb)*sqrt(max(na)));   % blob size scale (propto area)
 for k=1:Ka+1
   if na(k)>0, plot(0,k,'b.','markersize',max(1,popsc*sqrt(na(k)))); end
 end
@@ -35,7 +35,7 @@ hline(Ka+.5,'r-'); vline(Kb+.5,'r-'); hline(.5,'k-'); vline(.5,'k-');
 
 h(2) = subplot(1,6,3:4);
 imagesc(Qb); colormap(1-gray(256)); hold on
-popsc = 1e3/(Ka*sqrt(max(nb)));  % blob size scale (propto area)
+popsc = 2e3/(max(Ka,Kb)*sqrt(max(nb)));   % blob size scale (propto area)
 for k=1:Kb+1
   if nb(k)>0, plot(k,0,'b.','markersize',max(1,popsc*sqrt(nb(k)))); end
 end
@@ -52,7 +52,7 @@ recall(isnan(recall)) = 0;            % kill nans so they move to end
 [srecall,sri] = sort(recall,'descend'); % sri=sorted indices
 plot(srecall,'.-'); text(0.2+(1:K),0.01+srecall,num2cellstr(sri));
 title('recalls (descending order)');
-axis([1 K 0 1]); xlabel('# of matching labels');
+axis([1 max(2,K) 0 1]); xlabel('# of matching labels');
 
 h(4) = subplot(1,6,6);
 prec = diag(Q(1:K,1:K))./nb(1:K)';
@@ -60,7 +60,7 @@ prec(isnan(prec)) = 0;            % kill nans so they move to end
 [sprec,spi] = sort(prec,'descend');
 plot(sprec,'.-');text(0.2+(1:K),0.01+sprec,num2cellstr(spi));
 title('precisions (descending order)');
-axis([1 K 0 1]); xlabel('# of matching labels');
+axis([1 max(2,K) 0 1]); xlabel('# of matching labels');
 
 drawnow
 

@@ -39,6 +39,7 @@ function [fk Q perm info] = accuracy_anysorter_groundtrutheddata(sortfunc,datase
 % todo: * make various switches below into options.
 % 3/18/16 struct not text input for dataset. truewaveforms optional
 % 4/6/16 vastly simplified by using compare_two_sortings. 4/8/16 prefile
+% 7/21/16 use pathify
 
 if nargin==0, accuracy_simplesorter; return; end             % is in validation/
 if nargin<2|isempty(dataset), dataset = demo_dataset; dataset.name = 'demo'; end
@@ -50,7 +51,7 @@ outdir = dataset.outdir; if ~exist(outdir,'dir'), mkdir(outdir); end
 samplerate = dataset.samplerate;
 o_sorter.samplerate = samplerate;
 
-da.timeseries = fnameify32(dataset.timeseries,outdir);  % dataset A struct "true"
+da.timeseries = pathify32(dataset.timeseries,outdir);  % dataset A struct "true"
 da.firings = dataset.truefirings; da.name = [dataset.name ' true'];
 db = da; db.name = [dataset.name ' sorted'];            % dataset B, from sorter
 db.samplerate = samplerate;
@@ -81,19 +82,3 @@ if isfield(o_acc,'xc') && o_acc.xc % do cross-corr plot....
 end
 
 %%%%%%%%%%%%%%%
-
-% helpers...
-
-function fname = fnameify32(X,outdir)
-% FNAMEIFY  if array, writes to file and returns filename, otherwise keeps name
-
-% v crude for now.
-
-if nargin<2, outdir=tempdir; end
-if ischar(X) || isstring(X)
-  fname = X;
-else
-  fname = [outdir,'/',num2str(randi(1e10)),'.mda'];  % random filename
-  writemda32(X,fname);
-end
-%%%%%%%%
