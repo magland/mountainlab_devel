@@ -51,7 +51,7 @@ outdir = dataset.outdir; if ~exist(outdir,'dir'), mkdir(outdir); end
 samplerate = dataset.samplerate;
 o_sorter.samplerate = samplerate;
 
-da.timeseries = pathify32(dataset.timeseries,outdir);  % dataset A struct "true"
+da.timeseries = pathify32(dataset.timeseries);  % dataset A struct "true"
 da.firings = dataset.truefirings; da.name = [dataset.name ' true'];
 db = da; db.name = [dataset.name ' sorted'];            % dataset B, from sorter
 db.samplerate = samplerate;

@@ -17,8 +17,13 @@ o_acc.verb = 2;
 
 % thresh    |   acc fk                     | events 
 %   3.0          0.994  (3 mislabeled, 1 falspos, out of 348)     750000
+%   3.5          0.997  (0 missed, 2 falspos, out of 347)    350000
 % This compares vs Neto '16 p.10:  38 false pos, no missed.
 
+%  thresh  | # events    | cpu time (scda007)
+%   2.5            2e6
+%   3.0        750000
+%   3.5       348652        96
 
 if 1   % the hard one...
 dir = '/mnt/xfs1/home/ahb/ss_datasets/Kampff/2014_03_26_Pair_2_0';
@@ -31,8 +36,12 @@ o_acc.verb = 2;
 [fk Q perm] = accuracy_groundtruthedsorting(d,o_acc)
 end
 
-% finds 58 out of 150.  (beats Neto which finds 35 / 150)
-% but 5549 false pos !
+% Neto finds 35 / 150, upreported false pos rate
+
+%  thresh  | # events    | cpu time (scda007)   | # found (out of 150) | # fp
+%   3.0                                             58                  5549
+%   3.5       180000        67                      24                  2983
+
 
 
 mv.mode='overview2'; mv.raw=d.timeseries; mv.samplerate=3e4;

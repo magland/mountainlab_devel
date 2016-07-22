@@ -1,5 +1,5 @@
 % accuracy vs IC on Martinez 2009 synth, for various sorters.
-% Barnett 4/8/16, 4/19/16
+% Barnett 4/8/16, 4/19/16, algscda005 7/22/16 unfinished
 
 clear; addpath('sorting_algs/demo_sort_001');
 n = 3; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
@@ -11,8 +11,8 @@ o_acc.verb = 1; o_acc.xc = 1; o_acc.usepre = 1;  % accuracy-testing opts
 % common options for sorters
 oc.detect_threshold = 3.0;   % sorter opts: threshold in stddev
 
-sorters = {@simplesorter, @ds001_sort, @franklab_sort_2016_03_17_msdet4, @jfm_april_sort, @validspike_wrapper};
-snames = {'simple','demosort001','franklab 3-17 det4','jfm april','validspike'};
+sorters = {@simplesorter, @ds001_sort, @franklab_sort_2016_03_17_msdet4, @jfm_april_sort, @validspike_wrapper, @alg_scda_005};
+snames = {'simple','demosort001','franklab 3-17 det4','jfm april','validspike','algscda005'};
 for i=1:numel(sorters), os{i} = oc; end    % use common opts
 % ... put any variations from common opts here: ...
 os{1}.detect_polarity = 'p';

@@ -28,7 +28,9 @@ d.timeseries = [dir,'/raw.mda'];
 d.name = ['Kampff-',exptname];
 d.samplerate=3e4;
 d.truefirings = [dir,'/truefirings.mda'];
-d.elecadjmat = [dir,'/elecadjacencymatrix.mda'];    % file, not the array
+d.eleccoords = [dir,'/eleccoords.csv'];       % all need is this
+d.elecadjmat = [dir,'/elecadjacencymatrix.mda'];    % derived
+d.dims = readmdadims(d.timeseries);
 
 if 0 % plotting to see if any correlation of Y clips with JC firing:
   Y = readmda(d.timeseries); f = readmda(d.truefirings);

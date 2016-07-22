@@ -8,7 +8,8 @@ function d = grab_martinez2009_dataset(n,datapath)
 
 if nargin<1, n=1; end   % default
 
-d.outdir = '/tmp/output'; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end  % fix
+d.outdir = sprintf('/tmp/martinez%doutput',n);
+if ~exist(d.outdir,'dir'), mkdir(d.outdir); end  % fix
 
 mfile_path=fileparts(mfilename('fullpath'));
 ext = [mfile_path,'/../ext_datasets'];
@@ -33,3 +34,5 @@ truetimes = spike_times{1} + timeoff;
 truefirings = [0*truetimes; truetimes; truelabels];  % chan; time; label
 d.truefirings = [d.outdir,'/martinez2009_truefirings.mda'];
 writemda(truefirings, d.truefirings,'float64');
+d.dims = readmdadims(d.timeseries);
+% note empty eleccoords (full connectivity assumed for tetrode)
