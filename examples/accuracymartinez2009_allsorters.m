@@ -2,7 +2,7 @@
 % Barnett 4/8/16, 4/19/16, algscda005 7/22/16 unfinished
 
 clear; addpath('sorting_algs/demo_sort_001');
-n = 3; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
+n = 4; d = grab_martinez2009_dataset(n);      % choose n=1..5 (see Martinez '09)
 % (n=3 is most challenging, small ampl).
 % Compare accuracies to Table 2 in their paper (given as false pos, missed).
 
@@ -18,9 +18,10 @@ for i=1:numel(sorters), os{i} = oc; end    % use common opts
 os{1}.detect_polarity = 'p';
 % ds001 has no sign option
 os{4}.sign = +1; os{4}.detectability_threshold = 0;  % no filtering of det score
+os{4}.whiten=0;   % plain normalization (whitening breaks for M=1)
 %os{5}.num_fea = 5;  % doesn't help much, still bad
 
-testlist = [1 4]; %numel(sorters);   % which sorters to run (5 needs validspike)
+testlist = [4]; %numel(sorters);   % which sorters to run (5 needs validspike)
 
 for i=testlist
   fprintf('RUNNING sorter %s...\n',snames{i})

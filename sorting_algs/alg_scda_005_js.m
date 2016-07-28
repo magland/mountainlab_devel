@@ -1,7 +1,7 @@
-function [firingsfile,info] = alg_scda_005(tsfile,path,o)
-% ALG_SCDA_005  Matlab wrapper to JFM's javascript/C++ sorter of July 2017
+function [firingsfile,info] = alg_scda_005_js(tsfile,path,o)
+% ALG_SCDA_005_JS  Matlab wrapper to JFM's javascript/C++ sorter of July 2017
 %
-% [firingsfile,info] = alg_scda_005(rawfile,output_dir,o)
+% [firingsfile,info] = alg_scda_005_js(rawfile,output_dir,o)
 %
 % Inputs:
 %    rawfile - path to .mda of MxN (ie # channels by # timepoints) raw signal data
@@ -16,6 +16,9 @@ function [firingsfile,info] = alg_scda_005(tsfile,path,o)
 %    info - struct with fields:
 %           filtfile - filtered timeseries
 %           prefile - path to the preprocessed timeseries (filt and whitened)
+%
+% Also see: ml/matlab/sorting_algorithms/alg_scda_005.m  which is MATLAB
+%           reimplementation of this.
 
 mfile_path=fileparts(mfilename('fullpath'));
 ml = [mfile_path, '/../../mountainlab/'];

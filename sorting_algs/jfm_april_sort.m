@@ -108,11 +108,15 @@ end;
 if o.whiten
     mscmd_whiten([path,'/pre1b.mda'],[path,'/pre2.mda']);
 else
-    mscmd_copy([path,'/pre1b.mda'],[path,'/pre2.mda']);
+  Y = readmda([path,'/pre1b.mda']);
+  out = [path,'/pre2.mda'];
+  writemda(ms_normalize_channels(Y),out,'float32');
+  %mscmd_copy([path,'/pre1b.mda'],[path,'/pre2.mda']);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-mscmd_detect3([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);
+%mscmd_detect3([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);   % frac timeshifts
+mscmd_detect([path,'/pre2.mda'],[path,'/detect.mda'],o_detect);      % integer "
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 mscmd_branch_cluster_v2([path,'/pre2.mda'],[path,'/detect.mda'],o.elecadjmat,[path,'/firings1.mda'],o_branch_cluster);        % AHB added ajd mat 4/27/16

@@ -12,7 +12,7 @@ else
     fname=raw_fname;
 end;
 
-d.outdir = '/tmp/output'; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end  % fix
+d.outdir = '/tmp/harrisoutput'; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end  % fix
 
 fprintf('reading %s ...\n',fname)
 fid = fopen(fname,'r');
@@ -40,5 +40,5 @@ writemda(truefirings, d.truefirings,'float64');
 Y = Y(2:5,:);  % the EC channels
 d.timeseries = [d.outdir,'/harris2000_raw.mda'];
 writemda(Y, d.timeseries,'float32'); 
+d.dims = size(Y);
 d.name = 'Harris2000 d5331';
-

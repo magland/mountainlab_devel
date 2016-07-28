@@ -12,6 +12,7 @@ function d = demo_dataset(forceregen)
 %            d.truewaveforms - MDA filename for true waveforms
 %            d.samplerate - time series sample rate in samples/sec
 %            d.outdir - path to a working directory to be used for output files
+%                       (changed to /tmp, 7/28/16)
 %
 % The only self-test is to run without arguments
 %
@@ -21,7 +22,7 @@ function d = demo_dataset(forceregen)
 mfile_path=fileparts(mfilename('fullpath'));
 demodir = [mfile_path,'/demo_data'];
 if ~exist(demodir,'dir'), mkdir(demodir); end
-d.outdir = [demodir,'/output'];
+d.outdir = [tempdir,'/output'];                % was [demodir,'/output'];
 if ~exist(d.outdir,'dir'), mkdir(d.outdir); end
 
 d.timeseries = [demodir,'/demotimeseries.mda'];
