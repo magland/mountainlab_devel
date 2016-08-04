@@ -62,9 +62,15 @@ else
   writemda32(X,fname);
 end
 
+function times = run_mscmd_detect(Y,o);
+outdir = tempdir; detectfile = [outdir,'/detect.mda']; 
+mscmd_detect(pathify32(Y),detectfile,o);
+firings = readmda(detectfile);
+times = firings(2,:);
+
 function times = run_mscmd_detect3(Y,o);
 outdir = tempdir; detectfile = [outdir,'/detect.mda']; 
-mscmd_detect3(fnameify32(Y,outdir),detectfile,o);
+mscmd_detect3(pathify32(Y),detectfile,o);               % *** broken now
 firings = readmda(detectfile);
 times = firings(2,:);
 
@@ -77,23 +83,25 @@ o.clip_size = 30;          % only affects ends of timeseries
 o.polarity='m';
 regendata = 1;             % toggle this as you please
 % ahb trying various detection algs...
-fprintf('\nold detect:\n')             % kept in scratch_ahb
+fprintf('\nold ms detect:\n')             % kept in scratch_ahb
 v = path; addpath scratch_ahb
-test_detect_accuracy(@ms_detect,o,regendata); title('old detect'); drawnow
-fprintf('\ndetect3:\n')
-test_detect_accuracy(@ms_detect3,o); title('detect3'); drawnow
-o.jiggle = 1; fprintf('\ndetect4 jiggle=1:\n')
-test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=1'); drawnow
-o.jiggle = -1; fprintf('\ndetect4 jiggle=-1 (increase jiggle):\n')
-test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=-1'); drawnow
-o.jiggle = 2; fprintf('\ndetect4 jiggle=2:\n')
-test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2'); drawnow
-o.num_features=10; fprintf('\ndetect4 jiggle=2 numfea=10:\n')
-test_detect_accuracy(@ms_detect4,o); title('detect4 jiggle=2 numfea=10'); drawnow
+test_detect_accuracy(@ms_detect,o,regendata); title('old ms detect'); drawnow
+fprintf('\nms detect3:\n')
+test_detect_accuracy(@ms_detect3,o); title('ms detect3'); drawnow
+o.jiggle = 1; fprintf('\nms detect4 jiggle=1:\n')
+test_detect_accuracy(@ms_detect4,o); title('ms detect4 jiggle=1'); drawnow
+o.jiggle = -1; fprintf('\nms detect4 jiggle=-1 (increase jiggle):\n')
+test_detect_accuracy(@ms_detect4,o); title('ms detect4 jiggle=-1'); drawnow
+o.jiggle = 2; fprintf('\nms detect4 jiggle=2:\n')
+test_detect_accuracy(@ms_detect4,o); title('ms detect4 jiggle=2'); drawnow
+o.num_features=10; fprintf('\nms detect4 jiggle=2 numfea=10:\n')
+test_detect_accuracy(@ms_detect4,o); title('ms detect4 jiggle=2 numfea=10'); drawnow
+o.sign=-1; o.individual_channels = 0;
+test_detect_accuracy(@run_mscmd_detect,o); title('mscmd detect'); drawnow
 o.sign=-1; o.upsampling_factor = 10; o.num_pca_denoise_components = 5;
 o.pca_denoise_jiggle = 2;
 o.individual_channels = 0;   % jfm to implement (1 find duplicates of spikes!)
-test_detect_accuracy(@run_mscmd_detect3,o); title('mscmd_detect3'); drawnow
+test_detect_accuracy(@run_mscmd_detect3,o); title('mscmd detect3'); drawnow
 path(v);
 % seems like jiggle=1 helps, but not any higher, and numfea around 15 best
 % Also, adding jiggle to single times set is slightly worse than appending.

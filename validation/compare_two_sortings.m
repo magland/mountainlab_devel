@@ -36,6 +36,7 @@ function [fk Q perm iperm] = compare_two_sortings(da,db,o)
 % todo: opt to switch to mscmd_conf_mat for speed, test.
 % todo: handle zero-valued labels
 % Barnett 4/5/16. Kb absent label issue 4/19/16. opts.ts 5/12/16
+% all views best-permuted 8/4/16
 
 if nargin==0, test_compare_two_sortings; return; end
 
@@ -109,6 +110,7 @@ fprintf('\t%d',kblist); fprintf('\n'); fprintf('\t%d',popsb); fprintf('\n');
 if isempty(Lb), warning('Lb labels are empty (no spikes found)');
   if o.verb, close(bigfig); end % removed by jfm 4/13/16; close only g, ahb 4/19
 return; end
+pffile = db.firings;     % default
 if ischar(db.firings) && o.permfirings
   [path,nam] = fileparts(db.firings);
   pffile = [path,'/',nam,'_permed.mda'];
@@ -154,9 +156,9 @@ if o.verb==2          % show timeseries and firings overlaid...
   % can't include : '1:miss 2:false 3:wrong'  since need Y data too! (spikespy issue)
   %rmpath ~/spikespy/matlab/
 end
-if o.verb==3           % mountainview... (not best-permuted!)
+if o.verb==3           % mountainview... (will always call the timeseries "raw")
   mv.mode='overview2'; mv.raw=db.timeseries; mv.samplerate=db.samplerate;
-  mv.firings=pathify64(db.firings); mountainview(mv);
+  mv.firings=pffile; mountainview(mv);
 end
 if o.verb==4           % clip clouds...
   cco=[]; cco.vzoom = 1.0;
