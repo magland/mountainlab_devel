@@ -4,12 +4,14 @@ function d = grab_neurocube_dataset(n,datapath)
 % d = grab_neurocube_dataset(n)
 %  n=1:   30 sec
 %  n=2:   300 sec = 5 min
+%
+% Don't forget you can control the # grand truth neurons via Wthresh in code.
 % Barnett 4/26/16
 
 if nargin==0, n=1; end
 
 % keep output dir in a fast-IO drive:
-d.outdir = [tempdir,'output']; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end
+d.outdir = [tempdir,'neurocubeoutput']; if ~exist(d.outdir,'dir'), mkdir(d.outdir); end
 
 mfile_path=fileparts(mfilename('fullpath'));
 ext = [mfile_path,'/../ext_datasets'];
@@ -21,6 +23,7 @@ end;
 
 d.samplerate = 24000;        % see Par_sim.sr in neurocube.m
 d.timeseries = [d.outdir,'/neurocube_default_tet.mda'];
+d.dims = readmdadims(d.timeseries);
 d.truefirings = [d.outdir,'/neurocube_default_tet_truefirings.mda'];
 
 if n==1
@@ -31,7 +34,7 @@ elseif n==2
   d.name = 'NeuroCube-tet-5min';
 end
 writemda32(data,d.timeseries);
-Wthresh = 20.0;                   % template abs threshold (set to 0 for all 600!)
+Wthresh = 0.0;           % PARAM: template abs threshold (set to 0 for all 600!)
 gnd = find(max(abs(Close_Spikeshapes),[],2)>=Wthresh); % labels to call "ground truth"
 % a few neurons that have large peaks
 times = []; labels = [];
@@ -44,7 +47,6 @@ end
 times = d.samplerate*times/1e3;    % convert ms -> samples
 times = times + 21.0;              % apparent offset of 21 samples (as in 2009!)
 writemda64([0*times; times; labels],d.truefirings);  % peakchans=0
-
 
 if 0 % plotting to see if any correlation of Y clips with firings:
   spikespy({data,times,labels,'NeuroCube'});
