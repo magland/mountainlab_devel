@@ -20,8 +20,9 @@ os{1}.detect_polarity = 'p';
 os{4}.sign = +1; os{4}.detectability_threshold = 0;  % no filtering of det score
 os{4}.whiten=0;   % plain normalization (whitening breaks for M=1)
 %os{5}.num_fea = 5;  % doesn't help much, still bad
+os{6}.use_whitening = 0;
 
-testlist = [4]; %numel(sorters);   % which sorters to run (5 needs validspike)
+testlist = 6; %numel(sorters);   % which sorters to run (5 needs validspike)
 
 for i=testlist
   fprintf('RUNNING sorter %s...\n',snames{i})

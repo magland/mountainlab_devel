@@ -17,7 +17,7 @@ mfile_path = fileparts(mfilename('fullpath'));
 ext = [mfile_path,'/../ext_datasets/'];
 o_acc.verb = 0;                          % global accuracy options
 
-fout = fopen('~/spikesorting/franklab_paper/resultstable_neuron_harr.txt','w');
+fout = fopen('~/spikesorting/franklab_paper/resultstable_neuron.txt','w');
 dumpQinfo(fout);   % does the header
 i=1;   % expt counter (ie dataset)
 
@@ -40,7 +40,7 @@ if 1
 end
 
 
-if 0
+if 1
 disp('MARTINEZ:')
 % compare to: ~/spikesorting/martinezresults.txt which was for jfm_april_sort
 % and compare tables in Martinez '09 paper.
@@ -83,7 +83,7 @@ disp('NEUROCUBE:')
 end
 
 
-if 0
+if 1
 disp('KAMPFF/NETO:')
 % Compare to text p.10 of Neto '16 biorxiv preprint. 1 JC elec.
 for neto=1:2          % choose Neto dataset 1 or 2  (1 gives only K=12 good, 2 K=24ish)
@@ -110,11 +110,11 @@ fclose(fout);
 %i=1; mv.raw=d{i}.timeseries; mv.filt=[d{i}.outdir '/pre2.mda']; mv.firings=[d{i}.outdir '/firings_permed.mda']; mv.samplerate=d{i}.samplerate; mountainview(mv);
 
 % spikespy comparison of sorted vs truth:
-%i=1; Y=readmda(d{i}.timeseries); F=readmda([d{i}.outdir '/firings_permed.mda']); Ft=readmda(d{i}.truefirings); spikespy({Y,F(2,:),F(3,:),'sorted'},{Y,Ft(2,:),Ft(3,:),'truth'});
+%i=1; Y=readmda([d{i}.outdir '/pre2.mda']); F=readmda([d{i}.outdir '/firings_permed.mda']); Ft=readmda(d{i}.truefirings); spikespy({Y,F(2,:),F(3,:),'sorted'},{Y,Ft(2,:),Ft(3,:),'truth'});
 
 % gndtruth in MV:
 %i=1; mv.raw=d{i}.timeseries; mv.filt=[d{i}.outdir '/pre2.mda']; mv.firings=d{i}.truefirings; mv.samplerate=d{i}.samplerate; mountainview(mv);
 
-save ~/spikesorting/franklab_paper/resultstable_neuron_harr.mat
+save ~/spikesorting/franklab_paper/resultstable_neuron.mat
 
 %i=1; display_confusion(Q{1},'true','sorted');

@@ -1,5 +1,7 @@
 function d = grab_harris2000_dataset(raw_fname)
-% Get classic d5331 dataset w/ IC channel output as true firings. Barnett 4/6/16
+% Get classic d5331 dataset w/ IC channel output as true firings.
+% Barnett 4/6/16
+% Changed excluded interval 8/9/16
 
 mfile_path=fileparts(mfilename('fullpath'));
 
@@ -25,13 +27,15 @@ N = n/Nch; if N~=round(N), error('non-integer number of time pts for given M'); 
 Y = reshape(Y,[Nch N]);
 d.samplerate = 1e4;
 t = (1:N)/d.samplerate;   % time indices
-j = find((t>26 & t<109.49) | t>110.29);   % cut out bad parts & forget absolute t
+%j = find((t>26 & t<109.49) | t>110.29);   % ahb original cutout excluded opening
+j = find(t<109.49 | t>110.29);   % cut out 0.8 sec of bad bursting/noise part, forgets absolute t. As in Ekanadham et al 2013.
 N = numel(j);
 Y = Y(:,j);
 
-YEC = Y(6,:); % pull out the IC (intra-cellular), for ground truth
-trig = (max(YEC)+min(YEC))/2;   % trigger level (checked by eye)
-truetimes = 1+find(diff(YEC>trig)==1); % upwards-going times, sample units
+YIC = Y(6,:); % pull out the IC (intra-cellular), for ground truth
+%writemda(YIC-mean(YIC),[d.outdir,'/harris2000_IC.mda'],'float32'); % for debug
+trig = (max(YIC)+min(YIC))/2;   % trigger level (checked by eye)
+truetimes = 1+find(diff(YIC>trig)==1); % upwards-going times, sample units
 %figure; plot(1:N, YEC); vline(truetimes); xlabel('t (in samples)');
 truefirings = [0*truetimes; truetimes; 1+0*truetimes];  % chan; time; label
 d.truefirings = [d.outdir,'/harris2000_truefirings.mda'];

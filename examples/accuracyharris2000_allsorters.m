@@ -17,7 +17,8 @@ for i=1:numel(sorters), os{i} = oc; end    % use common opts
 %os{2}.detect_threshold = 3.0;
 %os{3}.detect_threshold = 3.0;
 os{4}.detectability_threshold=5;
-os{6}.detect_threshold=3.0; os{6}.clip_size=20; os{6}.use_whitening=0; os{6}.use_mask_out_artifacts=0; os{6}.freq_max=inf; os{6}.num_fea=10; %os{6}.neglogprior=30;
+
+os{6}.detect_threshold=3.5; os{6}.clip_size=20; os{6}.use_whitening=0; os{6}.use_mask_out_artifacts=0; os{6}.freq_max=inf; os{6}.num_fea=20; %os{6}.neglogprior=30;
 
 
 testlist = 6; %[1 4 5 6]; %1:4; %numel(sorters);   % which sorters to run
@@ -52,9 +53,17 @@ end
 
 % show the ith sorting...
 i=6; outdir = sprintf('%s/output%d',tempdir,i);
+if 1
 mv.mode='overview2'; mv.raw = d.timeseries;   % in MV...
 mv.filt=info{i}.filtfile; mv.pre=info{i}.prefile;mv.samplerate=d.samplerate;
 mv.firings= [outdir,'/firings_permed.mda'];mountainview(mv);
 
 Y=readmda([outdir,'/pre2.mda']); F=readmda([outdir,'/firings_permed.mda']);
 Ft=readmda(d.truefirings); spikespy({Y,F(2,:),F(3,:),'sorted'},{Y,Ft(2,:),Ft(3,:),'truth'});
+end
+
+if 0  % show IC signal too just to check gnd truth worked.
+  YIC=readmda('/tmp/harrisoutput/harris2000_IC.mda');
+Y=readmda([outdir,'/pre2.mda']); F=readmda([outdir,'/firings_permed.mda']);
+Ft=readmda(d.truefirings); spikespy({Y,F(2,:),F(3,:),'sorted'},{Y,Ft(2,:),Ft(3,:),'truth'},{YIC,Ft(2,:),Ft(3,:),'IC'});
+end
